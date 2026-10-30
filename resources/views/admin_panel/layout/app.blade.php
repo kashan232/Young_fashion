@@ -831,6 +831,11 @@
                                                                     class="fas fa-balance-scale"></i> Units</a></li>
                                                     @endcan
 
+                                                    @can('sizes.view')
+                                                        <li><a href="{{ route('Size.home') }}"><i
+                                                                    class="fas fa-ruler-combined"></i> Sizes</a></li>
+                                                    @endcan
+
                                                 </ul>
                                             </div>
                                         @endcanany
