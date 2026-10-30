@@ -669,6 +669,9 @@
                                     <div class="item-name">{{ $product->item_name }}</div>
                                     <div class="item-meta">
                                         <span class="item-code">{{ $product->item_code }}</span>
+                                @if(!empty($product->rack_shelf))
+                                    <span class="meta-chip" style="background:#f0fdf4; color:#15803d; border-color:#bbf7d0; font-size:10px;"><i class="fas fa-layer-group" style="font-size:.55rem;"></i> {{ $product->rack_shelf }}</span>
+                                @endif
                                         @if($product->category_relation)
                                             <span class="meta-chip"><i class="fas fa-list" style="font-size:.6rem;"></i> {{ $product->category_relation->name }}</span>
                                         @endif
@@ -802,6 +805,9 @@
                             </div>
                             <div class="item-meta mt-1">
                                 <span class="item-code">{{ $product->item_code }}</span>
+                                @if(!empty($product->rack_shelf))
+                                    <span class="meta-chip" style="background:#f0fdf4; color:#15803d; border-color:#bbf7d0; font-size:10px;"><i class="fas fa-layer-group" style="font-size:.55rem;"></i> {{ $product->rack_shelf }}</span>
+                                @endif
                                 @if($product->category_relation)
                                     <span class="meta-chip"><i class="fas fa-list"></i> {{ $product->category_relation->name }}</span>
                                 @endif

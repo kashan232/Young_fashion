@@ -271,6 +271,10 @@
                                                 <button type="button" class="btn btn-light border px-2 shadow-sm" data-toggle="modal" data-target="#brandModal">+</button>
                                             </div>
                                         </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label-pro"><i class="fas fa-layer-group text-primary me-1"></i>Rack / Shelf Location</label>
+                                            <input type="text" class="form-control-pro" name="rack_shelf" value="{{ $product->rack_shelf ?? '' }}" placeholder="e.g. Rack A-01, Shelf 3">
+                                        </div>
                                     </div>
                                 </div>
 
@@ -314,7 +318,17 @@
             @endforeach
         @endif
     </datalist>
-    <div id="variantsContainer">
+    <div class="mb-2 p-2 bg-light rounded border d-flex flex-wrap align-items-center gap-1 shadow-sm">
+                                        <span class="small fw-bold text-dark me-2"><i class="fas fa-shoe-prints text-primary me-1"></i>Quick Shoe Sizes:</span>
+                                        @if(isset($sizes) && count($sizes) > 0)
+                                            @foreach($sizes as $sz)
+                                                <button type="button" class="btn btn-sm btn-white border px-2 py-0 shadow-sm quick-size-chip" data-size="{{ $sz->name }}" style="font-size: 11px; font-weight: 700; border-radius: 6px; background:#fff;">
+                                                    <span class="text-primary">+</span> {{ $sz->name }}
+                                                </button>
+                                            @endforeach
+                                        @endif
+                                    </div>
+                                    <div id="variantsContainer">
                                         <div class="table-responsive">
                                             <table class="table table-bordered table-sm align-middle mb-1" id="variantsTable">
                                                 <thead class="table-light">
@@ -561,6 +575,7 @@
 @section('js')
     <script>
         let variantMode = 'standard';
+        const availableSizes = @json($sizes ?? []);
         document.addEventListener('DOMContentLoaded', function() {
             // --- UI Elements ---
             const unitDropdown = document.getElementById('unit-dropdown');
@@ -963,7 +978,7 @@
                         <input type="text" class="form-control-pro form-control-sm base-name-input fw-bold" name="variant_name[]" value="${nameVal}" placeholder="Name" data-vid="${vid}">
                         <input type="hidden" name="variant_is_base[]" value="1">
                     </td>
-                    <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_size[]" list="sizesList" value="${sizeVal}" placeholder="Size (e.g. 40, 41)"></td>
+                    <td class="p-1"><select class="form-select form-select-sm fw-bold variant-size-select" name="variant_size[]"><option value="">Size...</option>${availableSizes.map(s => `<option value="${s.name}" ${sizeVal == s.name ? "selected" : ""}>${s.name}</option>`).join("")}</select></td>
                     <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" value="${colorVal}" placeholder="Color"></td>
                     <td class="p-1">
                         <select class="form-select form-select-sm fw-bold text-primary px-1" name="variant_unit[]" style="font-size:11px;">
@@ -1141,7 +1156,7 @@
                         <input type="text" class="form-control-pro form-control-sm var-name-input" name="variant_name[]" value="${suggestedName}" placeholder="Name">
                         <input type="hidden" name="variant_is_base[]" value="0">
                     </td>
-                    <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_size[]" list="sizesList" value="${sizeVal}" placeholder="Size (e.g. 40, 41, 42)"></td>
+                    <td class="p-1"><select class="form-select form-select-sm fw-bold variant-size-select" name="variant_size[]"><option value="">Size...</option>${availableSizes.map(s => `<option value="${s.name}" ${sizeVal == s.name ? "selected" : ""}>${s.name}</option>`).join("")}</select></td>
                     <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" value="${colorVal}" placeholder="Color"></td>
                     <td class="p-1">
                         <select class="form-select form-select-sm px-1 fw-bold text-dark" name="variant_unit[]" style="font-size:11px;">
