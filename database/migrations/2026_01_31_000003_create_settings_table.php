@@ -25,7 +25,7 @@ return new class extends Migration
             // Company Settings
             [
                 'key' => 'company_name',
-                'value' => 'Three Stars Medical',
+                'value' => 'Young Fashion',
                 'type' => 'string',
                 'group' => 'company',
                 'label' => 'Company Name',

@@ -12,7 +12,13 @@ class Category extends Model
 
     protected $fillable = ['name', 'show_on_website', 'web_image'];
 
-    function subcategory(){
+    public function subcategory()
+    {
+        return $this->hasMany(Subcategory::class);
+    }
+
+    public function subcategories()
+    {
         return $this->hasMany(Subcategory::class);
     }
 }

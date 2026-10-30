@@ -306,10 +306,10 @@
                 <img src="{{ asset(ltrim($companyLogo, '/')) }}" alt="Company Logo">
             </div>
         @endif
-        <div class="company-name">{{ \App\Models\Setting::get('company_name', 'Three Stars Medical') }}</div>
+        <div class="company-name">{{ \App\Models\Setting::get('company_name', 'Young Fashion') }}</div>
         <div class="company-info">
-            <div>{{ \App\Models\Setting::get('company_address', 'Hyderabad') }}</div>
-            <div>Ph: {{ \App\Models\Setting::get('company_phone', '0327-9226901') }}</div>
+            <div>{{ \App\Models\Setting::get('company_address', 'Shaibazar, Hyderabad') }}</div>
+            <div>Ph: {{ \App\Models\Setting::get('company_phone', '0300-1234567') }}</div>
         </div>
         @if(\App\Models\Setting::get('facebook_link') || \App\Models\Setting::get('tiktok_link') || \App\Models\Setting::get('instagram_link') || \App\Models\Setting::get('website_link'))
         <div style="text-align: left; font-size: 10px; line-height: 1.4; word-wrap: break-word; overflow-wrap: break-word; margin-top: 4px;">
