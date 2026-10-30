@@ -556,9 +556,13 @@
                                 {{-- Sub-grid for left content, image on the right --}}
                                 <div class="col-md-9">
                                     <div class="row g-3">
-                                        <div class="col-md-12">
-                                            <label class="form-label-pro">Product Name <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control-pro fs-6 fw-bold" name="product_name" required placeholder="e.g. Ceramic Floor Tile 60x60">
+                                        <div class="col-md-8">
+                                            <label class="form-label-pro">Product / Article Name <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control-pro fs-6 fw-bold" name="product_name" required placeholder="e.g. Young Fashion Oxford Shoes">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label-pro"><i class="fas fa-layer-group text-primary me-1"></i>Rack / Shelf Location</label>
+                                            <input type="text" class="form-control-pro" name="rack_shelf" placeholder="e.g. Rack A-01, Shelf 2">
                                         </div>
 
                                         <div class="col-md-3">
