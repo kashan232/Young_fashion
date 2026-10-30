@@ -2,13 +2,13 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Illuminate\Support\Facades\Hash;
 
-class SuperAdminSeeder extends Seeder
+class SuperadminSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -18,23 +18,31 @@ class SuperAdminSeeder extends Seeder
         // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // create super-admin role
+        // Create Super Admin role
         $role = Role::firstOrCreate(['name' => 'Super Admin']);
         
-        // We will assign all existing permissions just in case.
+        // Sync all permissions to Super Admin role
         $role->syncPermissions(Permission::all());
 
-        // Create Super Admin User
+        // Create Main Super Admin User
         $user = User::firstOrCreate(
-            ['email' => 'superadmin@example.com'],
+            ['email' => 'admin@youngfashion.com'],
             [
-                'name' => 'Super Admin',
-                'password' => bcrypt('password123') // Default password
+                'name' => 'Young Fashion Admin',
+                'password' => Hash::make('admin123')
             ]
-            // atif@gmail.com
-            // 12345678
         );
 
         $user->assignRole($role);
+
+        // Also ensure admin@example.com / admin@gmail.com backup convenience account
+        $altUser = User::firstOrCreate(
+            ['email' => 'admin@gmail.com'],
+            [
+                'name' => 'Super Admin',
+                'password' => Hash::make('admin123')
+            ]
+        );
+        $altUser->assignRole($role);
     }
 }
