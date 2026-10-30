@@ -25,6 +25,7 @@ use App\Http\Controllers\StocksController;
 use App\Http\Controllers\StockTransferController;
 use App\Http\Controllers\StockAdjustmentController;
 use App\Http\Controllers\SubcategoryController;
+use App\Http\Controllers\SizeController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VendorController;
@@ -128,6 +129,12 @@ Route::middleware('auth')->group(function () {
     route::get('/Brand', [BrandController::class, 'index'])->middleware('permission:brands.view')->name('Brand.home');
     Route::get('/Brand/delete/{id}', [BrandController::class, 'delete'])->middleware('permission:brands.delete')->name('delete.Brand');
     route::post('/Brand/store', [BrandController::class, 'store'])->middleware('permission:brands.create|brands.edit')->name('store.Brand');
+
+        // Size Module
+    Route::get('/size', [SizeController::class, 'index'])->middleware('permission:sizes.view')->name('Size.home');
+    Route::get('/size/delete/{id}', [SizeController::class, 'delete'])->middleware('permission:sizes.delete')->name('delete.Size');
+    Route::post('/size/store', [SizeController::class, 'store'])->middleware('permission:sizes.create|sizes.edit')->name('store.Size');
+    Route::get('/get-sizes', [SizeController::class, 'getSizesJson'])->name('get-sizes');
 
     route::get('/Unit', [UnitController::class, 'index'])->middleware('permission:units.view')->name('Unit.home');
     Route::get('/Unit/delete/{id}', [UnitController::class, 'delete'])->middleware('permission:units.delete')->name('delete.Unit');

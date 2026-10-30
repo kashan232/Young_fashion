@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Stock;
 use App\Models\StockMovement;
+use App\Models\Size;
 use App\Models\Subcategory;
 use App\Models\Unit;
 use App\Models\WarehouseStock;
@@ -699,8 +700,9 @@ class ProductController extends Controller
         $categories = Category::select('id', 'name')->get();
         $units = Unit::select('id', 'name')->get();
         $brands = Brand::select('id', 'name')->get();
+        $sizes = Size::select('id', 'name', 'size_code')->orderBy('name', 'asc')->get();
 
-        return view('admin_panel.product.create', compact('categories', 'units', 'brands'));
+        return view('admin_panel.product.create', compact('categories', 'units', 'brands', 'sizes'));
     }
 
     // ===== Dependent subcategories =====
@@ -1763,6 +1765,7 @@ class ProductController extends Controller
         $categories = Category::all();
         $subcategories = SubCategory::all();
         $brands = Brand::all();
+        $sizes = Size::all();
 
         // Calculate current stock from WarehouseStock (the real source of truth)
         $totalPieces = $product->warehouseStocks->sum('total_pieces');
@@ -1785,7 +1788,7 @@ class ProductController extends Controller
             }
         }
 
-        return view('admin_panel.product.edit', compact('product', 'categories', 'subcategories', 'brands'));
+        return view('admin_panel.product.edit', compact('sizes', 'product', 'categories', 'subcategories', 'brands'));
     }
 
     // ===== Barcode view =====

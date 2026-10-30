@@ -307,7 +307,14 @@
                                         </div>
                                         <button type="button" class="btn btn-sm btn-primary" id="enableVariantsBtn"><i class="fas fa-plus me-1"></i>Add Variant Row</button>
                                     </div>
-                                    <div id="variantsContainer">
+                                    <datalist id="sizesList">
+        @if(isset($sizes))
+            @foreach($sizes as $sizeOption)
+                <option value="{{ $sizeOption->name }}">{{ $sizeOption->size_code ?? $sizeOption->name }}</option>
+            @endforeach
+        @endif
+    </datalist>
+    <div id="variantsContainer">
                                         <div class="table-responsive">
                                             <table class="table table-bordered table-sm align-middle mb-1" id="variantsTable">
                                                 <thead class="table-light">
@@ -956,7 +963,7 @@
                         <input type="text" class="form-control-pro form-control-sm base-name-input fw-bold" name="variant_name[]" value="${nameVal}" placeholder="Name" data-vid="${vid}">
                         <input type="hidden" name="variant_is_base[]" value="1">
                     </td>
-                    <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_size[]" value="${sizeVal}" placeholder="Size"></td>
+                    <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_size[]" list="sizesList" value="${sizeVal}" placeholder="Size (e.g. 40, 41)"></td>
                     <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" value="${colorVal}" placeholder="Color"></td>
                     <td class="p-1">
                         <select class="form-select form-select-sm fw-bold text-primary px-1" name="variant_unit[]" style="font-size:11px;">
@@ -1134,7 +1141,7 @@
                         <input type="text" class="form-control-pro form-control-sm var-name-input" name="variant_name[]" value="${suggestedName}" placeholder="Name">
                         <input type="hidden" name="variant_is_base[]" value="0">
                     </td>
-                    <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_size[]" value="${sizeVal}" placeholder="Size (e.g. Small, 30cm)"></td>
+                    <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_size[]" list="sizesList" value="${sizeVal}" placeholder="Size (e.g. 40, 41, 42)"></td>
                     <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" value="${colorVal}" placeholder="Color"></td>
                     <td class="p-1">
                         <select class="form-select form-select-sm px-1 fw-bold text-dark" name="variant_unit[]" style="font-size:11px;">
@@ -1469,7 +1476,7 @@
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
                         <div class="mob-field-group">
                             <div class="mob-label">Size</div>
-                            <input type="text" class="mob-input mob-sync" data-field="variant_size[]" value="${sizeVal}" placeholder="XL, M...">
+                            <input type="text" class="mob-input mob-sync" data-field="variant_size[]" list="sizesList" value="${sizeVal}" placeholder="40, 41, 42...">
                         </div>
                         <div class="mob-field-group">
                             <div class="mob-label">Color</div>

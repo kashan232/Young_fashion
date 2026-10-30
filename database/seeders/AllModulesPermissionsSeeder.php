@@ -26,6 +26,7 @@ class AllModulesPermissionsSeeder extends Seeder
             'categories',
             'subcategories',
             'brands',
+            'sizes',
             'units',
             'warehouse',
             'warehouse.stock',

@@ -796,7 +796,7 @@
                                     <div class="col-group-wrapper row">
                                         <!-- Products & Categories -->
                                         @canany(['products.view', 'discount.products.view', 'categories.view',
-                                            'subcategories.view', 'brands.view', 'units.view'])
+                                            'subcategories.view', 'brands.view', 'sizes.view', 'units.view'])
                                             <div class="col-group col-md-3">
                                                 <p class="category-heading">Products & Categories</p>
                                                 <ul class="submenu-item">
