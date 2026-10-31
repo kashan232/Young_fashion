@@ -937,56 +937,144 @@
 {{-- ══════════════════════════════════════════════════════════════
      PRODUCT VIEW MODAL
 ══════════════════════════════════════════════════════════════ --}}
-<div class="modal fade" id="productViewModal" tabindex="-1" aria-labelledby="productViewModalLabel" aria-hidden="true">
+<div class="modal fade" id="productViewModal" tabindex="-1" aria-labelledby="productViewModalLabel" aria-hidden="true" style="z-index: 1055;">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius:16px; overflow:hidden;">
-            <div class="modal-header border-bottom bg-white px-4 py-3">
-                <div>
-                    <h5 class="modal-title fw-bold text-dark mb-0" id="productViewModalLabel">
-                        <span id="view_item_name">Product</span>
-                    </h5>
-                    <small class="text-muted" id="view_item_subtext">CODE</small>
+            <!-- Modal Header -->
+            <div class="modal-header bg-white border-bottom px-4 py-3 align-items-center">
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark mb-0" id="view_item_name">Product Name</h5>
+                        <div class="text-muted small mt-1" id="view_item_subtext">CODE | CATEGORY | BRAND</div>
+                    </div>
+                    <span class="badge bg-success text-white px-2 py-1 ms-2 shadow-sm d-none" id="view_rack_badge" style="font-size: 11px;">
+                        <i class="fas fa-layer-group me-1"></i><span id="view_rack_text">Rack A-01, Shelf 2</span>
+                    </span>
                 </div>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <button type="button" class="close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" style="font-size: 1.5rem; line-height: 1;">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <div class="modal-body p-0">
+
+            <!-- Modal Body -->
+            <div class="modal-body p-0 bg-light">
+                <!-- Loading Spinner -->
                 <div id="modalLoadingSpinner" class="text-center py-5 d-none">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="sr-only">Loading...</span>
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="text-muted small mt-2">Loading footwear details…</p>
+                </div>
+
+                <!-- Main Content -->
+                <div id="modalContentRow" class="p-3">
+                    <!-- Top Summary Card: Photo Gallery + Highlights -->
+                    <div class="row g-3 mb-3">
+                        <!-- Left: Active Color Photo Gallery Preview -->
+                        <div class="col-md-5">
+                            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold text-dark small"><i class="fas fa-camera text-primary me-1"></i>Color Shoe Photo:</span>
+                                    <span class="badge bg-primary text-white" id="modalActiveColorBadge">All Colors</span>
+                                </div>
+                                <!-- Big Active Image Preview -->
+                                <div class="position-relative text-center bg-dark rounded border overflow-hidden d-flex align-items-center justify-content-center mb-2" style="height: 230px; cursor: pointer;" id="modalMainImgWrap" title="Click to view full image in high resolution">
+                                    <img id="modalMainImg" src="" style="max-height: 220px; max-width: 100%; object-fit: contain;">
+                                    <span class="position-absolute bottom-0 end-0 m-2 badge bg-black bg-opacity-75 text-white" style="font-size: 10px;">
+                                        <i class="fas fa-search-plus me-1"></i>Click to Zoom
+                                    </span>
+                                </div>
+                                <!-- Thumbnails Strip for Active Color -->
+                                <div class="d-flex gap-2 flex-wrap justify-content-center p-2 bg-light rounded border" id="modalColorThumbsStrip" style="min-height: 55px; max-height: 90px; overflow-y: auto;">
+                                    <!-- Dynamic thumbnails -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Article Highlights & Color Selector -->
+                        <div class="col-md-7">
+                            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100 d-flex flex-column justify-content-between">
+                                <div>
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <span class="text-muted small text-uppercase fw-bold">Footwear Article</span>
+                                            <h4 class="fw-bold text-dark mb-0" id="view_article_title">Oxford Shoes</h4>
+                                            <div class="text-muted small mt-1" id="view_article_desc"></div>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="fs-4 fw-bold text-success" id="view_sale_price">Rs. 0</div>
+                                            <small class="text-muted">Retail Price / Pair</small>
+                                        </div>
+                                    </div>
+
+                                    <!-- Quick Stats Grid -->
+                                    <div class="row g-2 mb-3">
+                                        <div class="col-4">
+                                            <div class="p-2 rounded bg-light border text-center">
+                                                <div class="text-muted" style="font-size: 10px; text-transform: uppercase;">Total Stock</div>
+                                                <div class="fw-bold text-primary fs-5" id="view_total_stock">0</div>
+                                                <small class="text-muted">Pairs Available</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="p-2 rounded bg-light border text-center">
+                                                <div class="text-muted" style="font-size: 10px; text-transform: uppercase;">Purch Price</div>
+                                                <div class="fw-bold text-dark fs-6 mt-1" id="view_purch_price">Rs. 0</div>
+                                                <small class="text-muted">Cost / Pair</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="p-2 rounded bg-light border text-center">
+                                                <div class="text-muted" style="font-size: 10px; text-transform: uppercase;">Wholesale</div>
+                                                <div class="fw-bold text-dark fs-6 mt-1" id="view_wholesale_price">Rs. 0</div>
+                                                <small class="text-muted">Dealer Price</small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Shoe Color Filter Buttons -->
+                                    <div class="mb-2">
+                                        <label class="form-label small fw-bold text-muted mb-1 text-uppercase">
+                                            <i class="fas fa-palette text-primary me-1"></i>Filter By Shoe Color:
+                                        </label>
+                                        <div class="d-flex gap-2 flex-wrap" id="modalColorFilterButtons">
+                                            <!-- Color chips generated here -->
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="border-top pt-2 mt-2 d-flex justify-content-between align-items-center text-muted small flex-wrap gap-2">
+                                    <span><i class="fas fa-map-marker-alt text-danger me-1"></i>Location: <strong class="text-dark" id="view_shelf_info">-</strong></span>
+                                    <span><i class="fas fa-barcode text-secondary me-1"></i>Article Code: <code class="text-dark" id="view_code_info">-</code></span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <p class="text-muted small mt-2">Fetching product details…</p>
-                </div>
-                                <div id="modalColorGalleries" class="p-3 bg-light border-bottom d-none">
-                    <div class="fw-bold small text-dark mb-2"><i class="fas fa-palette text-primary me-1"></i>Color Photos Gallery:</div>
-                    <div id="modalColorGalleriesContent" class="d-flex flex-column gap-2"></div>
-                </div>
-                <div id="modalContentRow" class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 text-center" style="font-size:.88rem;">
-                        <thead style="background:#f8fafc;">
-                            <tr>
-                                <th class="text-start ps-4" style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#475569;">Variant Name</th>
-                                <th style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#475569;">Size</th>
-                                <th style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#475569;">Color</th>
-                                <th style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#475569;">Stock</th>
-                                <th style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#475569;">Sale Price</th>
-                                <th style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#475569;">Purch Price</th>
-                                <th style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#475569;">Alert</th>
-                                <th class="text-end pe-4" style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#475569;">Barcode</th>
-                            </tr>
-                        </thead>
-                        <tbody id="variantTableBody"></tbody>
-                    </table>
+
+                    <!-- Color & Size Breakdown Section -->
+                    <div class="card border-0 shadow-sm rounded-3 bg-white overflow-hidden">
+                        <div class="card-header bg-white border-bottom py-2 px-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <span class="fw-bold text-dark small">
+                                <i class="fas fa-layer-group text-primary me-1"></i>Color-Wise Variants & Available Sizes Breakdown
+                            </span>
+                            <span class="badge bg-light text-dark border" id="view_variants_count_badge">0 Variants</span>
+                        </div>
+                        <div class="card-body p-3">
+                            <!-- Color Groups Container -->
+                            <div id="modalColorGroupedContainers" class="d-flex flex-column gap-3">
+                                <!-- Generated dynamically -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="modal-footer bg-white py-2 px-4">
-                <button type="button" class="btn btn-secondary btn-sm px-4" data-dismiss="modal">Close</button>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer bg-white py-2 px-4 justify-content-between">
+                <span class="text-muted small"><i class="fas fa-store text-primary me-1"></i>Young Fashion — Footwear POS & Retail ERP</span>
+                <button type="button" class="btn btn-secondary btn-sm px-4" data-dismiss="modal" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
 </div>
-
 
 
 @endsection
@@ -1030,65 +1118,45 @@ $(document).ready(function () {
         $('#productViewModal').modal('show');
 
         $.ajax({
-            url:  "/productview/" + productId,
+            url: "/productview/" + productId,
             type: "GET",
             success: function(product) {
                 $('#modalLoadingSpinner').addClass('d-none');
                 $('#modalContentRow').removeClass('d-none');
 
                 $('#view_item_name').text(product.item_name ?? 'Unknown');
-
-                // Populate Color Photos Gallery
-                const galleryBox = $('#modalColorGalleries');
-                const galleryContent = $('#modalColorGalleriesContent');
-                galleryContent.empty();
-
-                if (product.web_images && product.web_images.length > 0) {
-                    galleryBox.removeClass('d-none');
-                    // Group by color
-                    const grouped = {};
-                    product.web_images.forEach(img => {
-                        const c = img.color || 'General';
-                        if (!grouped[c]) grouped[c] = [];
-                        grouped[c].push(img);
-                    });
-
-                    Object.keys(grouped).forEach(colorName => {
-                        const imgs = grouped[colorName];
-                        let imgThumbs = '';
-                        imgs.forEach((im, idx) => {
-                            imgThumbs += `
-                                <a href="/uploads/products/${im.image_path}" target="_blank" class="position-relative rounded border shadow-sm overflow-hidden d-inline-block" style="width:54px; height:54px;">
-                                    <img src="/uploads/products/${im.image_path}" style="width:100%; height:100%; object-fit:cover;">
-                                    <span class="position-absolute bottom-0 start-0 bg-dark text-white text-center w-100" style="font-size:8px; opacity:0.8;">#${idx+1}</span>
-                                </a>
-                            `;
-                        });
-
-                        galleryContent.append(`
-                            <div class="d-flex align-items-center gap-2 flex-wrap bg-white p-2 rounded border">
-                                <span class="badge bg-primary text-white"><i class="fas fa-tag me-1"></i>${colorName} (${imgs.length})</span>
-                                <div class="d-flex gap-2 flex-wrap">
-                                    ${imgThumbs}
-                                </div>
-                            </div>
-                        `);
-                    });
-                } else {
-                    galleryBox.addClass('d-none');
-                }
-
+                $('#view_article_title').text(product.item_name ?? 'Unknown');
                 $('#view_item_subtext').text(
                     (product.item_code ?? '') + ' | ' +
-                    (product.category_relation?.name ?? '') + ' | ' +
-                    (product.brand?.name ?? '')
+                    (product.category_relation?.name ?? 'Footwear') + ' | ' +
+                    (product.brand?.name ?? 'Young Fashion')
                 );
+                $('#view_article_desc').text(product.meta_description || product.description || '');
+                $('#view_code_info').text(product.item_code ?? '-');
 
-                let tbody = $('#variantTableBody');
-                tbody.empty();
+                // Rack & Shelf
+                if (product.rack_shelf) {
+                    $('#view_rack_badge').removeClass('d-none');
+                    $('#view_rack_text').text(product.rack_shelf);
+                    $('#view_shelf_info').text(product.rack_shelf);
+                } else {
+                    $('#view_rack_badge').addClass('d-none');
+                    $('#view_shelf_info').text('Not Assigned');
+                }
 
-                let colorList = ['-'];
-                let variants  = [];
+                // Prices & Stock
+                let salePrice = product.sale_price_per_piece || product.sale_price_per_box || 0;
+                let purchPrice = product.purchase_price_per_piece || product.purchase_price_per_box || 0;
+                let wholesalePrice = product.wholesale_price || 0;
+                let totalStock = product.calculated_total_stock_qty ?? 0;
+
+                $('#view_sale_price').text('Rs. ' + parseFloat(salePrice).toLocaleString('en-US', {minimumFractionDigits: 0}));
+                $('#view_purch_price').text('Rs. ' + parseFloat(purchPrice).toLocaleString('en-US', {minimumFractionDigits: 0}));
+                $('#view_wholesale_price').text('Rs. ' + parseFloat(wholesalePrice).toLocaleString('en-US', {minimumFractionDigits: 0}));
+                $('#view_total_stock').text(totalStock);
+
+                // Parse Variants
+                let variants = [];
                 if (product.color) {
                     let parsed = product.color;
                     if (typeof parsed === 'string') {
@@ -1100,77 +1168,233 @@ $(document).ready(function () {
                     if (Array.isArray(parsed) && parsed.length > 0) {
                         if (typeof parsed[0] === 'object' && parsed[0] !== null) {
                             variants = parsed;
-                        } else {
-                            colorList = parsed;
                         }
                     } else if (typeof parsed === 'object' && parsed !== null) {
                         variants = [parsed];
-                    } else if (typeof parsed === 'string') {
-                        colorList = [parsed];
                     }
                 }
 
-                let sizeStr = '-';
-                if (product.size_mode === 'by_size')
-                    sizeStr = (product.height || 0) + ' x ' + (product.width || 0) + ' cm';
+                $('#view_variants_count_badge').text(variants.length + ' Total Variant Combinations');
 
-                let stock     = product.calculated_total_stock_qty ?? 0;
-                let alertDef  = product.alert_carton_quantity != null ? product.alert_carton_quantity + '' : '-';
-                let salePrice = product.size_mode === 'by_size' ? product.price_per_m2 : (product.sale_price_per_piece || product.sale_price_per_box || 0);
-                let purchPrice= product.size_mode === 'by_size' ? product.purchase_price_per_m2 : (product.purchase_price_per_piece || 0);
-                let priceLabel= product.size_mode === 'by_size' ? '/m²' : '/pc';
+                // Group by Color
+                const colorGroups = {};
+                variants.forEach(v => {
+                    let c = (v.color && v.color !== '-' && v.color.trim() !== '') ? v.color.trim() : 'Standard';
+                    if (!colorGroups[c]) {
+                        colorGroups[c] = {
+                            color: c,
+                            variants: [],
+                            totalStock: 0,
+                            images: []
+                        };
+                    }
+                    colorGroups[c].variants.push(v);
+                    let st = parseFloat(v.available_stock ?? v.stock ?? 0) || 0;
+                    colorGroups[c].totalStock += st;
 
-                function stockBadgeHtml(qty, alert) {
-                    let isLow = qty > 0 && alert != null && qty <= alert;
-                    let cls   = qty == 0 ? 'background:#fef3c7;color:#b45309;border:1px solid #fde68a;' : (isLow ? 'background:#fef2f2;color:#dc2626;border:1px solid #fecaca;' : 'background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;');
-                    return `<span style="${cls} border-radius:6px; padding:3px 8px; font-size:.78rem; font-weight:600;">${qty}</span>`;
+                    if (Array.isArray(v.images)) {
+                        v.images.forEach(img => {
+                            if (!colorGroups[c].images.includes(img)) {
+                                colorGroups[c].images.push(img);
+                            }
+                        });
+                    }
+                });
+
+                // Also merge web_images into respective color groups
+                if (product.web_images && product.web_images.length > 0) {
+                    product.web_images.forEach(img => {
+                        let c = (img.color && img.color !== '-' && img.color.trim() !== '') ? img.color.trim() : 'Standard';
+                        if (!colorGroups[c]) {
+                            colorGroups[c] = { color: c, variants: [], totalStock: 0, images: [] };
+                        }
+                        if (!colorGroups[c].images.includes(img.image_path)) {
+                            colorGroups[c].images.push(img.image_path);
+                        }
+                    });
                 }
 
-                if (variants.length > 0) {
-                    variants.forEach(v => {
-                        let vName     = v.name || v.variant_name || product.item_name;
-                        let vSize     = v.size || v.variant_size || '-';
-                        let vColorVal = v.color || v.variant_color || '-';
-                        let vStock    = (v.available_stock !== undefined && v.available_stock !== null) ? v.available_stock : ((v.current_stock !== undefined && v.current_stock !== null) ? v.current_stock : ((v.stock !== undefined && v.stock !== null && v.stock !== '') ? v.stock : (v.variant_stock ?? 0)));
-                        let vSale     = (v.sale_price !== undefined && v.sale_price !== null && v.sale_price !== '') ? v.sale_price : (v.variant_sale_price ?? 0);
-                        let vPurch    = (v.purch_price !== undefined && v.purch_price !== null && v.purch_price !== '') ? v.purch_price : (v.purchase_price ?? v.variant_purchase_price ?? 0);
-                        let vAlert    = (v.alert !== undefined && v.alert !== null && v.alert !== '') ? v.alert : (v.variant_alert_qty ?? 0);
-                        let vBarcode  = v.barcode || v.variant_barcode || (product.barcode_path ?? product.item_code);
-                        let vUnit     = v.unit || v.variant_unit || (product.unit ? product.unit.name : 'Pcs');
+                // If no color groups found, create default standard group
+                if (Object.keys(colorGroups).length === 0) {
+                    colorGroups['Standard'] = {
+                        color: 'Standard',
+                        variants: [{
+                            name: product.item_name,
+                            size: 'Free Size',
+                            color: 'Standard',
+                            stock: totalStock,
+                            sale_price: salePrice,
+                            purch_price: purchPrice,
+                            barcode: product.barcode_path ?? product.item_code
+                        }],
+                        totalStock: totalStock,
+                        images: product.image ? [product.image] : []
+                    };
+                }
 
-                        let colorBadge = (vColorVal && vColorVal !== '-') ? `<span style="background:#e2e8f0;border-radius:4px;padding:2px 6px;font-size:.72rem;">${vColorVal}</span>` : '<span style="color:#94a3b8;">—</span>';
-                        let alertQty  = (vAlert != null && vAlert != 0) ? vAlert : '-';
+                // Active Color State
+                const colorNames = Object.keys(colorGroups);
+                let activeColor = colorNames[0];
+
+                function switchActiveColor(colorName) {
+                    activeColor = colorName;
+                    $('#modalActiveColorBadge').text(colorName);
+
+                    const group = colorGroups[colorName] || colorGroups[colorNames[0]];
+                    const imgs = (group && group.images.length > 0) ? group.images : (product.image ? [product.image] : []);
+
+                    const thumbsStrip = $('#modalColorThumbsStrip');
+                    thumbsStrip.empty();
+
+                    if (imgs.length > 0) {
+                        $('#modalMainImg').attr('src', '/uploads/products/' + imgs[0]);
+                        $('#modalMainImgWrap').data('full-src', '/uploads/products/' + imgs[0]);
+
+                        imgs.forEach((imgFile, idx) => {
+                            const fullUrl = '/uploads/products/' + imgFile;
+                            const t = $(`
+                                <div class="position-relative border rounded shadow-sm overflow-hidden modal-strip-thumb ${idx === 0 ? 'border-primary border-2 shadow' : ''}" style="width: 44px; height: 44px; cursor: pointer;">
+                                    <img src="${fullUrl}" style="width: 100%; height: 100%; object-fit: cover;">
+                                </div>
+                            `);
+                            t.on('click', function() {
+                                $('.modal-strip-thumb').removeClass('border-primary border-2 shadow');
+                                $(this).addClass('border-primary border-2 shadow');
+                                $('#modalMainImg').attr('src', fullUrl);
+                                $('#modalMainImgWrap').data('full-src', fullUrl);
+                            });
+                            thumbsStrip.append(t);
+                        });
+                    } else {
+                        $('#modalMainImg').attr('src', '/uploads/products/placeholder.png');
+                        thumbsStrip.html('<small class="text-muted">No photos uploaded for this color</small>');
+                    }
+                }
+
+                // Render Color Filter Buttons
+                const filterBtnContainer = $('#modalColorFilterButtons');
+                filterBtnContainer.empty();
+
+                // "Show All" button
+                const allBtn = $(`<button type="button" class="btn btn-sm btn-outline-dark fw-bold px-3 active color-filter-pill" data-target="all"><i class="fas fa-layer-group me-1"></i>All Colors (${colorNames.length})</button>`);
+                allBtn.on('click', function() {
+                    $('.color-filter-pill').removeClass('active btn-dark text-white').addClass('btn-outline-dark');
+                    $(this).addClass('active btn-dark text-white').removeClass('btn-outline-dark');
+                    $('.color-group-section').fadeIn(150);
+                });
+                filterBtnContainer.append(allBtn);
+
+                colorNames.forEach((cName, idx) => {
+                    const g = colorGroups[cName];
+                    const btn = $(`
+                        <button type="button" class="btn btn-sm btn-outline-primary fw-bold px-3 color-filter-pill" data-target="${cName}">
+                            <span class="me-1">●</span> ${cName} <span class="badge bg-light text-primary border ms-1">${g.variants.length} Sizes</span>
+                        </button>
+                    `);
+                    btn.on('click', function() {
+                        $('.color-filter-pill').removeClass('active btn-dark btn-primary text-white').addClass('btn-outline-primary btn-outline-dark');
+                        $(this).addClass('active btn-primary text-white').removeClass('btn-outline-primary');
                         
-                        if (product.size_mode === 'by_kg' && v.conv_factor != 1 && !v.unit) vUnit = 'Pcs';
-                        let vPriceLabel = product.size_mode === 'by_size' ? '/m²' : '/' + vUnit;
+                        // Switch photos to this color
+                        switchActiveColor(cName);
 
-                        tbody.append(`<tr>
-                            <td class="text-start ps-4 fw-semibold">${vName}</td>
-                            <td>${vSize}</td>
-                            <td>${colorBadge}</td>
-                            <td>${stockBadgeHtml(vStock, vAlert)}</td>
-                            <td class="fw-bold" style="color:#059669;">Rs. ${parseFloat(vSale||0).toFixed(2)} <small class="fw-normal text-muted">${vPriceLabel}</small></td>
-                            <td class="text-muted">Rs. ${parseFloat(vPurch||0).toFixed(2)} <small>${vPriceLabel}</small></td>
-                            <td><span style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:4px;padding:2px 6px;font-size:.72rem;">${alertQty}</span></td>
-                            <td class="text-end pe-4"><code style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:2px 6px;font-size:.75rem;">${vBarcode}</code></td>
-                        </tr>`);
+                        // Filter cards
+                        $('.color-group-section').hide();
+                        $(`.color-group-section[data-color="${cName}"]`).fadeIn(150);
                     });
-                } else {
-                    colorList.forEach((color, index) => {
-                        let barcode   = (product.barcode_path ?? product.item_code ?? '') + (index > 0 ? '-' + String(index+1).padStart(2,'0') : '');
-                        let colorBadge = (color && color !== '-') ? `<span style="background:#e2e8f0;border-radius:4px;padding:2px 6px;font-size:.72rem;">${color}</span>` : '<span style="color:#94a3b8;">—</span>';
-                        tbody.append(`<tr>
-                            <td class="text-start ps-4 fw-semibold">${product.item_name}</td>
-                            <td>${sizeStr}</td>
-                            <td>${colorBadge}</td>
-                            <td>${stockBadgeHtml(stock, product.alert_carton_quantity)}</td>
-                            <td class="fw-bold" style="color:#059669;">Rs. ${parseFloat(salePrice||0).toFixed(2)} <small class="fw-normal text-muted">${priceLabel}</small></td>
-                            <td class="text-muted">Rs. ${parseFloat(purchPrice||0).toFixed(2)} <small>${priceLabel}</small></td>
-                            <td><span style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:4px;padding:2px 6px;font-size:.72rem;">${alertDef}</span></td>
-                            <td class="text-end pe-4"><code style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:2px 6px;font-size:.75rem;">${barcode}</code></td>
-                        </tr>`);
+                    filterBtnContainer.append(btn);
+                });
+
+                // Initialize photo gallery with first color
+                switchActiveColor(activeColor);
+
+                // Render Color Grouped Breakdown Cards
+                const groupContainer = $('#modalColorGroupedContainers');
+                groupContainer.empty();
+
+                colorNames.forEach(cName => {
+                    const g = colorGroups[cName];
+                    const firstImg = (g.images && g.images.length > 0) ? '/uploads/products/' + g.images[0] : (product.image ? '/uploads/products/' + product.image : null);
+
+                    let rowsHtml = '';
+                    g.variants.forEach(v => {
+                        let vSize = v.size || '-';
+                        let vStock = (v.available_stock !== undefined && v.available_stock !== null) ? v.available_stock : ((v.stock !== undefined && v.stock !== null) ? v.stock : 0);
+                        let vSale = parseFloat(v.sale_price || salePrice || 0);
+                        let vPurch = parseFloat(v.purch_price || purchPrice || 0);
+                        let vBarcode = v.barcode || product.item_code;
+                        let vThumb = (Array.isArray(v.images) && v.images.length > 0) ? '/uploads/products/' + v.images[0] : firstImg;
+
+                        let stockBadge = vStock > 5 
+                            ? `<span class="badge bg-success text-white px-2 py-1">${vStock} In Stock</span>`
+                            : (vStock > 0 
+                                ? `<span class="badge bg-warning text-dark px-2 py-1">${vStock} Low Stock</span>`
+                                : `<span class="badge bg-danger text-white px-2 py-1">Out of Stock</span>`);
+
+                        let thumbHtml = vThumb 
+                            ? `<img src="${vThumb}" class="rounded border shadow-sm view-full-shoe-img" data-src="${vThumb}" data-title="${product.item_name} (${cName} - Size ${vSize})" style="width: 32px; height: 32px; object-fit: cover; cursor: pointer;" title="Click to view full photo">`
+                            : `<span class="text-muted small">—</span>`;
+
+                        rowsHtml += `
+                            <tr>
+                                <td class="fw-bold fs-6 text-primary text-center" style="width: 80px;">${vSize}</td>
+                                <td class="text-center" style="width: 70px;">${thumbHtml}</td>
+                                <td class="text-center" style="width: 140px;">${stockBadge}</td>
+                                <td class="text-center fw-bold text-success" style="width: 130px;">Rs. ${vSale.toLocaleString('en-US', {minimumFractionDigits: 0})}</td>
+                                <td class="text-center text-muted" style="width: 130px;">Rs. ${vPurch.toLocaleString('en-US', {minimumFractionDigits: 0})}</td>
+                                <td class="text-center" style="width: 130px;"><code class="bg-light px-2 py-1 rounded border">${vBarcode}</code></td>
+                            </tr>
+                        `;
                     });
-                }
+
+                    const cardHtml = `
+                        <div class="color-group-section border rounded-3 overflow-hidden shadow-sm bg-white" data-color="${cName}">
+                            <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-dark text-white fs-6 px-3 py-1">
+                                        <i class="fas fa-shoe-prints me-1"></i>Color: ${cName}
+                                    </span>
+                                    <span class="badge bg-primary text-white">${g.variants.length} Sizes</span>
+                                    <span class="badge bg-info text-dark">${g.images.length} Photos</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="text-muted small fw-bold">Total Stock for ${cName}:</span>
+                                    <span class="badge bg-success fs-6 px-2 py-1">${g.totalStock} Pairs</span>
+                                    <button type="button" class="btn btn-xs btn-outline-primary px-2 py-1 switch-to-color-btn" data-color="${cName}" title="Preview photos of this color">
+                                        <i class="fas fa-camera me-1"></i>View Photos
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0" style="font-size: 13px;">
+                                    <thead class="table-light text-muted text-uppercase" style="font-size: 11px;">
+                                        <tr>
+                                            <th class="text-center">Shoe Size</th>
+                                            <th class="text-center">Photo</th>
+                                            <th class="text-center">Inventory Status</th>
+                                            <th class="text-center">Retail Price</th>
+                                            <th class="text-center">Cost Price</th>
+                                            <th class="text-center">Barcode</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${rowsHtml}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                    groupContainer.append(cardHtml);
+                });
+
+                // Attach View Photos button within each card
+                $('.switch-to-color-btn').on('click', function() {
+                    const c = $(this).data('color');
+                    switchActiveColor(c);
+                    $('html, body, #productViewModal').animate({
+                        scrollTop: $("#modalMainImgWrap").offset().top - 100
+                    }, 300);
+                });
             },
             error: function() {
                 $('#modalLoadingSpinner').addClass('d-none');
@@ -1178,6 +1402,25 @@ $(document).ready(function () {
             }
         });
     });
+
+    // Zoom full shoe image when clicked
+    $(document).on('click', '#modalMainImgWrap, .view-full-shoe-img', function() {
+        const src = $(this).data('full-src') || $(this).data('src') || $(this).find('img').attr('src') || $(this).attr('src');
+        const title = $(this).data('title') || $('#view_item_name').text() || 'Footwear Photo';
+        if (!src) return;
+
+        Swal.fire({
+            title: title,
+            imageUrl: src,
+            imageAlt: title,
+            showCloseButton: true,
+            showConfirmButton: false,
+            width: 'auto',
+            backdrop: 'rgba(0,0,0,0.85)'
+        });
+    });
+
+    
 
     // ── Toggle Active ──
     $(document).on('click', '.toggle-active-btn', function () {
