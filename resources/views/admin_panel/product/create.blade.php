@@ -1083,21 +1083,11 @@
                     </td>
                     <td class="p-1"><select class="form-select form-select-sm fw-bold variant-size-select" name="variant_size[]"><option value="">Size...</option>${availableSizes.map(s => `<option value="${s.name}">${s.name}</option>`).join("")}</select></td>
                     <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" placeholder="Color"></td>
-                    <td class="p-1 text-center" style="width: 140px; min-width: 130px;">
+                    <td class="p-1 text-center" style="width: 105px; min-width: 95px;">
                         <input type="hidden" name="variant_row_id[]" value="${vid}">
                         <input type="file" class="d-none var-photos-file-input" name="variant_photos[${vid}][]" multiple accept="image/*">
-                        <div class="var-photo-btn border border-dashed rounded p-1 text-center bg-white shadow-sm" style="cursor: pointer; min-height: 32px;" title="Click to upload multiple photos for this variant">
-                            <span class="badge bg-light text-primary border var-photo-count" style="font-size: 11px;">
-                                <i class="fas fa-camera me-1"></i><span class="count-num">0</span> Pics
-                            </span>
-                            <div class="var-thumbs-preview d-flex flex-wrap gap-1 mt-1 justify-content-center"></div>
-                        </div>
-                    </td>
-                    <td class="p-1 text-center" style="width: 140px; min-width: 130px;">
-                        <input type="hidden" name="variant_row_id[]" value="${vid}">
-                        <input type="file" class="d-none var-photos-file-input" name="variant_photos[${vid}][]" multiple accept="image/*">
-                        <div class="var-photo-btn border border-dashed rounded p-1 text-center bg-white shadow-sm" style="cursor: pointer; min-height: 32px;" title="Click to upload multiple photos for this variant">
-                            <span class="badge bg-light text-primary border var-photo-count" style="font-size: 11px;">
+                        <div class="var-photo-btn border border-dashed rounded py-1 px-1 text-center bg-white shadow-sm" style="cursor: pointer; min-height: 28px;" title="Click to upload multiple photos">
+                            <span class="badge bg-light text-primary border var-photo-count" style="font-size: 10px; padding: 3px 6px;">
                                 <i class="fas fa-camera me-1"></i><span class="count-num">0</span> Pics
                             </span>
                             <div class="var-thumbs-preview d-flex flex-wrap gap-1 mt-1 justify-content-center"></div>
@@ -1269,21 +1259,11 @@
                     </td>
                     <td class="p-1"><select class="form-select form-select-sm fw-bold variant-size-select" name="variant_size[]"><option value="">Size...</option>${availableSizes.map(s => `<option value="${s.name}" ${presetSize === s.name ? "selected" : ""}>${s.name}</option>`).join("")}</select></td>
                     <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" placeholder="Color"></td>
-                    <td class="p-1 text-center" style="width: 140px; min-width: 130px;">
+                    <td class="p-1 text-center" style="width: 105px; min-width: 95px;">
                         <input type="hidden" name="variant_row_id[]" value="${vid}">
                         <input type="file" class="d-none var-photos-file-input" name="variant_photos[${vid}][]" multiple accept="image/*">
-                        <div class="var-photo-btn border border-dashed rounded p-1 text-center bg-white shadow-sm" style="cursor: pointer; min-height: 32px;" title="Click to upload multiple photos for this variant">
-                            <span class="badge bg-light text-primary border var-photo-count" style="font-size: 11px;">
-                                <i class="fas fa-camera me-1"></i><span class="count-num">0</span> Pics
-                            </span>
-                            <div class="var-thumbs-preview d-flex flex-wrap gap-1 mt-1 justify-content-center"></div>
-                        </div>
-                    </td>
-                    <td class="p-1 text-center" style="width: 140px; min-width: 130px;">
-                        <input type="hidden" name="variant_row_id[]" value="${vid}">
-                        <input type="file" class="d-none var-photos-file-input" name="variant_photos[${vid}][]" multiple accept="image/*">
-                        <div class="var-photo-btn border border-dashed rounded p-1 text-center bg-white shadow-sm" style="cursor: pointer; min-height: 32px;" title="Click to upload multiple photos for this variant">
-                            <span class="badge bg-light text-primary border var-photo-count" style="font-size: 11px;">
+                        <div class="var-photo-btn border border-dashed rounded py-1 px-1 text-center bg-white shadow-sm" style="cursor: pointer; min-height: 28px;" title="Click to upload multiple photos">
+                            <span class="badge bg-light text-primary border var-photo-count" style="font-size: 10px; padding: 3px 6px;">
                                 <i class="fas fa-camera me-1"></i><span class="count-num">0</span> Pics
                             </span>
                             <div class="var-thumbs-preview d-flex flex-wrap gap-1 mt-1 justify-content-center"></div>

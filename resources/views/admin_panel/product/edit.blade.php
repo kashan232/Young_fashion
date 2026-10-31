@@ -400,20 +400,20 @@
                                             <table class="table table-bordered table-sm align-middle mb-1" id="variantsTable">
                                                 <thead class="table-light">
                                                     <tr>
-                                                        <th class="text-uppercase text-muted p-1" style="min-width: 180px; width: 250px; font-size: 11px;">Variant Name</th>
-                                                        <th class="text-uppercase text-muted p-1" style="width: 100px; font-size: 11px;">Size</th>
-                                                        <th class="text-uppercase text-muted p-1" style="width: 100px; font-size: 11px;">Color</th>
-                                                        <th class="text-uppercase text-muted p-1 text-center" style="width: 140px; font-size: 11px;"><i class="fas fa-camera text-primary me-1"></i>Photos</th>
-                                                        <th class="text-uppercase text-muted p-1" style="width: 90px; font-size: 11px;">Unit</th>
-                                                        <th class="text-uppercase text-muted p-1 text-center" style="width: 110px; font-size: 11px;">Available Stock</th>
-                                                        <th class="text-uppercase text-muted p-1 text-center conv-col" id="convFactorHeader" style="width: 110px; font-size: 11px;">Pcs / Carton</th>
-                                                        <th class="text-uppercase text-muted p-1 text-center piece-wt-only-col" style="width: 110px; font-size: 11px;">Piece Wt (g)</th>
-                                                        <th class="text-uppercase text-muted p-1" style="width: 110px; font-size: 11px;">Sale Price</th>
-                                                        <th class="text-uppercase text-muted p-1" style="width: 110px; font-size: 11px;">Wholesale</th>
-                                                        <th class="text-uppercase text-muted p-1" style="width: 110px; font-size: 11px;">Purch Price</th>
-                                                        <th class="text-uppercase text-muted p-1" style="width: 70px; font-size: 11px;">Alert</th>
-                                                        <th class="text-uppercase text-muted p-1" style="width: 120px; font-size: 11px;">Barcode</th>
-                                                        <th class="text-uppercase text-muted p-1 text-center" style="width: 60px; font-size: 11px;">Action</th>
+                                                        <th class="text-uppercase text-muted p-1" style="min-width: 160px; font-size: 11px;">Variant Name</th>
+                                                        <th class="text-uppercase text-muted p-1" style="width: 85px; min-width: 80px; font-size: 11px;">Size</th>
+                                                        <th class="text-uppercase text-muted p-1" style="width: 85px; min-width: 80px; font-size: 11px;">Color</th>
+                                                        <th class="text-uppercase text-muted p-1 text-center" style="width: 105px; min-width: 95px; font-size: 11px;"><i class="fas fa-camera text-primary me-1"></i>Photos</th>
+                                                        <th class="text-uppercase text-muted p-1" style="width: 80px; min-width: 75px; font-size: 11px;">Unit</th>
+                                                        <th class="text-uppercase text-muted p-1 text-center" style="width: 95px; min-width: 85px; font-size: 11px;">Available Stock</th>
+                                                        <th class="text-uppercase text-muted p-1 text-center conv-col" id="convFactorHeader" style="width: 95px; font-size: 11px;">Pcs / Carton</th>
+                                                        <th class="text-uppercase text-muted p-1 text-center piece-wt-only-col" style="width: 95px; font-size: 11px;">Piece Wt (g)</th>
+                                                        <th class="text-uppercase text-muted p-1" style="width: 95px; min-width: 85px; font-size: 11px;">Sale Price</th>
+                                                        <th class="text-uppercase text-muted p-1" style="width: 90px; min-width: 80px; font-size: 11px;">Wholesale</th>
+                                                        <th class="text-uppercase text-muted p-1" style="width: 95px; min-width: 85px; font-size: 11px;">Purch Price</th>
+                                                        <th class="text-uppercase text-muted p-1" style="width: 65px; min-width: 60px; font-size: 11px;">Alert</th>
+                                                        <th class="text-uppercase text-muted p-1" style="width: 105px; min-width: 95px; font-size: 11px;">Barcode</th>
+                                                        <th class="text-uppercase text-muted p-1 text-center" style="width: 65px; font-size: 11px;">Action</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody id="variantsBody">
@@ -1048,25 +1048,7 @@
                     </td>
                     <td class="p-1"><select class="form-select form-select-sm fw-bold variant-size-select" name="variant_size[]"><option value="">Size...</option>${availableSizes.map(s => `<option value="${s.name}" ${sizeVal == s.name ? "selected" : ""}>${s.name}</option>`).join("")}</select></td>
                     <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" value="${colorVal}" placeholder="Color"></td>
-                    <td class="p-1 text-center" style="width: 140px; min-width: 130px;">
-                        <input type="hidden" name="variant_row_id[]" value="${vid}">
-                        <input type="file" class="d-none var-photos-file-input" name="variant_photos[${vid}][]" multiple accept="image/*">
-                        <div class="var-photo-btn border border-dashed rounded p-1 text-center bg-white shadow-sm" style="cursor: pointer; min-height: 32px;" title="Click to upload multiple photos for this variant">
-                            <span class="badge ${(v && Array.isArray(v.images) && v.images.length > 0) ? 'bg-success text-white' : 'bg-light text-primary border'} var-photo-count" style="font-size: 11px;">
-                                <i class="fas fa-camera me-1"></i><span class="count-num">${(v && Array.isArray(v.images)) ? v.images.length : 0}</span> Pics
-                            </span>
-                            <div class="var-thumbs-preview d-flex flex-wrap gap-1 mt-1 justify-content-center">
-                                ${(v && Array.isArray(v.images)) ? v.images.slice(0, 4).map(img => `
-                                    <div class="position-relative" style="width:24px; height:24px;">
-                                        <img src="/uploads/products/${img}" class="rounded border shadow-sm" style="width:100%; height:100%; object-fit:cover;">
-                                        <input type="hidden" name="variant_existing_images[${vid}][]" value="${img}">
-                                    </div>
-                                `).join('') : ''}
-                                ${(v && Array.isArray(v.images) && v.images.length > 4) ? `<span class="badge bg-dark text-white p-1" style="font-size:8px;">+${v.images.length - 4}</span>` : ''}
-                            </div>
-                        </div>
-                    </td>
-                    <td class="p-1 text-center" style="width: 140px; min-width: 130px;">
+                    <td class="p-1 text-center" style="width: 105px; min-width: 95px;">
                         <input type="hidden" name="variant_row_id[]" value="${vid}">
                         <input type="file" class="d-none var-photos-file-input" name="variant_photos[${vid}][]" multiple accept="image/*">
                         <div class="var-photo-btn border border-dashed rounded p-1 text-center bg-white shadow-sm" style="cursor: pointer; min-height: 32px;" title="Click to upload multiple photos for this variant">
@@ -1263,25 +1245,7 @@
                     </td>
                     <td class="p-1"><select class="form-select form-select-sm fw-bold variant-size-select" name="variant_size[]"><option value="">Size...</option>${availableSizes.map(s => `<option value="${s.name}" ${sizeVal == s.name ? "selected" : ""}>${s.name}</option>`).join("")}</select></td>
                     <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" value="${colorVal}" placeholder="Color"></td>
-                    <td class="p-1 text-center" style="width: 140px; min-width: 130px;">
-                        <input type="hidden" name="variant_row_id[]" value="${vid}">
-                        <input type="file" class="d-none var-photos-file-input" name="variant_photos[${vid}][]" multiple accept="image/*">
-                        <div class="var-photo-btn border border-dashed rounded p-1 text-center bg-white shadow-sm" style="cursor: pointer; min-height: 32px;" title="Click to upload multiple photos for this variant">
-                            <span class="badge ${(v && Array.isArray(v.images) && v.images.length > 0) ? 'bg-success text-white' : 'bg-light text-primary border'} var-photo-count" style="font-size: 11px;">
-                                <i class="fas fa-camera me-1"></i><span class="count-num">${(v && Array.isArray(v.images)) ? v.images.length : 0}</span> Pics
-                            </span>
-                            <div class="var-thumbs-preview d-flex flex-wrap gap-1 mt-1 justify-content-center">
-                                ${(v && Array.isArray(v.images)) ? v.images.slice(0, 4).map(img => `
-                                    <div class="position-relative" style="width:24px; height:24px;">
-                                        <img src="/uploads/products/${img}" class="rounded border shadow-sm" style="width:100%; height:100%; object-fit:cover;">
-                                        <input type="hidden" name="variant_existing_images[${vid}][]" value="${img}">
-                                    </div>
-                                `).join('') : ''}
-                                ${(v && Array.isArray(v.images) && v.images.length > 4) ? `<span class="badge bg-dark text-white p-1" style="font-size:8px;">+${v.images.length - 4}</span>` : ''}
-                            </div>
-                        </div>
-                    </td>
-                    <td class="p-1 text-center" style="width: 140px; min-width: 130px;">
+                    <td class="p-1 text-center" style="width: 105px; min-width: 95px;">
                         <input type="hidden" name="variant_row_id[]" value="${vid}">
                         <input type="file" class="d-none var-photos-file-input" name="variant_photos[${vid}][]" multiple accept="image/*">
                         <div class="var-photo-btn border border-dashed rounded p-1 text-center bg-white shadow-sm" style="cursor: pointer; min-height: 32px;" title="Click to upload multiple photos for this variant">
