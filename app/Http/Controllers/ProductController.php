@@ -103,7 +103,7 @@ class ProductController extends Controller
 
         $query = Product::query()
             ->select('id', 'item_name', 'item_code', 'barcode_path', 'size_mode', 'unit_id', 'height', 'width', 'pieces_per_box', 'purchase_price_per_box', 'purchase_price_per_m2', 'purchase_price_per_piece', 'pieces_per_m2', 'purchase_discount_percent', 'sale_discount_percent', 'color', 'sale_price_per_piece')
-            ->with(['unit'])
+            ->with(['unit', 'webImages'])
             ->withSum('warehouseStocks', 'total_pieces') /* Sum PIECES, not boxes */
             ->where('is_active', true) /* Only active products */
             ->where(function ($q) use ($term) {
@@ -374,7 +374,7 @@ class ProductController extends Controller
     {
         $term = $request->get('q', '');
 
-        $products = Product::with('category_relation', 'sub_category_relation', 'brand')
+        $products = Product::with('category_relation', 'sub_category_relation', 'brand', 'webImages')
             ->withSum('warehouseStocks', 'total_pieces')
             ->where('is_active', true) /* Only active products */
             ->when($term, function ($query) use ($term) {
@@ -429,6 +429,7 @@ class ProductController extends Controller
             'sub_category_relation',
             'unit',
             'brand',
+            'webImages',
         ])->withSum('warehouseStocks', 'total_pieces');
 
         // ── Filters ──
@@ -469,6 +470,7 @@ class ProductController extends Controller
             'brand',
             'unit',
             'warehouseStocks',
+            'webImages',
         ])->find($id);
 
         if (! $product) {
@@ -1068,7 +1070,34 @@ class ProductController extends Controller
                 ]);
             }
 
-            // Upload Website Gallery Images
+            // Upload Color-Wise Shoes Gallery Images
+            if ($request->hasFile('color_images')) {
+                $sortIdx = 0;
+                foreach ($request->file('color_images') as $colorName => $files) {
+                    if (is_array($files)) {
+                        foreach ($files as $file) {
+                            if ($file && $file->isValid()) {
+                                $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                                $file->move(public_path('uploads/products'), $fileName);
+                                \App\Models\ProductWebImage::create([
+                                    'product_id' => $product->id,
+                                    'color'      => trim((string)$colorName),
+                                    'image_path' => $fileName,
+                                    'sort_order' => $sortIdx++
+                                ]);
+
+                                // If main product image is empty, set first uploaded image as main
+                                if (empty($product->image)) {
+                                    $product->image = $fileName;
+                                    $product->save();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Upload General Website Gallery Images (if any)
             if ($request->hasFile('web_images')) {
                 foreach ($request->file('web_images') as $index => $file) {
                     $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
@@ -1472,6 +1501,27 @@ class ProductController extends Controller
             // BOM re-save logic removed as table does not exist
             // DB::table('product_boms')->where('product_id', $id)->delete();
 
+            // Upload Color-Wise Shoes Gallery Images (Append new color photos)
+            if ($request->hasFile('color_images')) {
+                $sortIdx = \App\Models\ProductWebImage::where('product_id', $id)->count();
+                foreach ($request->file('color_images') as $colorName => $files) {
+                    if (is_array($files)) {
+                        foreach ($files as $file) {
+                            if ($file && $file->isValid()) {
+                                $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                                $file->move(public_path('uploads/products'), $fileName);
+                                \App\Models\ProductWebImage::create([
+                                    'product_id' => $id,
+                                    'color'      => trim((string)$colorName),
+                                    'image_path' => $fileName,
+                                    'sort_order' => $sortIdx++
+                                ]);
+                            }
+                        }
+                    }
+                }
+            }
+
             // Upload Website Gallery Images
             if ($request->hasFile('web_images')) {
                 // Remove old images if new ones are uploaded
@@ -1762,7 +1812,7 @@ class ProductController extends Controller
     // ===== Edit view =====
     public function edit($id)
     {
-        $product = Product::with('category_relation', 'sub_category_relation', 'unit', 'brand', 'warehouseStocks')
+        $product = Product::with('category_relation', 'sub_category_relation', 'unit', 'brand', 'warehouseStocks', 'webImages')
             ->findOrFail($id);
         $categories = Category::all();
         $subcategories = SubCategory::all();
@@ -2129,4 +2179,18 @@ class ProductController extends Controller
 
         return $results;
     }
+    // ===== Delete single product image (for color gallery) =====
+    public function deleteProductImage($id)
+    {
+        $img = \App\Models\ProductWebImage::find($id);
+        if ($img) {
+            if (file_exists(public_path('uploads/products/' . $img->image_path))) {
+                @unlink(public_path('uploads/products/' . $img->image_path));
+            }
+            $img->delete();
+            return response()->json(['status' => 'success', 'message' => 'Image deleted successfully']);
+        }
+        return response()->json(['status' => 'error', 'message' => 'Image not found'], 404);
+    }
+
 }

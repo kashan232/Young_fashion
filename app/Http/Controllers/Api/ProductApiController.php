@@ -67,6 +67,23 @@ class ProductApiController extends Controller
             $product->final_price = $product->web_sale_price ?: ($product->sale_price_per_piece ?: $product->sale_price_per_box);
             $product->description = $product->meta_description ?: ($product->description ?? "");
             $product->total_stock = (int) ($product->total_stock ?? 0);
+
+            // Group images by color for Flutter/Mobile app carousels
+            $colorGalleries = [];
+            if ($product->webImages) {
+                foreach ($product->webImages as $img) {
+                    $cKey = $img->color ?: "General";
+                    $colorGalleries[$cKey][] = [
+                        "id" => $img->id,
+                        "color" => $img->color,
+                        "image_name" => $img->image_path,
+                        "image_url" => asset("uploads/products/" . $img->image_path),
+                        "sort_order" => $img->sort_order,
+                    ];
+                }
+            }
+            $product->color_galleries = $colorGalleries;
+
             return $product;
         });
 
@@ -85,6 +102,22 @@ class ProductApiController extends Controller
         $product->final_price = $product->web_sale_price ?: ($product->sale_price_per_piece ?: $product->sale_price_per_box);
         $product->description = $product->meta_description ?: ($product->description ?? "");
         $product->total_stock = (int) ($product->total_stock ?? 0);
+
+        // Group images by color for Flutter/Mobile app carousels
+        $colorGalleries = [];
+        if ($product->webImages) {
+            foreach ($product->webImages as $img) {
+                $cKey = $img->color ?: "General";
+                $colorGalleries[$cKey][] = [
+                    "id" => $img->id,
+                    "color" => $img->color,
+                    "image_name" => $img->image_path,
+                    "image_url" => asset("uploads/products/" . $img->image_path),
+                    "sort_order" => $img->sort_order,
+                ];
+            }
+        }
+        $product->color_galleries = $colorGalleries;
 
         if ($product->color) {
             try {

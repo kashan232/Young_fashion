@@ -300,7 +300,75 @@
                                     </div>
                                 </div>
 
+                                
+                                {{-- Color-Wise Photo Gallery (Shoes / Footwear) --}}
                                 <div class="col-12 mt-3 pt-3 border-top">
+                                    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                                        <div>
+                                            <h6 class="form-label-pro text-primary mb-0">
+                                                <i class="fas fa-palette me-1"></i>Color-Wise Shoe Photo Gallery (5-6 Photos Per Color)
+                                            </h6>
+                                            <div class="small text-muted" style="font-size: 11px;">
+                                                Upload multiple photos per color. Existing photos are displayed below by color. In the Flutter App & Website, the photo slider automatically switches when the customer selects a color!
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-primary fw-bold" id="addColorGalleryBtn">
+                                            <i class="fas fa-plus me-1"></i> Add Another Color Photos
+                                        </button>
+                                    </div>
+
+                                    {{-- Quick Common Footwear Colors --}}
+                                    <div class="mb-3 p-2 bg-light rounded border d-flex flex-wrap align-items-center gap-1 shadow-sm">
+                                        <span class="small fw-bold text-dark me-2"><i class="fas fa-brush text-primary me-1"></i>Quick Shoe Colors:</span>
+                                        <button type="button" class="btn btn-sm btn-white border px-2 py-0 shadow-sm quick-color-btn" data-color="Black" style="font-size: 11px; font-weight: 700; background:#fff;"><span style="color:#000;">●</span> Black</button>
+                                        <button type="button" class="btn btn-sm btn-white border px-2 py-0 shadow-sm quick-color-btn" data-color="Brown" style="font-size: 11px; font-weight: 700; background:#fff;"><span style="color:#78350f;">●</span> Brown</button>
+                                        <button type="button" class="btn btn-sm btn-white border px-2 py-0 shadow-sm quick-color-btn" data-color="Tan" style="font-size: 11px; font-weight: 700; background:#fff;"><span style="color:#b45309;">●</span> Tan</button>
+                                        <button type="button" class="btn btn-sm btn-white border px-2 py-0 shadow-sm quick-color-btn" data-color="White" style="font-size: 11px; font-weight: 700; background:#fff;"><span style="color:#94a3b8;">○</span> White</button>
+                                        <button type="button" class="btn btn-sm btn-white border px-2 py-0 shadow-sm quick-color-btn" data-color="Navy Blue" style="font-size: 11px; font-weight: 700; background:#fff;"><span style="color:#1e3a8a;">●</span> Navy Blue</button>
+                                        <button type="button" class="btn btn-sm btn-white border px-2 py-0 shadow-sm quick-color-btn" data-color="Grey" style="font-size: 11px; font-weight: 700; background:#fff;"><span style="color:#64748b;">●</span> Grey</button>
+                                    </div>
+
+                                    <div id="colorGalleriesContainer" class="d-flex flex-column gap-3 mb-3">
+                                        @php
+                                            $groupedWebImages = $product->webImages ? $product->webImages->groupBy('color') : collect();
+                                        @endphp
+
+                                        @foreach($groupedWebImages as $cName => $cImgs)
+                                            @php $colorLabel = $cName ?: 'General'; @endphp
+                                            <div class="color-gallery-box p-3 border rounded shadow-sm bg-white" id="color_existing_{{ Str::slug($colorLabel) }}">
+                                                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2 border-bottom pb-2">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <span class="badge bg-primary text-white px-2 py-1"><i class="fas fa-palette me-1"></i>Color:</span>
+                                                        <input type="text" class="form-control form-control-sm fw-bold color-title-input" value="{{ $colorLabel }}" style="width: 170px; font-size: 13px;" readonly>
+                                                    </div>
+                                                    <span class="badge bg-success text-white">{{ count($cImgs) }} existing photo(s)</span>
+                                                </div>
+
+                                                <div class="row align-items-center g-2">
+                                                    <div class="col-md-4">
+                                                        <div class="border border-2 border-dashed rounded p-3 text-center bg-light upload-dropzone-click" style="cursor:pointer; border-color:#cbd5e1;">
+                                                            <input type="file" class="d-none color-files-input" name="color_images[{{ $colorLabel }}][]" multiple accept="image/*">
+                                                            <i class="fas fa-plus-circle text-primary fs-3 mb-1"></i>
+                                                            <div class="fw-bold small text-dark">Add more photos for {{ $colorLabel }}</div>
+                                                            <div class="text-muted" style="font-size:10px;">Click to select additional photos</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-8">
+                                                        <div class="d-flex flex-wrap gap-2 preview-thumbnails-container p-2 bg-light rounded border" style="min-height:85px; align-items:center;">
+                                                            @foreach($cImgs as $img)
+                                                                <div class="position-relative preview-thumb-wrap rounded border shadow-sm bg-white existing-img-wrap-{{ $img->id }}" style="width:64px; height:64px; overflow:hidden;">
+                                                                    <img src="{{ asset('uploads/products/' . $img->image_path) }}" style="width:100%; height:100%; object-fit:cover;">
+                                                                    <button type="button" class="btn btn-danger btn-sm p-0 delete-existing-img-btn position-absolute top-0 end-0" data-img-id="{{ $img->id }}" style="width:18px; height:18px; font-size:10px; line-height:1; border-radius:50%; margin:2px;" title="Delete this photo">&times;</button>
+                                                                </div>
+                                                            @endforeach
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+<div class="col-12 mt-3 pt-3 border-top">
                                     <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                                         <div class="d-flex align-items-center gap-3">
                                             <h6 class="form-label-pro text-primary mb-0"><i class="fas fa-cubes me-1"></i>Product Variants & Units</h6>

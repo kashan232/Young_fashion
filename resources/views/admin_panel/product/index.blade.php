@@ -958,6 +958,10 @@
                     </div>
                     <p class="text-muted small mt-2">Fetching product details…</p>
                 </div>
+                                <div id="modalColorGalleries" class="p-3 bg-light border-bottom d-none">
+                    <div class="fw-bold small text-dark mb-2"><i class="fas fa-palette text-primary me-1"></i>Color Photos Gallery:</div>
+                    <div id="modalColorGalleriesContent" class="d-flex flex-column gap-2"></div>
+                </div>
                 <div id="modalContentRow" class="table-responsive">
                     <table class="table table-hover align-middle mb-0 text-center" style="font-size:.88rem;">
                         <thead style="background:#f8fafc;">
@@ -1033,6 +1037,47 @@ $(document).ready(function () {
                 $('#modalContentRow').removeClass('d-none');
 
                 $('#view_item_name').text(product.item_name ?? 'Unknown');
+
+                // Populate Color Photos Gallery
+                const galleryBox = $('#modalColorGalleries');
+                const galleryContent = $('#modalColorGalleriesContent');
+                galleryContent.empty();
+
+                if (product.web_images && product.web_images.length > 0) {
+                    galleryBox.removeClass('d-none');
+                    // Group by color
+                    const grouped = {};
+                    product.web_images.forEach(img => {
+                        const c = img.color || 'General';
+                        if (!grouped[c]) grouped[c] = [];
+                        grouped[c].push(img);
+                    });
+
+                    Object.keys(grouped).forEach(colorName => {
+                        const imgs = grouped[colorName];
+                        let imgThumbs = '';
+                        imgs.forEach((im, idx) => {
+                            imgThumbs += `
+                                <a href="/uploads/products/${im.image_path}" target="_blank" class="position-relative rounded border shadow-sm overflow-hidden d-inline-block" style="width:54px; height:54px;">
+                                    <img src="/uploads/products/${im.image_path}" style="width:100%; height:100%; object-fit:cover;">
+                                    <span class="position-absolute bottom-0 start-0 bg-dark text-white text-center w-100" style="font-size:8px; opacity:0.8;">#${idx+1}</span>
+                                </a>
+                            `;
+                        });
+
+                        galleryContent.append(`
+                            <div class="d-flex align-items-center gap-2 flex-wrap bg-white p-2 rounded border">
+                                <span class="badge bg-primary text-white"><i class="fas fa-tag me-1"></i>${colorName} (${imgs.length})</span>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    ${imgThumbs}
+                                </div>
+                            </div>
+                        `);
+                    });
+                } else {
+                    galleryBox.addClass('d-none');
+                }
+
                 $('#view_item_subtext').text(
                     (product.item_code ?? '') + ' | ' +
                     (product.category_relation?.name ?? '') + ' | ' +

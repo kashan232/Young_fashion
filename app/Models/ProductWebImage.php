@@ -9,5 +9,15 @@ class ProductWebImage extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['product_id', 'image_path'];
+    protected $fillable = [
+        'product_id',
+        'color',
+        'image_path',
+        'sort_order',
+    ];
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
 }

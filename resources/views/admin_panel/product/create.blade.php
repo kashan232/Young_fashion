@@ -1008,7 +1008,138 @@
                                 if (variantMode === 'weight' && !variantsContainer.classList.contains('d-none')) {
                                     addBaseVariantRow();
 
-            // Quick Shoe Size Chips handler
+            
+        // ==========================================
+        // COLOR-WISE SHOE PHOTO GALLERY HANDLER
+        // ==========================================
+        let colorGalleryCounter = 0;
+
+        function addColorGalleryBlock(colorName = 'Black') {
+            colorGalleryCounter++;
+            const gid = colorGalleryCounter;
+            const container = document.getElementById('colorGalleriesContainer');
+            if (!container) return;
+
+            const block = document.createElement('div');
+            block.className = 'color-gallery-box p-3 border rounded shadow-sm bg-white';
+            block.id = `color_box_${gid}`;
+            block.dataset.gid = gid;
+
+            block.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2 border-bottom pb-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-primary text-white px-2 py-1"><i class="fas fa-palette me-1"></i>Shoe Color:</span>
+                        <input type="text" class="form-control form-control-sm fw-bold color-title-input" value="${colorName}" placeholder="Color Name (e.g. Black, Brown)" style="width: 170px; font-size: 13px;" required>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-light text-dark border image-counter-badge">0 photos selected</span>
+                        <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2 remove-color-box-btn" title="Remove color gallery"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                </div>
+
+                <div class="row align-items-center g-2">
+                    <div class="col-md-4">
+                        <div class="border border-2 border-dashed rounded p-3 text-center bg-light upload-dropzone-click" style="cursor:pointer; border-color:#cbd5e1;">
+                            <input type="file" class="d-none color-files-input" name="color_images[${colorName}][]" multiple accept="image/*">
+                            <i class="fas fa-cloud-upload-alt text-primary fs-3 mb-1"></i>
+                            <div class="fw-bold small text-dark">Click to upload 3-6 Photos</div>
+                            <div class="text-muted" style="font-size:10px;">Front, side, sole, heel angles (JPG, PNG)</div>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="d-flex flex-wrap gap-2 preview-thumbnails-container p-2 bg-light rounded border" style="min-height:85px; align-items:center;">
+                            <span class="text-muted small ps-2 empty-msg"><i class="fas fa-images me-1"></i>No photos selected yet for ${colorName}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            container.appendChild(block);
+
+            // Wire up dropzone click
+            const dropzone = block.querySelector('.upload-dropzone-click');
+            const fileInput = block.querySelector('.color-files-input');
+            const previewsContainer = block.querySelector('.preview-thumbnails-container');
+            const emptyMsg = block.querySelector('.empty-msg');
+            const counterBadge = block.querySelector('.image-counter-badge');
+            const colorTitle = block.querySelector('.color-title-input');
+
+            dropzone.addEventListener('click', () => fileInput.click());
+
+            // Handle color name changes
+            colorTitle.addEventListener('input', function() {
+                const newName = this.value.trim() || 'Color';
+                fileInput.name = `color_images[${newName}][]`;
+                if (emptyMsg) emptyMsg.innerHTML = `<i class="fas fa-images me-1"></i>No photos selected yet for ${newName}`;
+            });
+
+            // Handle file selection and preview
+            fileInput.addEventListener('change', function() {
+                const files = this.files;
+                if (!files || files.length === 0) return;
+
+                if (emptyMsg) emptyMsg.style.display = 'none';
+                previewsContainer.querySelectorAll('.preview-thumb-wrap').forEach(el => el.remove());
+
+                counterBadge.textContent = `${files.length} photo(s) selected`;
+                counterBadge.className = 'badge bg-success text-white';
+
+                Array.from(files).forEach((f, idx) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const thumb = document.createElement('div');
+                        thumb.className = 'position-relative preview-thumb-wrap rounded border shadow-sm bg-white';
+                        thumb.style.width = '64px';
+                        thumb.style.height = '64px';
+                        thumb.style.overflow = 'hidden';
+
+                        thumb.innerHTML = `
+                            <img src="${e.target.result}" style="width:100%; height:100%; object-fit:cover;">
+                            <span class="position-absolute bottom-0 start-0 bg-dark text-white text-center w-100" style="font-size:9px; opacity:0.8;">#${idx + 1}</span>
+                        `;
+                        previewsContainer.appendChild(thumb);
+                    };
+                    reader.readAsDataURL(f);
+                });
+            });
+
+            // Remove block
+            block.querySelector('.remove-color-box-btn').addEventListener('click', function() {
+                block.remove();
+            });
+        }
+
+        // Initialize with default color (e.g. Black)
+        document.addEventListener('DOMContentLoaded', function() {
+            addColorGalleryBlock('Black');
+
+            const addColorBtn = document.getElementById('addColorGalleryBtn');
+            if (addColorBtn) {
+                addColorBtn.addEventListener('click', function() {
+                    addColorGalleryBlock('Brown');
+                });
+            }
+
+            // Quick color buttons
+            $(document).on('click', '.quick-color-btn', function(e) {
+                e.preventDefault();
+                const color = $(this).data('color');
+                // Check if color already exists
+                let exists = false;
+                $('.color-title-input').each(function() {
+                    if ($(this).val().toLowerCase() === color.toLowerCase()) {
+                        exists = true;
+                        $(this).focus();
+                        return false;
+                    }
+                });
+                if (!exists) {
+                    addColorGalleryBlock(color);
+                }
+            });
+        });
+
+// Quick Shoe Size Chips handler
             $(document).on('click', '.quick-size-chip', function(e) {
                 e.preventDefault();
                 const sizeVal = $(this).data('size');
@@ -1389,7 +1520,138 @@
                 if (variantsBody.children.length === 0) {
                     addBaseVariantRow();
 
-            // Quick Shoe Size Chips handler
+            
+        // ==========================================
+        // COLOR-WISE SHOE PHOTO GALLERY HANDLER
+        // ==========================================
+        let colorGalleryCounter = 0;
+
+        function addColorGalleryBlock(colorName = 'Black') {
+            colorGalleryCounter++;
+            const gid = colorGalleryCounter;
+            const container = document.getElementById('colorGalleriesContainer');
+            if (!container) return;
+
+            const block = document.createElement('div');
+            block.className = 'color-gallery-box p-3 border rounded shadow-sm bg-white';
+            block.id = `color_box_${gid}`;
+            block.dataset.gid = gid;
+
+            block.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2 border-bottom pb-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-primary text-white px-2 py-1"><i class="fas fa-palette me-1"></i>Shoe Color:</span>
+                        <input type="text" class="form-control form-control-sm fw-bold color-title-input" value="${colorName}" placeholder="Color Name (e.g. Black, Brown)" style="width: 170px; font-size: 13px;" required>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-light text-dark border image-counter-badge">0 photos selected</span>
+                        <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2 remove-color-box-btn" title="Remove color gallery"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                </div>
+
+                <div class="row align-items-center g-2">
+                    <div class="col-md-4">
+                        <div class="border border-2 border-dashed rounded p-3 text-center bg-light upload-dropzone-click" style="cursor:pointer; border-color:#cbd5e1;">
+                            <input type="file" class="d-none color-files-input" name="color_images[${colorName}][]" multiple accept="image/*">
+                            <i class="fas fa-cloud-upload-alt text-primary fs-3 mb-1"></i>
+                            <div class="fw-bold small text-dark">Click to upload 3-6 Photos</div>
+                            <div class="text-muted" style="font-size:10px;">Front, side, sole, heel angles (JPG, PNG)</div>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="d-flex flex-wrap gap-2 preview-thumbnails-container p-2 bg-light rounded border" style="min-height:85px; align-items:center;">
+                            <span class="text-muted small ps-2 empty-msg"><i class="fas fa-images me-1"></i>No photos selected yet for ${colorName}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            container.appendChild(block);
+
+            // Wire up dropzone click
+            const dropzone = block.querySelector('.upload-dropzone-click');
+            const fileInput = block.querySelector('.color-files-input');
+            const previewsContainer = block.querySelector('.preview-thumbnails-container');
+            const emptyMsg = block.querySelector('.empty-msg');
+            const counterBadge = block.querySelector('.image-counter-badge');
+            const colorTitle = block.querySelector('.color-title-input');
+
+            dropzone.addEventListener('click', () => fileInput.click());
+
+            // Handle color name changes
+            colorTitle.addEventListener('input', function() {
+                const newName = this.value.trim() || 'Color';
+                fileInput.name = `color_images[${newName}][]`;
+                if (emptyMsg) emptyMsg.innerHTML = `<i class="fas fa-images me-1"></i>No photos selected yet for ${newName}`;
+            });
+
+            // Handle file selection and preview
+            fileInput.addEventListener('change', function() {
+                const files = this.files;
+                if (!files || files.length === 0) return;
+
+                if (emptyMsg) emptyMsg.style.display = 'none';
+                previewsContainer.querySelectorAll('.preview-thumb-wrap').forEach(el => el.remove());
+
+                counterBadge.textContent = `${files.length} photo(s) selected`;
+                counterBadge.className = 'badge bg-success text-white';
+
+                Array.from(files).forEach((f, idx) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const thumb = document.createElement('div');
+                        thumb.className = 'position-relative preview-thumb-wrap rounded border shadow-sm bg-white';
+                        thumb.style.width = '64px';
+                        thumb.style.height = '64px';
+                        thumb.style.overflow = 'hidden';
+
+                        thumb.innerHTML = `
+                            <img src="${e.target.result}" style="width:100%; height:100%; object-fit:cover;">
+                            <span class="position-absolute bottom-0 start-0 bg-dark text-white text-center w-100" style="font-size:9px; opacity:0.8;">#${idx + 1}</span>
+                        `;
+                        previewsContainer.appendChild(thumb);
+                    };
+                    reader.readAsDataURL(f);
+                });
+            });
+
+            // Remove block
+            block.querySelector('.remove-color-box-btn').addEventListener('click', function() {
+                block.remove();
+            });
+        }
+
+        // Initialize with default color (e.g. Black)
+        document.addEventListener('DOMContentLoaded', function() {
+            addColorGalleryBlock('Black');
+
+            const addColorBtn = document.getElementById('addColorGalleryBtn');
+            if (addColorBtn) {
+                addColorBtn.addEventListener('click', function() {
+                    addColorGalleryBlock('Brown');
+                });
+            }
+
+            // Quick color buttons
+            $(document).on('click', '.quick-color-btn', function(e) {
+                e.preventDefault();
+                const color = $(this).data('color');
+                // Check if color already exists
+                let exists = false;
+                $('.color-title-input').each(function() {
+                    if ($(this).val().toLowerCase() === color.toLowerCase()) {
+                        exists = true;
+                        $(this).focus();
+                        return false;
+                    }
+                });
+                if (!exists) {
+                    addColorGalleryBlock(color);
+                }
+            });
+        });
+
+// Quick Shoe Size Chips handler
             $(document).on('click', '.quick-size-chip', function(e) {
                 e.preventDefault();
                 const sizeVal = $(this).data('size');

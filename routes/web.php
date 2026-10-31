@@ -150,6 +150,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/admin/products', [ProductController::class, 'Product'])->middleware('permission:products.view');
     Route::get('/products-list', [ProductController::class, 'Product'])->middleware('permission:products.view');
     Route::get('/productview/{id}', [ProductController::class, 'productview'])->name('productview');
+    Route::post('/product/delete-image/{id}', [ProductController::class, 'deleteProductImage'])->name('product.delete_image');
+    Route::get('/product/delete-image/{id}', [ProductController::class, 'deleteProductImage']);
+
     Route::get('/products/search', [ProductController::class, 'searchProducts'])->name('products.search');
 
     // //////////
