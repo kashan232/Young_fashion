@@ -301,7 +301,6 @@
                                 </div>
 
                                 
-                                {{-- Color-Wise Photo Gallery (Shoes / Footwear) --}}
                                 <div class="col-12 mt-3 pt-3 border-top">
                                     <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                                         <div>
@@ -404,6 +403,7 @@
                                                         <th class="text-uppercase text-muted p-1" style="min-width: 180px; width: 250px; font-size: 11px;">Variant Name</th>
                                                         <th class="text-uppercase text-muted p-1" style="width: 100px; font-size: 11px;">Size</th>
                                                         <th class="text-uppercase text-muted p-1" style="width: 100px; font-size: 11px;">Color</th>
+                                                        <th class="text-uppercase text-muted p-1 text-center" style="width: 140px; font-size: 11px;"><i class="fas fa-camera text-primary me-1"></i>Photos</th>
                                                         <th class="text-uppercase text-muted p-1" style="width: 90px; font-size: 11px;">Unit</th>
                                                         <th class="text-uppercase text-muted p-1 text-center" style="width: 110px; font-size: 11px;">Available Stock</th>
                                                         <th class="text-uppercase text-muted p-1 text-center conv-col" id="convFactorHeader" style="width: 110px; font-size: 11px;">Pcs / Carton</th>
@@ -1048,6 +1048,42 @@
                     </td>
                     <td class="p-1"><select class="form-select form-select-sm fw-bold variant-size-select" name="variant_size[]"><option value="">Size...</option>${availableSizes.map(s => `<option value="${s.name}" ${sizeVal == s.name ? "selected" : ""}>${s.name}</option>`).join("")}</select></td>
                     <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" value="${colorVal}" placeholder="Color"></td>
+                    <td class="p-1 text-center" style="width: 140px; min-width: 130px;">
+                        <input type="hidden" name="variant_row_id[]" value="${vid}">
+                        <input type="file" class="d-none var-photos-file-input" name="variant_photos[${vid}][]" multiple accept="image/*">
+                        <div class="var-photo-btn border border-dashed rounded p-1 text-center bg-white shadow-sm" style="cursor: pointer; min-height: 32px;" title="Click to upload multiple photos for this variant">
+                            <span class="badge ${(v && Array.isArray(v.images) && v.images.length > 0) ? 'bg-success text-white' : 'bg-light text-primary border'} var-photo-count" style="font-size: 11px;">
+                                <i class="fas fa-camera me-1"></i><span class="count-num">${(v && Array.isArray(v.images)) ? v.images.length : 0}</span> Pics
+                            </span>
+                            <div class="var-thumbs-preview d-flex flex-wrap gap-1 mt-1 justify-content-center">
+                                ${(v && Array.isArray(v.images)) ? v.images.slice(0, 4).map(img => `
+                                    <div class="position-relative" style="width:24px; height:24px;">
+                                        <img src="/uploads/products/${img}" class="rounded border shadow-sm" style="width:100%; height:100%; object-fit:cover;">
+                                        <input type="hidden" name="variant_existing_images[${vid}][]" value="${img}">
+                                    </div>
+                                `).join('') : ''}
+                                ${(v && Array.isArray(v.images) && v.images.length > 4) ? `<span class="badge bg-dark text-white p-1" style="font-size:8px;">+${v.images.length - 4}</span>` : ''}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="p-1 text-center" style="width: 140px; min-width: 130px;">
+                        <input type="hidden" name="variant_row_id[]" value="${vid}">
+                        <input type="file" class="d-none var-photos-file-input" name="variant_photos[${vid}][]" multiple accept="image/*">
+                        <div class="var-photo-btn border border-dashed rounded p-1 text-center bg-white shadow-sm" style="cursor: pointer; min-height: 32px;" title="Click to upload multiple photos for this variant">
+                            <span class="badge ${(v && Array.isArray(v.images) && v.images.length > 0) ? 'bg-success text-white' : 'bg-light text-primary border'} var-photo-count" style="font-size: 11px;">
+                                <i class="fas fa-camera me-1"></i><span class="count-num">${(v && Array.isArray(v.images)) ? v.images.length : 0}</span> Pics
+                            </span>
+                            <div class="var-thumbs-preview d-flex flex-wrap gap-1 mt-1 justify-content-center">
+                                ${(v && Array.isArray(v.images)) ? v.images.slice(0, 4).map(img => `
+                                    <div class="position-relative" style="width:24px; height:24px;">
+                                        <img src="/uploads/products/${img}" class="rounded border shadow-sm" style="width:100%; height:100%; object-fit:cover;">
+                                        <input type="hidden" name="variant_existing_images[${vid}][]" value="${img}">
+                                    </div>
+                                `).join('') : ''}
+                                ${(v && Array.isArray(v.images) && v.images.length > 4) ? `<span class="badge bg-dark text-white p-1" style="font-size:8px;">+${v.images.length - 4}</span>` : ''}
+                            </div>
+                        </div>
+                    </td>
                     <td class="p-1">
                         <select class="form-select form-select-sm fw-bold text-primary px-1" name="variant_unit[]" style="font-size:11px;">
                             <option value="Carton" ${unitVal==='Carton'||isCartonMode?'selected':''}>Carton</option>
@@ -1086,6 +1122,7 @@
                     </td>
                 `;
                 variantsBody.appendChild(tr);
+                wireVariantRowPhotos(tr, vid);
 
                 const baseSaleInp = tr.querySelector('.base-sale-input');
                 const basePurchInp = tr.querySelector('.base-purch-input');
@@ -1226,6 +1263,42 @@
                     </td>
                     <td class="p-1"><select class="form-select form-select-sm fw-bold variant-size-select" name="variant_size[]"><option value="">Size...</option>${availableSizes.map(s => `<option value="${s.name}" ${sizeVal == s.name ? "selected" : ""}>${s.name}</option>`).join("")}</select></td>
                     <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" value="${colorVal}" placeholder="Color"></td>
+                    <td class="p-1 text-center" style="width: 140px; min-width: 130px;">
+                        <input type="hidden" name="variant_row_id[]" value="${vid}">
+                        <input type="file" class="d-none var-photos-file-input" name="variant_photos[${vid}][]" multiple accept="image/*">
+                        <div class="var-photo-btn border border-dashed rounded p-1 text-center bg-white shadow-sm" style="cursor: pointer; min-height: 32px;" title="Click to upload multiple photos for this variant">
+                            <span class="badge ${(v && Array.isArray(v.images) && v.images.length > 0) ? 'bg-success text-white' : 'bg-light text-primary border'} var-photo-count" style="font-size: 11px;">
+                                <i class="fas fa-camera me-1"></i><span class="count-num">${(v && Array.isArray(v.images)) ? v.images.length : 0}</span> Pics
+                            </span>
+                            <div class="var-thumbs-preview d-flex flex-wrap gap-1 mt-1 justify-content-center">
+                                ${(v && Array.isArray(v.images)) ? v.images.slice(0, 4).map(img => `
+                                    <div class="position-relative" style="width:24px; height:24px;">
+                                        <img src="/uploads/products/${img}" class="rounded border shadow-sm" style="width:100%; height:100%; object-fit:cover;">
+                                        <input type="hidden" name="variant_existing_images[${vid}][]" value="${img}">
+                                    </div>
+                                `).join('') : ''}
+                                ${(v && Array.isArray(v.images) && v.images.length > 4) ? `<span class="badge bg-dark text-white p-1" style="font-size:8px;">+${v.images.length - 4}</span>` : ''}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="p-1 text-center" style="width: 140px; min-width: 130px;">
+                        <input type="hidden" name="variant_row_id[]" value="${vid}">
+                        <input type="file" class="d-none var-photos-file-input" name="variant_photos[${vid}][]" multiple accept="image/*">
+                        <div class="var-photo-btn border border-dashed rounded p-1 text-center bg-white shadow-sm" style="cursor: pointer; min-height: 32px;" title="Click to upload multiple photos for this variant">
+                            <span class="badge ${(v && Array.isArray(v.images) && v.images.length > 0) ? 'bg-success text-white' : 'bg-light text-primary border'} var-photo-count" style="font-size: 11px;">
+                                <i class="fas fa-camera me-1"></i><span class="count-num">${(v && Array.isArray(v.images)) ? v.images.length : 0}</span> Pics
+                            </span>
+                            <div class="var-thumbs-preview d-flex flex-wrap gap-1 mt-1 justify-content-center">
+                                ${(v && Array.isArray(v.images)) ? v.images.slice(0, 4).map(img => `
+                                    <div class="position-relative" style="width:24px; height:24px;">
+                                        <img src="/uploads/products/${img}" class="rounded border shadow-sm" style="width:100%; height:100%; object-fit:cover;">
+                                        <input type="hidden" name="variant_existing_images[${vid}][]" value="${img}">
+                                    </div>
+                                `).join('') : ''}
+                                ${(v && Array.isArray(v.images) && v.images.length > 4) ? `<span class="badge bg-dark text-white p-1" style="font-size:8px;">+${v.images.length - 4}</span>` : ''}
+                            </div>
+                        </div>
+                    </td>
                     <td class="p-1">
                         <select class="form-select form-select-sm px-1 fw-bold text-dark" name="variant_unit[]" style="font-size:11px;">
                             <option value="Carton" ${unitVal==='Carton'?'selected':''}>Carton</option>
@@ -1264,6 +1337,7 @@
                     </td>
                 `;
                 variantsBody.appendChild(tr);
+                wireVariantRowPhotos(tr, vid);
 
                 const saleInput = tr.querySelector('.sale-price-input');
                 const purchInput = tr.querySelector('.purch-price-input');
@@ -1800,5 +1874,51 @@
         window.mobileAddVariant = mobileAddVariant;
         window.mobToggleCard = mobToggleCard;
         window.mobDeleteCard = mobDeleteCard;
+    
+        function wireVariantRowPhotos(tr, vid) {
+            const fileInput = tr.querySelector('.var-photos-file-input');
+            const photoBtn = tr.querySelector('.var-photo-btn');
+            const badge = tr.querySelector('.var-photo-count');
+            const countNum = tr.querySelector('.count-num');
+            const thumbsPreview = tr.querySelector('.var-thumbs-preview');
+
+            if (!fileInput || !photoBtn) return;
+
+            photoBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', function() {
+                const files = this.files;
+                if (!files || files.length === 0) return;
+
+                countNum.textContent = files.length;
+                badge.className = 'badge bg-success text-white border var-photo-count';
+                thumbsPreview.innerHTML = '';
+
+                Array.from(files).slice(0, 4).forEach((file) => {
+                    const reader = new FileReader();
+                    reader.onload = function(ev) {
+                        const img = document.createElement('img');
+                        img.src = ev.target.result;
+                        img.className = 'rounded border shadow-sm';
+                        img.style.width = '24px';
+                        img.style.height = '24px';
+                        img.style.objectFit = 'cover';
+                        thumbsPreview.appendChild(img);
+                    };
+                    reader.readAsDataURL(file);
+                });
+                if (files.length > 4) {
+                    const moreBadge = document.createElement('span');
+                    moreBadge.className = 'badge bg-dark text-white p-1';
+                    moreBadge.style.fontSize = '8px';
+                    moreBadge.textContent = `+${files.length - 4}`;
+                    thumbsPreview.appendChild(moreBadge);
+                }
+            });
+        }
+
     </script>
 @endsection

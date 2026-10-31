@@ -967,10 +967,13 @@ class ProductController extends Controller
                             $variantStockSum += $vStock;
                         }
 
+                        $rowIds = $request->input('variant_row_id', []);
+                        $vRowId = $rowIds[$i] ?? ('row_' . $i);
                         $variants[] = [
                             'name' => $names[$i],
                             'size' => $sizes[$i] ?? '-',
                             'color' => $colors[$i] ?? '-',
+                            'row_id' => $vRowId,
                             'stock' => $vStock,
                             'sale_price' => $sale_prices[$i] ?? 0,
                             'wholesale_price' => $wholesale_prices[$i] ?? 0,
@@ -1070,23 +1073,33 @@ class ProductController extends Controller
                 ]);
             }
 
-            // Upload Color-Wise Shoes Gallery Images
-            if ($request->hasFile('color_images')) {
-                $sortIdx = 0;
-                foreach ($request->file('color_images') as $colorName => $files) {
+            // Upload Variant Photos (from variant table rows)
+            $colorImageCache = [];
+            $sortIdx = 0;
+            $rowIds = $request->input('variant_row_id', []);
+
+            for ($i = 0; $i < count($variants); $i++) {
+                $vid = $variants[$i]['row_id'] ?? ($rowIds[$i] ?? ('row_' . $i));
+                $vColor = trim((string)($variants[$i]['color'] ?? 'General'));
+                if ($vColor === '-' || empty($vColor)) $vColor = 'General';
+                $rowImages = [];
+
+                if ($request->hasFile("variant_photos.{$vid}")) {
+                    $files = $request->file("variant_photos.{$vid}");
                     if (is_array($files)) {
                         foreach ($files as $file) {
                             if ($file && $file->isValid()) {
                                 $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
                                 $file->move(public_path('uploads/products'), $fileName);
+                                $rowImages[] = $fileName;
+
                                 \App\Models\ProductWebImage::create([
                                     'product_id' => $product->id,
-                                    'color'      => trim((string)$colorName),
+                                    'color'      => $vColor,
                                     'image_path' => $fileName,
                                     'sort_order' => $sortIdx++
                                 ]);
 
-                                // If main product image is empty, set first uploaded image as main
                                 if (empty($product->image)) {
                                     $product->image = $fileName;
                                     $product->save();
@@ -1094,7 +1107,20 @@ class ProductController extends Controller
                             }
                         }
                     }
+                    if (!empty($rowImages)) {
+                        $colorImageCache[$vColor] = $rowImages;
+                    }
+                } elseif (!empty($colorImageCache[$vColor])) {
+                    // Inherit photos of the same color if not uploaded individually
+                    $rowImages = $colorImageCache[$vColor];
                 }
+
+                $variants[$i]['images'] = $rowImages;
+            }
+
+            if (count($variants) > 0) {
+                $product->color = json_encode($variants);
+                $product->save();
             }
 
             // Upload General Website Gallery Images (if any)
@@ -1407,10 +1433,13 @@ class ProductController extends Controller
                             $savedInitial = $stocks[$i] ?? 0;
                         }
 
+                        $rowIds = $request->input('variant_row_id', []);
+                        $vRowId = $rowIds[$i] ?? ('row_' . $i);
                         $variants[] = [
                             'name' => $vName,
                             'size' => $vSize,
                             'color' => $vColor,
+                            'row_id' => $vRowId,
                             'stock' => $savedInitial,
                             'orig_initial_stock' => $savedInitial,
                             'sale_price' => $sale_prices[$i] ?? 0,
@@ -1501,25 +1530,55 @@ class ProductController extends Controller
             // BOM re-save logic removed as table does not exist
             // DB::table('product_boms')->where('product_id', $id)->delete();
 
-            // Upload Color-Wise Shoes Gallery Images (Append new color photos)
-            if ($request->hasFile('color_images')) {
-                $sortIdx = \App\Models\ProductWebImage::where('product_id', $id)->count();
-                foreach ($request->file('color_images') as $colorName => $files) {
+            // Upload Variant Photos (from variant table rows in edit)
+            $colorImageCache = [];
+            $sortIdx = \App\Models\ProductWebImage::where('product_id', $id)->count();
+            $rowIds = $request->input('variant_row_id', []);
+
+            for ($i = 0; $i < count($variants); $i++) {
+                $vid = $variants[$i]['row_id'] ?? ($rowIds[$i] ?? ('row_' . $i));
+                $vColor = trim((string)($variants[$i]['color'] ?? 'General'));
+                if ($vColor === '-' || empty($vColor)) $vColor = 'General';
+                
+                // Keep existing images if any
+                $existingImages = $variants[$i]['images'] ?? [];
+                if (!is_array($existingImages)) $existingImages = [];
+
+                if ($request->hasFile("variant_photos.{$vid}")) {
+                    $files = $request->file("variant_photos.{$vid}");
                     if (is_array($files)) {
                         foreach ($files as $file) {
                             if ($file && $file->isValid()) {
                                 $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
                                 $file->move(public_path('uploads/products'), $fileName);
+                                $existingImages[] = $fileName;
+
                                 \App\Models\ProductWebImage::create([
                                     'product_id' => $id,
-                                    'color'      => trim((string)$colorName),
+                                    'color'      => $vColor,
                                     'image_path' => $fileName,
                                     'sort_order' => $sortIdx++
                                 ]);
+
+                                if (empty($product->image)) {
+                                    $product->image = $fileName;
+                                    $product->save();
+                                }
                             }
                         }
                     }
+                    if (!empty($existingImages)) {
+                        $colorImageCache[$vColor] = $existingImages;
+                    }
+                } elseif (!empty($colorImageCache[$vColor])) {
+                    $existingImages = array_unique(array_merge($existingImages, $colorImageCache[$vColor]));
                 }
+
+                $variants[$i]['images'] = $existingImages;
+            }
+
+            if (count($variants) > 0) {
+                \App\Models\Product::where('id', $id)->update(['color' => json_encode($variants)]);
             }
 
             // Upload Website Gallery Images

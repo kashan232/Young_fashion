@@ -665,6 +665,7 @@
                                                         <th class="text-uppercase text-muted p-1" style="min-width: 180px; width: 250px; font-size: 11px;">Variant Name</th>
                                                         <th class="text-uppercase text-muted p-1" style="width: 100px; font-size: 11px;">Size</th>
                                                         <th class="text-uppercase text-muted p-1" style="width: 100px; font-size: 11px;">Color</th>
+                                                        <th class="text-uppercase text-muted p-1 text-center" style="width: 140px; font-size: 11px;"><i class="fas fa-camera text-primary me-1"></i>Photos</th>
                                                         <th class="text-uppercase text-muted p-1" style="width: 90px; font-size: 11px;">Unit</th>
                                                         <th class="text-uppercase text-muted p-1 text-center" style="width: 110px; font-size: 11px;">Initial Stock</th>
                                                         <th class="text-uppercase text-muted p-1 text-center conv-col" id="convFactorHeader" style="width: 110px; font-size: 11px;">Pcs / Carton</th>
@@ -700,41 +701,6 @@
 
 
                     
-                    {{-- CARD 2: Color-Wise Shoe Photo Gallery --}}
-                    <div class="section-card mt-3">
-                        <div class="card-header-pro d-flex justify-content-between align-items-center flex-wrap gap-2">
-                            <div>
-                                <h5 class="card-title-pro mb-0">
-                                    <i class="fas fa-palette text-primary"></i> Color-Wise Shoe Photo Gallery
-                                </h5>
-                                <div class="text-muted small mt-1" style="font-size: 11px;">
-                                    Har color (e.g. Black, Brown) ki 4-6 pictures upload karein. Flutter Mobile App aur Web par customer jab color select karega to us color ki images automatically change hongi!
-                                </div>
-                            </div>
-                            <button type="button" class="btn btn-sm btn-primary fw-bold px-3 shadow-sm" id="addColorGalleryBtn">
-                                <i class="fas fa-plus me-1"></i> Add Another Color Photos
-                            </button>
-                        </div>
-                        <div class="card-body-pro p-3">
-                            {{-- Quick Color Chips --}}
-                            <div class="mb-3 p-2 bg-light rounded border d-flex flex-wrap align-items-center gap-2 shadow-sm">
-                                <span class="small fw-bold text-dark me-1"><i class="fas fa-brush text-primary me-1"></i>Quick Shoe Colors:</span>
-                                <button type="button" class="btn btn-sm btn-white border px-2 py-1 shadow-sm quick-color-btn" data-color="Black" style="font-size: 12px; font-weight: 700; background:#fff;"><span style="color:#000;">●</span> Black</button>
-                                <button type="button" class="btn btn-sm btn-white border px-2 py-1 shadow-sm quick-color-btn" data-color="Brown" style="font-size: 12px; font-weight: 700; background:#fff;"><span style="color:#78350f;">●</span> Brown</button>
-                                <button type="button" class="btn btn-sm btn-white border px-2 py-1 shadow-sm quick-color-btn" data-color="Tan" style="font-size: 12px; font-weight: 700; background:#fff;"><span style="color:#b45309;">●</span> Tan</button>
-                                <button type="button" class="btn btn-sm btn-white border px-2 py-1 shadow-sm quick-color-btn" data-color="White" style="font-size: 12px; font-weight: 700; background:#fff;"><span style="color:#94a3b8;">○</span> White</button>
-                                <button type="button" class="btn btn-sm btn-white border px-2 py-1 shadow-sm quick-color-btn" data-color="Navy Blue" style="font-size: 12px; font-weight: 700; background:#fff;"><span style="color:#1e3a8a;">●</span> Navy Blue</button>
-                                <button type="button" class="btn btn-sm btn-white border px-2 py-1 shadow-sm quick-color-btn" data-color="Grey" style="font-size: 12px; font-weight: 700; background:#fff;"><span style="color:#64748b;">●</span> Grey</button>
-                            </div>
-
-                            {{-- Container for dynamically added color blocks --}}
-                            <div id="colorGalleriesContainer" class="d-flex flex-column gap-3">
-                                {{-- Dynamically populated with JS --}}
-                            </div>
-                        </div>
-                    </div>
-
-
                     {{-- INLINE ACTIONS ROW (desktop only) --}}
                     <div class="d-flex justify-content-end align-items-center bg-white p-3 rounded shadow-sm border mb-4 gap-2 desktop-action-bar">
                         <a href="{{ route('product') }}" class="btn btn-outline-secondary px-4 py-2" style="border-radius: var(--radius-md); font-size: 0.9rem;">Cancel</a>
@@ -1117,6 +1083,26 @@
                     </td>
                     <td class="p-1"><select class="form-select form-select-sm fw-bold variant-size-select" name="variant_size[]"><option value="">Size...</option>${availableSizes.map(s => `<option value="${s.name}">${s.name}</option>`).join("")}</select></td>
                     <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" placeholder="Color"></td>
+                    <td class="p-1 text-center" style="width: 140px; min-width: 130px;">
+                        <input type="hidden" name="variant_row_id[]" value="${vid}">
+                        <input type="file" class="d-none var-photos-file-input" name="variant_photos[${vid}][]" multiple accept="image/*">
+                        <div class="var-photo-btn border border-dashed rounded p-1 text-center bg-white shadow-sm" style="cursor: pointer; min-height: 32px;" title="Click to upload multiple photos for this variant">
+                            <span class="badge bg-light text-primary border var-photo-count" style="font-size: 11px;">
+                                <i class="fas fa-camera me-1"></i><span class="count-num">0</span> Pics
+                            </span>
+                            <div class="var-thumbs-preview d-flex flex-wrap gap-1 mt-1 justify-content-center"></div>
+                        </div>
+                    </td>
+                    <td class="p-1 text-center" style="width: 140px; min-width: 130px;">
+                        <input type="hidden" name="variant_row_id[]" value="${vid}">
+                        <input type="file" class="d-none var-photos-file-input" name="variant_photos[${vid}][]" multiple accept="image/*">
+                        <div class="var-photo-btn border border-dashed rounded p-1 text-center bg-white shadow-sm" style="cursor: pointer; min-height: 32px;" title="Click to upload multiple photos for this variant">
+                            <span class="badge bg-light text-primary border var-photo-count" style="font-size: 11px;">
+                                <i class="fas fa-camera me-1"></i><span class="count-num">0</span> Pics
+                            </span>
+                            <div class="var-thumbs-preview d-flex flex-wrap gap-1 mt-1 justify-content-center"></div>
+                        </div>
+                    </td>
                     <td class="p-1">
                         <select class="form-select form-select-sm fw-bold text-primary px-1" name="variant_unit[]" style="font-size:11px;">
                             <option value="Carton" ${isCartonMode||baseUnitName.includes('Carton')?'selected':''}>Carton</option>
@@ -1152,6 +1138,7 @@
                     </td>
                 `;
                 variantsBody.appendChild(tr);
+                wireVariantRowPhotos(tr, vid);
 
                 const baseSaleInp = tr.querySelector('.base-sale-input');
                 const basePurchInp = tr.querySelector('.base-purch-input');
@@ -1282,6 +1269,26 @@
                     </td>
                     <td class="p-1"><select class="form-select form-select-sm fw-bold variant-size-select" name="variant_size[]"><option value="">Size...</option>${availableSizes.map(s => `<option value="${s.name}" ${presetSize === s.name ? "selected" : ""}>${s.name}</option>`).join("")}</select></td>
                     <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" placeholder="Color"></td>
+                    <td class="p-1 text-center" style="width: 140px; min-width: 130px;">
+                        <input type="hidden" name="variant_row_id[]" value="${vid}">
+                        <input type="file" class="d-none var-photos-file-input" name="variant_photos[${vid}][]" multiple accept="image/*">
+                        <div class="var-photo-btn border border-dashed rounded p-1 text-center bg-white shadow-sm" style="cursor: pointer; min-height: 32px;" title="Click to upload multiple photos for this variant">
+                            <span class="badge bg-light text-primary border var-photo-count" style="font-size: 11px;">
+                                <i class="fas fa-camera me-1"></i><span class="count-num">0</span> Pics
+                            </span>
+                            <div class="var-thumbs-preview d-flex flex-wrap gap-1 mt-1 justify-content-center"></div>
+                        </div>
+                    </td>
+                    <td class="p-1 text-center" style="width: 140px; min-width: 130px;">
+                        <input type="hidden" name="variant_row_id[]" value="${vid}">
+                        <input type="file" class="d-none var-photos-file-input" name="variant_photos[${vid}][]" multiple accept="image/*">
+                        <div class="var-photo-btn border border-dashed rounded p-1 text-center bg-white shadow-sm" style="cursor: pointer; min-height: 32px;" title="Click to upload multiple photos for this variant">
+                            <span class="badge bg-light text-primary border var-photo-count" style="font-size: 11px;">
+                                <i class="fas fa-camera me-1"></i><span class="count-num">0</span> Pics
+                            </span>
+                            <div class="var-thumbs-preview d-flex flex-wrap gap-1 mt-1 justify-content-center"></div>
+                        </div>
+                    </td>
                     <td class="p-1">
                         <select class="form-select form-select-sm px-1 fw-bold text-dark" name="variant_unit[]" style="font-size:11px;">
                             <option value="Carton" ${isCartonMode ? 'selected' : ''}>Carton</option>
@@ -1317,6 +1324,7 @@
                     </td>
                 `;
                 variantsBody.appendChild(tr);
+                wireVariantRowPhotos(tr, vid);
 
                 const saleInput = tr.querySelector('.sale-price-input');
                 const purchInput = tr.querySelector('.purch-price-input');
@@ -1848,131 +1856,51 @@
         window.mobDeleteCard = mobDeleteCard;
 
 
-        // ==========================================
-        // COLOR-WISE SHOE PHOTO GALLERY HANDLER
-        // ==========================================
-        let colorGalleryCounter = 0;
+        
+        function wireVariantRowPhotos(tr, vid) {
+            const fileInput = tr.querySelector('.var-photos-file-input');
+            const photoBtn = tr.querySelector('.var-photo-btn');
+            const badge = tr.querySelector('.var-photo-count');
+            const countNum = tr.querySelector('.count-num');
+            const thumbsPreview = tr.querySelector('.var-thumbs-preview');
 
-        function addColorGalleryBlock(colorName = "Black") {
-            colorGalleryCounter++;
-            const gid = colorGalleryCounter;
-            const container = document.getElementById("colorGalleriesContainer");
-            if (!container) return;
+            if (!fileInput || !photoBtn) return;
 
-            // Prevent duplicate blocks for same color
-            const existingBlocks = container.querySelectorAll(".color-title-input");
-            for (let input of existingBlocks) {
-                if (input.value.trim().toLowerCase() === colorName.trim().toLowerCase()) {
-                    input.scrollIntoView({ behavior: "smooth", block: "center" });
-                    input.focus();
-                    return;
-                }
-            }
-
-            const block = document.createElement("div");
-            block.className = "color-gallery-box p-3 border rounded shadow-sm bg-white";
-            block.id = `color_box_${gid}`;
-            block.dataset.gid = gid;
-
-            block.innerHTML = `
-                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2 border-bottom pb-2">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="badge bg-primary text-white px-2 py-1"><i class="fas fa-palette me-1"></i>Shoe Color:</span>
-                        <input type="text" class="form-control form-control-sm fw-bold color-title-input" value="${colorName}" placeholder="Color Name (e.g. Black, Brown)" style="width: 170px; font-size: 13px;" required>
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="badge bg-light text-dark border image-counter-badge">0 photos selected</span>
-                        <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2 remove-color-box-btn" title="Remove color gallery"><i class="fas fa-trash-alt"></i></button>
-                    </div>
-                </div>
-
-                <div class="row align-items-center g-2">
-                    <div class="col-md-4">
-                        <div class="border border-2 border-dashed rounded p-3 text-center bg-light upload-dropzone-click" style="cursor:pointer; border-color:#cbd5e1;">
-                            <input type="file" class="d-none color-files-input" name="color_images[${colorName}][]" multiple accept="image/*">
-                            <i class="fas fa-cloud-upload-alt text-primary fs-3 mb-1"></i>
-                            <div class="fw-bold small text-dark">Click to upload 3-6 Photos</div>
-                            <div class="text-muted" style="font-size:10px;">Front, side, sole, heel angles (JPG, PNG)</div>
-                        </div>
-                    </div>
-                    <div class="col-md-8">
-                        <div class="d-flex flex-wrap gap-2 preview-thumbnails-container p-2 bg-light rounded border" style="min-height:85px; align-items:center;">
-                            <span class="text-muted small ps-2 empty-msg"><i class="fas fa-images me-1"></i>No photos selected yet for ${colorName}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            container.appendChild(block);
-
-            // Wire up dropzone click
-            const dropzone = block.querySelector(".upload-dropzone-click");
-            const fileInput = block.querySelector(".color-files-input");
-            const previewsContainer = block.querySelector(".preview-thumbnails-container");
-            const emptyMsg = block.querySelector(".empty-msg");
-            const counterBadge = block.querySelector(".image-counter-badge");
-            const colorTitle = block.querySelector(".color-title-input");
-
-            dropzone.addEventListener("click", () => fileInput.click());
-
-            // Handle color name changes
-            colorTitle.addEventListener("input", function() {
-                const newName = this.value.trim() || "Color";
-                fileInput.name = `color_images[${newName}][]`;
-                if (emptyMsg) emptyMsg.innerHTML = `<i class="fas fa-images me-1"></i>No photos selected yet for ${newName}`;
+            photoBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                fileInput.click();
             });
 
-            // Handle file selection and preview
-            fileInput.addEventListener("change", function() {
+            fileInput.addEventListener('change', function() {
                 const files = this.files;
                 if (!files || files.length === 0) return;
 
-                if (emptyMsg) emptyMsg.style.display = "none";
-                previewsContainer.querySelectorAll(".preview-thumb-wrap").forEach(el => el.remove());
+                countNum.textContent = files.length;
+                badge.className = 'badge bg-success text-white border var-photo-count';
+                thumbsPreview.innerHTML = '';
 
-                counterBadge.textContent = `${files.length} photo(s) selected`;
-                counterBadge.className = "badge bg-success text-white";
-
-                Array.from(files).forEach((f, idx) => {
+                Array.from(files).slice(0, 4).forEach((file) => {
                     const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const thumb = document.createElement("div");
-                        thumb.className = "position-relative preview-thumb-wrap rounded border shadow-sm bg-white";
-                        thumb.style.width = "64px";
-                        thumb.style.height = "64px";
-                        thumb.style.overflow = "hidden";
-
-                        thumb.innerHTML = `
-                            <img src="${e.target.result}" style="width:100%; height:100%; object-fit:cover;">
-                            <span class="position-absolute bottom-0 start-0 bg-dark text-white text-center w-100" style="font-size:9px; opacity:0.8;">#${idx + 1}</span>
-                        `;
-                        previewsContainer.appendChild(thumb);
+                    reader.onload = function(ev) {
+                        const img = document.createElement('img');
+                        img.src = ev.target.result;
+                        img.className = 'rounded border shadow-sm';
+                        img.style.width = '24px';
+                        img.style.height = '24px';
+                        img.style.objectFit = 'cover';
+                        thumbsPreview.appendChild(img);
                     };
-                    reader.readAsDataURL(f);
+                    reader.readAsDataURL(file);
                 });
-            });
-
-            // Remove block
-            block.querySelector(".remove-color-box-btn").addEventListener("click", function() {
-                block.remove();
+                if (files.length > 4) {
+                    const moreBadge = document.createElement('span');
+                    moreBadge.className = 'badge bg-dark text-white p-1';
+                    moreBadge.style.fontSize = '8px';
+                    moreBadge.textContent = `+${files.length - 4}`;
+                    thumbsPreview.appendChild(moreBadge);
+                }
             });
         }
-
-        // Initialize with default color block (Black)
-        $(document).ready(function() {
-            addColorGalleryBlock("Black");
-
-            $("#addColorGalleryBtn").on("click", function() {
-                addColorGalleryBlock("Brown");
-            });
-
-            // Quick color buttons
-            $(document).on("click", ".quick-color-btn", function(e) {
-                e.preventDefault();
-                const color = $(this).data("color");
-                addColorGalleryBlock(color);
-            });
-        });
 
     </script>
 @endsection
