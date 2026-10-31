@@ -561,6 +561,42 @@
 
         </form>
 
+                {{-- Variant Photo Gallery Lightbox Modal --}}
+        <div id="variantGalleryModal" class="modal fade" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+                    <div class="modal-header bg-dark text-white py-2 px-3">
+                        <h6 class="modal-title mb-0" id="galleryModalTitle">
+                            <i class="fas fa-images text-warning me-2"></i>Variant Photos
+                        </h6>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" data-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-3 text-center bg-light">
+                        <div class="main-image-container position-relative d-flex align-items-center justify-content-center bg-dark rounded shadow-sm mb-3" style="min-height: 380px; max-height: 480px; overflow: hidden;">
+                            <img id="galleryMainImg" src="" style="max-height: 460px; max-width: 100%; object-fit: contain;" class="rounded">
+                            <button type="button" class="btn btn-dark btn-sm position-absolute start-0 top-50 translate-middle-y ms-2 rounded-circle shadow" id="prevGalleryImg" style="width: 38px; height: 38px; opacity: 0.85;">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <button type="button" class="btn btn-dark btn-sm position-absolute end-0 top-50 translate-middle-y me-2 rounded-circle shadow" id="nextGalleryImg" style="width: 38px; height: 38px; opacity: 0.85;">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                            <span class="position-absolute bottom-0 start-50 translate-middle-x mb-2 badge bg-dark bg-opacity-75 text-white px-3 py-1 fs-6" id="galleryCounterBadge">
+                                Photo 1 of 5
+                            </span>
+                        </div>
+                        <!-- Thumbnail strip -->
+                        <div class="d-flex gap-2 justify-content-center flex-wrap p-2 bg-white rounded border" id="galleryThumbsStrip" style="max-height: 90px; overflow-x: auto;">
+                            <!-- Thumbnails rendered here -->
+                        </div>
+                    </div>
+                    <div class="modal-footer py-2 px-3 bg-white justify-content-between">
+                        <div class="text-muted small" id="galleryModalFooterInfo"><i class="fas fa-mouse-pointer text-primary me-1"></i>Click any thumbnail to preview</div>
+                        <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {{-- Modals --}}
         <div id="categoryModal" class="modal fade" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -1048,23 +1084,35 @@
                     </td>
                     <td class="p-1"><select class="form-select form-select-sm fw-bold variant-size-select" name="variant_size[]"><option value="">Size...</option>${availableSizes.map(s => `<option value="${s.name}" ${sizeVal == s.name ? "selected" : ""}>${s.name}</option>`).join("")}</select></td>
                     <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" value="${colorVal}" placeholder="Color"></td>
-                    <td class="p-1 text-center" style="width: 105px; min-width: 95px;">
+                    <td class="p-1 text-center" style="width: 110px; min-width: 100px;">
                         <input type="hidden" name="variant_row_id[]" value="${vid}">
                         <input type="file" class="d-none var-photos-file-input" name="variant_photos[${vid}][]" multiple accept="image/*">
-                        <div class="var-photo-btn border border-dashed rounded p-1 text-center bg-white shadow-sm" style="cursor: pointer; min-height: 32px;" title="Click to upload multiple photos for this variant">
-                            <span class="badge ${(v && Array.isArray(v.images) && v.images.length > 0) ? 'bg-success text-white' : 'bg-light text-primary border'} var-photo-count" style="font-size: 11px;">
-                                <i class="fas fa-camera me-1"></i><span class="count-num">${(v && Array.isArray(v.images)) ? v.images.length : 0}</span> Pics
-                            </span>
-                            <div class="var-thumbs-preview d-flex flex-wrap gap-1 mt-1 justify-content-center">
-                                ${(v && Array.isArray(v.images)) ? v.images.slice(0, 4).map(img => `
-                                    <div class="position-relative" style="width:24px; height:24px;">
-                                        <img src="/uploads/products/${img}" class="rounded border shadow-sm" style="width:100%; height:100%; object-fit:cover;">
-                                        <input type="hidden" name="variant_existing_images[${vid}][]" value="${img}">
-                                    </div>
-                                `).join('') : ''}
-                                ${(v && Array.isArray(v.images) && v.images.length > 4) ? `<span class="badge bg-dark text-white p-1" style="font-size:8px;">+${v.images.length - 4}</span>` : ''}
+                        
+                        <!-- Empty state: Upload button -->
+                        <div class="photos-empty-state">
+                            <button type="button" class="btn btn-sm btn-white border border-dashed py-1 px-2 text-primary shadow-sm var-upload-btn text-nowrap" style="font-size: 11px; font-weight: 600;" title="Click to upload multiple photos">
+                                <i class="fas fa-camera me-1"></i>0 Pics
+                            </button>
+                        </div>
+
+                        <!-- Filled state: Thumbnail with badge & view/edit buttons -->
+                        <div class="photos-filled-state d-none align-items-center justify-content-center gap-1">
+                            <div class="position-relative var-thumb-click" style="cursor: pointer; width: 34px; height: 34px;" title="Click to view full photos">
+                                <img src="" class="rounded border shadow-sm var-first-thumb" style="width: 34px; height: 34px; object-fit: cover;">
+                                <span class="position-absolute top-0 end-0 badge rounded-pill bg-success var-photo-count" style="font-size: 9px; transform: translate(25%, -25%); box-shadow: 0 1px 3px rgba(0,0,0,0.3);">
+                                    0
+                                </span>
+                            </div>
+                            <div class="d-flex flex-column gap-1 ms-1">
+                                <button type="button" class="btn btn-light btn-xs p-0 px-1 border text-primary var-view-gallery-btn" title="View Full Image(s)" style="font-size: 10px; height: 16px; line-height: 14px;">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button type="button" class="btn btn-light btn-xs p-0 px-1 border text-secondary var-add-more-btn" title="Add More / Change Photos" style="font-size: 10px; height: 16px; line-height: 14px;">
+                                    <i class="fas fa-plus"></i>
+                                </button>
                             </div>
                         </div>
+                        ${(v && Array.isArray(v.images)) ? v.images.map(img => `<input type="hidden" name="variant_existing_images[${vid}][]" value="${img}">`).join('') : ''}
                     </td>
                     <td class="p-1">
                         <select class="form-select form-select-sm fw-bold text-primary px-1" name="variant_unit[]" style="font-size:11px;">
@@ -1104,7 +1152,7 @@
                     </td>
                 `;
                 variantsBody.appendChild(tr);
-                wireVariantRowPhotos(tr, vid);
+                wireVariantRowPhotos(tr, vid, (v && Array.isArray(v.images)) ? v.images.map(i => `/uploads/products/${i}`) : []);
 
                 const baseSaleInp = tr.querySelector('.base-sale-input');
                 const basePurchInp = tr.querySelector('.base-purch-input');
@@ -1245,23 +1293,35 @@
                     </td>
                     <td class="p-1"><select class="form-select form-select-sm fw-bold variant-size-select" name="variant_size[]"><option value="">Size...</option>${availableSizes.map(s => `<option value="${s.name}" ${sizeVal == s.name ? "selected" : ""}>${s.name}</option>`).join("")}</select></td>
                     <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" value="${colorVal}" placeholder="Color"></td>
-                    <td class="p-1 text-center" style="width: 105px; min-width: 95px;">
+                    <td class="p-1 text-center" style="width: 110px; min-width: 100px;">
                         <input type="hidden" name="variant_row_id[]" value="${vid}">
                         <input type="file" class="d-none var-photos-file-input" name="variant_photos[${vid}][]" multiple accept="image/*">
-                        <div class="var-photo-btn border border-dashed rounded p-1 text-center bg-white shadow-sm" style="cursor: pointer; min-height: 32px;" title="Click to upload multiple photos for this variant">
-                            <span class="badge ${(v && Array.isArray(v.images) && v.images.length > 0) ? 'bg-success text-white' : 'bg-light text-primary border'} var-photo-count" style="font-size: 11px;">
-                                <i class="fas fa-camera me-1"></i><span class="count-num">${(v && Array.isArray(v.images)) ? v.images.length : 0}</span> Pics
-                            </span>
-                            <div class="var-thumbs-preview d-flex flex-wrap gap-1 mt-1 justify-content-center">
-                                ${(v && Array.isArray(v.images)) ? v.images.slice(0, 4).map(img => `
-                                    <div class="position-relative" style="width:24px; height:24px;">
-                                        <img src="/uploads/products/${img}" class="rounded border shadow-sm" style="width:100%; height:100%; object-fit:cover;">
-                                        <input type="hidden" name="variant_existing_images[${vid}][]" value="${img}">
-                                    </div>
-                                `).join('') : ''}
-                                ${(v && Array.isArray(v.images) && v.images.length > 4) ? `<span class="badge bg-dark text-white p-1" style="font-size:8px;">+${v.images.length - 4}</span>` : ''}
+                        
+                        <!-- Empty state: Upload button -->
+                        <div class="photos-empty-state">
+                            <button type="button" class="btn btn-sm btn-white border border-dashed py-1 px-2 text-primary shadow-sm var-upload-btn text-nowrap" style="font-size: 11px; font-weight: 600;" title="Click to upload multiple photos">
+                                <i class="fas fa-camera me-1"></i>0 Pics
+                            </button>
+                        </div>
+
+                        <!-- Filled state: Thumbnail with badge & view/edit buttons -->
+                        <div class="photos-filled-state d-none align-items-center justify-content-center gap-1">
+                            <div class="position-relative var-thumb-click" style="cursor: pointer; width: 34px; height: 34px;" title="Click to view full photos">
+                                <img src="" class="rounded border shadow-sm var-first-thumb" style="width: 34px; height: 34px; object-fit: cover;">
+                                <span class="position-absolute top-0 end-0 badge rounded-pill bg-success var-photo-count" style="font-size: 9px; transform: translate(25%, -25%); box-shadow: 0 1px 3px rgba(0,0,0,0.3);">
+                                    0
+                                </span>
+                            </div>
+                            <div class="d-flex flex-column gap-1 ms-1">
+                                <button type="button" class="btn btn-light btn-xs p-0 px-1 border text-primary var-view-gallery-btn" title="View Full Image(s)" style="font-size: 10px; height: 16px; line-height: 14px;">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button type="button" class="btn btn-light btn-xs p-0 px-1 border text-secondary var-add-more-btn" title="Add More / Change Photos" style="font-size: 10px; height: 16px; line-height: 14px;">
+                                    <i class="fas fa-plus"></i>
+                                </button>
                             </div>
                         </div>
+                        ${(v && Array.isArray(v.images)) ? v.images.map(img => `<input type="hidden" name="variant_existing_images[${vid}][]" value="${img}">`).join('') : ''}
                     </td>
                     <td class="p-1">
                         <select class="form-select form-select-sm px-1 fw-bold text-dark" name="variant_unit[]" style="font-size:11px;">
@@ -1301,7 +1361,7 @@
                     </td>
                 `;
                 variantsBody.appendChild(tr);
-                wireVariantRowPhotos(tr, vid);
+                wireVariantRowPhotos(tr, vid, (v && Array.isArray(v.images)) ? v.images.map(i => `/uploads/products/${i}`) : []);
 
                 const saleInput = tr.querySelector('.sale-price-input');
                 const purchInput = tr.querySelector('.purch-price-input');
@@ -1839,49 +1899,146 @@
         window.mobToggleCard = mobToggleCard;
         window.mobDeleteCard = mobDeleteCard;
     
-        function wireVariantRowPhotos(tr, vid) {
-            const fileInput = tr.querySelector('.var-photos-file-input');
-            const photoBtn = tr.querySelector('.var-photo-btn');
-            const badge = tr.querySelector('.var-photo-count');
-            const countNum = tr.querySelector('.count-num');
-            const thumbsPreview = tr.querySelector('.var-thumbs-preview');
+        // ==============================================
+        // VARIANT PHOTO GALLERY VIEWER & UPLOADER
+        // ==============================================
+        let currentGalleryPhotos = [];
+        let currentGalleryIdx = 0;
 
-            if (!fileInput || !photoBtn) return;
+        function openVariantGallery(title, photos, startIdx = 0) {
+            if (!photos || photos.length === 0) return;
+            currentGalleryPhotos = photos;
+            currentGalleryIdx = startIdx;
 
-            photoBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                fileInput.click();
+            const modalTitle = document.getElementById('galleryModalTitle');
+            if (modalTitle) {
+                modalTitle.innerHTML = `<i class="fas fa-images text-warning me-2"></i>${title}`;
+            }
+            updateGalleryView();
+
+            const strip = document.getElementById('galleryThumbsStrip');
+            if (strip) {
+                strip.innerHTML = '';
+                photos.forEach((src, idx) => {
+                    const t = document.createElement('img');
+                    t.src = src;
+                    t.className = `rounded border ${idx === startIdx ? 'border-primary border-3 shadow' : ''}`;
+                    t.style.width = '55px';
+                    t.style.height = '55px';
+                    t.style.objectFit = 'cover';
+                    t.style.cursor = 'pointer';
+                    t.addEventListener('click', () => {
+                        currentGalleryIdx = idx;
+                        updateGalleryView();
+                    });
+                    strip.appendChild(t);
+                });
+            }
+
+            if (window.bootstrap && bootstrap.Modal) {
+                new bootstrap.Modal(document.getElementById('variantGalleryModal')).show();
+            } else {
+                $('#variantGalleryModal').modal('show');
+            }
+        }
+
+        function updateGalleryView() {
+            const mainImg = document.getElementById('galleryMainImg');
+            const badge = document.getElementById('galleryCounterBadge');
+            if (!mainImg || currentGalleryPhotos.length === 0) return;
+
+            mainImg.src = currentGalleryPhotos[currentGalleryIdx];
+            if (badge) {
+                badge.textContent = `Photo ${currentGalleryIdx + 1} of ${currentGalleryPhotos.length}`;
+            }
+
+            const thumbs = document.querySelectorAll('#galleryThumbsStrip img');
+            thumbs.forEach((img, i) => {
+                if (i === currentGalleryIdx) {
+                    img.className = 'rounded border border-primary border-3 shadow';
+                } else {
+                    img.className = 'rounded border';
+                }
             });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('prevGalleryImg')?.addEventListener('click', () => {
+                if (currentGalleryPhotos.length <= 1) return;
+                currentGalleryIdx = (currentGalleryIdx - 1 + currentGalleryPhotos.length) % currentGalleryPhotos.length;
+                updateGalleryView();
+            });
+            document.getElementById('nextGalleryImg')?.addEventListener('click', () => {
+                if (currentGalleryPhotos.length <= 1) return;
+                currentGalleryIdx = (currentGalleryIdx + 1) % currentGalleryPhotos.length;
+                updateGalleryView();
+            });
+        });
+
+        function wireVariantRowPhotos(tr, vid, initialPhotos = []) {
+            const fileInput = tr.querySelector('.var-photos-file-input');
+            const uploadBtn = tr.querySelector('.var-upload-btn');
+            const emptyState = tr.querySelector('.photos-empty-state');
+            const filledState = tr.querySelector('.photos-filled-state');
+            const firstThumb = tr.querySelector('.var-first-thumb');
+            const countBadge = tr.querySelector('.var-photo-count');
+            const thumbClick = tr.querySelector('.var-thumb-click');
+            const viewBtn = tr.querySelector('.var-view-gallery-btn');
+            const addMoreBtn = tr.querySelector('.var-add-more-btn');
+
+            if (!fileInput) return;
+
+            let rowPhotoDataUrls = Array.isArray(initialPhotos) ? [...initialPhotos] : [];
+
+            if (rowPhotoDataUrls.length > 0) {
+                firstThumb.src = rowPhotoDataUrls[0];
+                countBadge.textContent = rowPhotoDataUrls.length;
+                emptyState.classList.add('d-none');
+                filledState.classList.remove('d-none');
+                filledState.classList.add('d-flex');
+            }
+
+            if (uploadBtn) uploadBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); fileInput.click(); });
+            if (addMoreBtn) addMoreBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); fileInput.click(); });
 
             fileInput.addEventListener('change', function() {
                 const files = this.files;
                 if (!files || files.length === 0) return;
 
-                countNum.textContent = files.length;
-                badge.className = 'badge bg-success text-white border var-photo-count';
-                thumbsPreview.innerHTML = '';
-
-                Array.from(files).slice(0, 4).forEach((file) => {
+                rowPhotoDataUrls = [];
+                let loaded = 0;
+                Array.from(files).forEach((file, fIdx) => {
                     const reader = new FileReader();
                     reader.onload = function(ev) {
-                        const img = document.createElement('img');
-                        img.src = ev.target.result;
-                        img.className = 'rounded border shadow-sm';
-                        img.style.width = '24px';
-                        img.style.height = '24px';
-                        img.style.objectFit = 'cover';
-                        thumbsPreview.appendChild(img);
+                        rowPhotoDataUrls[fIdx] = ev.target.result;
+                        loaded++;
+                        if (loaded === files.length) {
+                            firstThumb.src = rowPhotoDataUrls[0];
+                            countBadge.textContent = files.length;
+                            emptyState.classList.add('d-none');
+                            filledState.classList.remove('d-none');
+                            filledState.classList.add('d-flex');
+                        }
                     };
                     reader.readAsDataURL(file);
                 });
-                if (files.length > 4) {
-                    const moreBadge = document.createElement('span');
-                    moreBadge.className = 'badge bg-dark text-white p-1';
-                    moreBadge.style.fontSize = '8px';
-                    moreBadge.textContent = `+${files.length - 4}`;
-                    thumbsPreview.appendChild(moreBadge);
-                }
             });
+
+            const openGalleryHandler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (rowPhotoDataUrls.length === 0) return;
+
+                const vName = tr.querySelector('[name="variant_name[]"]')?.value || 'Shoe Variant';
+                const vSize = tr.querySelector('[name="variant_size[]"]')?.value || '';
+                const vColor = tr.querySelector('[name="variant_color[]"]')?.value || '';
+                const title = `${vName} ${vColor ? '● ' + vColor : ''} ${vSize ? '(' + vSize + ')' : ''} - Photos`;
+
+                openVariantGallery(title, rowPhotoDataUrls, 0);
+            };
+
+            if (thumbClick) thumbClick.addEventListener('click', openGalleryHandler);
+            if (viewBtn) viewBtn.addEventListener('click', openGalleryHandler);
         }
 
     </script>
