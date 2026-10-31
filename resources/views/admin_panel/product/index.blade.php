@@ -437,6 +437,74 @@
         #productTable { min-width: 660px !important; }
         .btn-act { padding: 3px 6px; font-size: .68rem; }
     }
+
+    /* ── Footwear Product View Modal Styles ── */
+    #productViewModal .color-tab-pill {
+        border-radius: 30px;
+        padding: 7px 18px;
+        font-size: 13px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        color: #334155;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    #productViewModal .color-tab-pill:hover {
+        border-color: #6366f1;
+        color: #4f46e5;
+        background: #f8fafc;
+    }
+    #productViewModal .color-tab-pill.active {
+        background: #4f46e5 !important;
+        border-color: #4f46e5 !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+    }
+    #productViewModal .color-tab-pill.active .badge {
+        background: rgba(255, 255, 255, 0.25) !important;
+        color: #ffffff !important;
+    }
+    #productViewModal .shoe-size-chip {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 8px 14px;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    #productViewModal .shoe-size-chip:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.06);
+    }
+    #productViewModal .modal-thumb-btn {
+        width: 52px;
+        height: 52px;
+        border-radius: 8px;
+        border: 2px solid #e2e8f0;
+        background: #ffffff;
+        padding: 2px;
+        cursor: pointer;
+        transition: all 0.18s ease;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    #productViewModal .modal-thumb-btn:hover {
+        border-color: #4f46e5;
+        transform: translateY(-2px);
+    }
+    #productViewModal .modal-thumb-btn.active {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.25);
+    }
 </style>
 
 <div class="main-content">
@@ -937,145 +1005,222 @@
 {{-- ══════════════════════════════════════════════════════════════
      PRODUCT VIEW MODAL
 ══════════════════════════════════════════════════════════════ --}}
+{{-- ══════════════════════════════════════════════════════════════
+     PRODUCT VIEW MODAL - LUXURY FOOTWEAR RETAIL ERP DESIGN
+══════════════════════════════════════════════════════════════ --}}
 <div class="modal fade" id="productViewModal" tabindex="-1" aria-labelledby="productViewModalLabel" aria-hidden="true" style="z-index: 1055;">
     <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius:16px; overflow:hidden;">
-            <!-- Modal Header -->
-            <div class="modal-header bg-white border-bottom px-4 py-3 align-items-center">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 18px; overflow: hidden; background: #fdfdfd;">
+            
+            <!-- Clean Header -->
+            <div class="modal-header bg-white px-4 py-3 border-bottom d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-3 flex-wrap">
-                    <div>
-                        <h5 class="modal-title fw-bold text-dark mb-0" id="view_item_name">Product Name</h5>
-                        <div class="text-muted small mt-1" id="view_item_subtext">CODE | CATEGORY | BRAND</div>
+                    <div class="d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle" style="width: 44px; height: 44px; font-size: 1.25rem;">
+                        <i class="fas fa-shoe-prints"></i>
                     </div>
-                    <span class="badge bg-success text-white px-2 py-1 ms-2 shadow-sm d-none" id="view_rack_badge" style="font-size: 11px;">
-                        <i class="fas fa-layer-group me-1"></i><span id="view_rack_text">Rack A-01, Shelf 2</span>
-                    </span>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <h5 class="modal-title fw-bold text-dark mb-0" id="view_item_name" style="font-size: 1.25rem; letter-spacing: -0.3px;">Product Name</h5>
+                            <span class="badge bg-success text-white px-2 py-1 shadow-sm d-none" id="view_rack_badge" style="font-size: 11px; font-weight: 600;">
+                                <i class="fas fa-map-marker-alt me-1"></i><span id="view_rack_text">Rack A-01, Shelf 2</span>
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 text-muted small mt-1 flex-wrap" id="view_item_subtext">
+                            <!-- Article Code • Category • Brand -->
+                        </div>
+                    </div>
                 </div>
-                <button type="button" class="close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" style="font-size: 1.5rem; line-height: 1;">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="text-end d-none d-sm-block me-3">
+                        <span class="text-muted d-block" style="font-size: 11px; text-transform: uppercase; font-weight: 600;">Total Stock</span>
+                        <span class="fw-bold fs-6 text-primary" id="view_header_stock">0 Pairs</span>
+                    </div>
+                    <button type="button" class="btn-close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" style="background: none; border: none; font-size: 1.5rem; color: #64748b; cursor: pointer;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
             </div>
 
             <!-- Modal Body -->
-            <div class="modal-body p-0 bg-light">
+            <div class="modal-body p-0" style="background: #f8fafc; min-height: 480px;">
                 <!-- Loading Spinner -->
                 <div id="modalLoadingSpinner" class="text-center py-5 d-none">
-                    <div class="spinner-border text-primary" role="status"></div>
-                    <p class="text-muted small mt-2">Loading footwear details…</p>
+                    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+                    <p class="text-muted fw-semibold mt-3">Loading article & variant details…</p>
                 </div>
 
                 <!-- Main Content -->
-                <div id="modalContentRow" class="p-3">
-                    <!-- Top Summary Card: Photo Gallery + Highlights -->
-                    <div class="row g-3 mb-3">
-                        <!-- Left: Active Color Photo Gallery Preview -->
-                        <div class="col-md-5">
-                            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100">
+                <div id="modalContentRow" class="p-4">
+                    
+                    <!-- ── TOP COLOR SELECTOR BAR ── -->
+                    <div class="bg-white p-3 rounded-3 border shadow-sm mb-4">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="fw-bold text-dark small text-uppercase" style="letter-spacing: 0.5px;">
+                                    <i class="fas fa-palette text-primary me-1"></i>Select Article Color:
+                                </span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap" id="modalColorTabsBar">
+                                <!-- Dynamic Color Tabs: e.g. [ 🖤 Black (60 Pairs) ] [ 🤎 Brown (40 Pairs) ] [ 📋 All Variants ] -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── COLOR SPECIFIC VIEW ── -->
+                    <div id="modalColorSpecificView" class="row g-4">
+                        <!-- Left Column: Shoe Photo Showcase (45%) -->
+                        <div class="col-lg-5">
+                            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100 d-flex flex-column">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="fw-bold text-dark small"><i class="fas fa-camera text-primary me-1"></i>Color Shoe Photo:</span>
-                                    <span class="badge bg-primary text-white" id="modalActiveColorBadge">All Colors</span>
-                                </div>
-                                <!-- Big Active Image Preview -->
-                                <div class="position-relative text-center bg-dark rounded border overflow-hidden d-flex align-items-center justify-content-center mb-2" style="height: 230px; cursor: pointer;" id="modalMainImgWrap" title="Click to view full image in high resolution">
-                                    <img id="modalMainImg" src="" style="max-height: 220px; max-width: 100%; object-fit: contain;">
-                                    <span class="position-absolute bottom-0 end-0 m-2 badge bg-black bg-opacity-75 text-white" style="font-size: 10px;">
-                                        <i class="fas fa-search-plus me-1"></i>Click to Zoom
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge px-3 py-1 text-white fw-bold shadow-sm" id="modalCurrentColorPill" style="background: #1e293b; font-size: 12px;">
+                                            Color: Black
+                                        </span>
+                                        <span class="badge bg-light text-muted border" id="modalCurrentColorPhotosCount">0 Photos</span>
+                                    </div>
+                                    <span class="text-muted" style="font-size: 11px;">
+                                        <i class="fas fa-search-plus me-1"></i>Click shoe to zoom
                                     </span>
                                 </div>
-                                <!-- Thumbnails Strip for Active Color -->
-                                <div class="d-flex gap-2 flex-wrap justify-content-center p-2 bg-light rounded border" id="modalColorThumbsStrip" style="min-height: 55px; max-height: 90px; overflow-y: auto;">
-                                    <!-- Dynamic thumbnails -->
+
+                                <!-- Large Shoe Frame -->
+                                <div class="position-relative text-center rounded-3 border overflow-hidden d-flex align-items-center justify-content-center p-3 mb-3" 
+                                     id="modalMainImgWrap" 
+                                     style="height: 310px; background: #ffffff; cursor: pointer; transition: all 0.2s;"
+                                     title="Click to view full high-res photo">
+                                    <img id="modalMainImg" src="" alt="Shoe Photo" style="max-height: 280px; max-width: 100%; object-fit: contain; filter: drop-shadow(0 10px 16px rgba(0,0,0,0.08));">
+                                    
+                                    <div class="position-absolute bottom-0 end-0 m-2 badge bg-dark bg-opacity-75 text-white px-2 py-1 shadow-sm" style="font-size: 10px; border-radius: 6px;">
+                                        <i class="fas fa-search-plus me-1"></i>High-Res Zoom
+                                    </div>
+                                </div>
+
+                                <!-- Thumbnails Strip (Angles & Views) -->
+                                <div class="mt-auto">
+                                    <div class="text-muted small fw-semibold mb-2" style="font-size: 11px;">
+                                        <i class="fas fa-images text-secondary me-1"></i>Color Photos & Angles:
+                                    </div>
+                                    <div class="d-flex gap-2 flex-wrap p-2 rounded-3 border" id="modalColorThumbsStrip" style="min-height: 60px; max-height: 100px; overflow-y: auto; background: #f8fafc;">
+                                        <!-- Dynamically generated thumbnails -->
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Right: Article Highlights & Color Selector -->
-                        <div class="col-md-7">
-                            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100 d-flex flex-column justify-content-between">
+                        <!-- Right Column: Stock, Sizes Matrix & Breakdown (55%) -->
+                        <div class="col-lg-7">
+                            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100 d-flex flex-column">
+                                
+                                <!-- Pricing Row -->
+                                <div class="row g-2 mb-3">
+                                    <div class="col-sm-4">
+                                        <div class="p-3 rounded-3 border text-center" style="background: #f0fdf4; border-color: #bbf7d0 !important;">
+                                            <div class="text-muted small text-uppercase fw-bold" style="font-size: 10px; color: #166534 !important;">Retail Sale Price</div>
+                                            <div class="fw-bold mt-1" style="font-size: 1.35rem; color: #15803d;" id="modalPriceSale">Rs. 0</div>
+                                            <div class="text-muted" style="font-size: 11px;">Per Pair</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <div class="p-3 rounded-3 border text-center" style="background: #f8fafc;">
+                                            <div class="text-muted small text-uppercase fw-bold" style="font-size: 10px;">Purchase / Cost</div>
+                                            <div class="fw-bold text-dark mt-1" style="font-size: 1.15rem;" id="modalPricePurch">Rs. 0</div>
+                                            <div class="text-muted" style="font-size: 11px;">Cost Price</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <div class="p-3 rounded-3 border text-center" style="background: #f8fafc;">
+                                            <div class="text-muted small text-uppercase fw-bold" style="font-size: 10px;">Wholesale Price</div>
+                                            <div class="fw-bold text-dark mt-1" style="font-size: 1.15rem;" id="modalPriceWholesale">Rs. 0</div>
+                                            <div class="text-muted" style="font-size: 11px;">Dealer Rate</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Footwear Shoe Sizes Matrix -->
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="fw-bold text-dark small text-uppercase" style="letter-spacing: 0.5px;">
+                                            <i class="fas fa-ruler-horizontal text-primary me-1"></i>Available Shoe Sizes & Stock:
+                                        </span>
+                                        <span class="badge bg-primary text-white" id="modalActiveColorTotalStock">0 Pairs in Stock</span>
+                                    </div>
+
+                                    <!-- Quick Size Stock Badges -->
+                                    <div class="d-flex flex-wrap gap-2 p-3 rounded-3 border" id="modalSizesBadgesGrid" style="background: #f8fafc;">
+                                        <!-- Dynamic: [ Size 39 : 12 in stock ] [ Size 40 : 12 in stock ] -->
+                                    </div>
+                                </div>
+
+                                <!-- Sizes Breakdown Table -->
+                                <div class="mt-auto">
+                                    <div class="table-responsive rounded-3 border">
+                                        <table class="table table-hover align-middle mb-0" style="font-size: 12.5px;">
+                                            <thead class="table-light text-muted text-uppercase" style="font-size: 11px; letter-spacing: 0.5px;">
+                                                <tr>
+                                                    <th class="ps-3 py-2 text-start">Size</th>
+                                                    <th class="py-2 text-center">Stock Status</th>
+                                                    <th class="py-2 text-center">Retail Price</th>
+                                                    <th class="py-2 text-center">Cost Price</th>
+                                                    <th class="pe-3 py-2 text-end">Barcode</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="modalActiveColorSizesTbody">
+                                                <!-- Dynamic rows -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── ALL VARIANTS MASTER TABLE ── -->
+                    <div id="modalAllVariantsView" class="d-none">
+                        <div class="card border-0 shadow-sm rounded-3 bg-white overflow-hidden">
+                            <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
                                 <div>
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <div>
-                                            <span class="text-muted small text-uppercase fw-bold">Footwear Article</span>
-                                            <h4 class="fw-bold text-dark mb-0" id="view_article_title">Oxford Shoes</h4>
-                                            <div class="text-muted small mt-1" id="view_article_desc"></div>
-                                        </div>
-                                        <div class="text-end">
-                                            <div class="fs-4 fw-bold text-success" id="view_sale_price">Rs. 0</div>
-                                            <small class="text-muted">Retail Price / Pair</small>
-                                        </div>
-                                    </div>
-
-                                    <!-- Quick Stats Grid -->
-                                    <div class="row g-2 mb-3">
-                                        <div class="col-4">
-                                            <div class="p-2 rounded bg-light border text-center">
-                                                <div class="text-muted" style="font-size: 10px; text-transform: uppercase;">Total Stock</div>
-                                                <div class="fw-bold text-primary fs-5" id="view_total_stock">0</div>
-                                                <small class="text-muted">Pairs Available</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-4">
-                                            <div class="p-2 rounded bg-light border text-center">
-                                                <div class="text-muted" style="font-size: 10px; text-transform: uppercase;">Purch Price</div>
-                                                <div class="fw-bold text-dark fs-6 mt-1" id="view_purch_price">Rs. 0</div>
-                                                <small class="text-muted">Cost / Pair</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-4">
-                                            <div class="p-2 rounded bg-light border text-center">
-                                                <div class="text-muted" style="font-size: 10px; text-transform: uppercase;">Wholesale</div>
-                                                <div class="fw-bold text-dark fs-6 mt-1" id="view_wholesale_price">Rs. 0</div>
-                                                <small class="text-muted">Dealer Price</small>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Shoe Color Filter Buttons -->
-                                    <div class="mb-2">
-                                        <label class="form-label small fw-bold text-muted mb-1 text-uppercase">
-                                            <i class="fas fa-palette text-primary me-1"></i>Filter By Shoe Color:
-                                        </label>
-                                        <div class="d-flex gap-2 flex-wrap" id="modalColorFilterButtons">
-                                            <!-- Color chips generated here -->
-                                        </div>
-                                    </div>
+                                    <h6 class="fw-bold text-dark mb-0"><i class="fas fa-th-list text-primary me-2"></i>Complete Variants Inventory Breakdown</h6>
+                                    <small class="text-muted">All sizes, colors, inventory levels, barcodes and pricing</small>
                                 </div>
-
-                                <div class="border-top pt-2 mt-2 d-flex justify-content-between align-items-center text-muted small flex-wrap gap-2">
-                                    <span><i class="fas fa-map-marker-alt text-danger me-1"></i>Location: <strong class="text-dark" id="view_shelf_info">-</strong></span>
-                                    <span><i class="fas fa-barcode text-secondary me-1"></i>Article Code: <code class="text-dark" id="view_code_info">-</code></span>
-                                </div>
+                                <span class="badge bg-primary text-white px-3 py-2" id="modalAllVariantsTotalBadge">0 Total Pairs</span>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0" style="font-size: 13px;">
+                                    <thead class="table-light text-muted text-uppercase" style="font-size: 11px; letter-spacing: 0.5px;">
+                                        <tr>
+                                            <th class="ps-4 py-3 text-center" style="width: 70px;">Photo</th>
+                                            <th class="py-3 text-start">Color</th>
+                                            <th class="py-3 text-center">Size</th>
+                                            <th class="py-3 text-center">Available Stock</th>
+                                            <th class="py-3 text-center">Retail Price</th>
+                                            <th class="py-3 text-center">Cost Price</th>
+                                            <th class="pe-4 py-3 text-end">Barcode</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="modalAllVariantsTbody">
+                                        <!-- Dynamic rows -->
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Color & Size Breakdown Section -->
-                    <div class="card border-0 shadow-sm rounded-3 bg-white overflow-hidden">
-                        <div class="card-header bg-white border-bottom py-2 px-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                            <span class="fw-bold text-dark small">
-                                <i class="fas fa-layer-group text-primary me-1"></i>Color-Wise Variants & Available Sizes Breakdown
-                            </span>
-                            <span class="badge bg-light text-dark border" id="view_variants_count_badge">0 Variants</span>
-                        </div>
-                        <div class="card-body p-3">
-                            <!-- Color Groups Container -->
-                            <div id="modalColorGroupedContainers" class="d-flex flex-column gap-3">
-                                <!-- Generated dynamically -->
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
             <!-- Modal Footer -->
-            <div class="modal-footer bg-white py-2 px-4 justify-content-between">
-                <span class="text-muted small"><i class="fas fa-store text-primary me-1"></i>Young Fashion — Footwear POS & Retail ERP</span>
-                <button type="button" class="btn btn-secondary btn-sm px-4" data-dismiss="modal" data-bs-dismiss="modal">Close</button>
+            <div class="modal-footer bg-white py-2 px-4 justify-content-between border-top">
+                <span class="text-muted small">
+                    <i class="fas fa-store text-primary me-1"></i>Young Fashion — Shaibazar HYD Footwear ERP
+                </span>
+                <button type="button" class="btn btn-secondary btn-sm px-4 fw-semibold" data-dismiss="modal" data-bs-dismiss="modal">
+                    Close View
+                </button>
             </div>
         </div>
     </div>
 </div>
-
 
 @endsection
 
@@ -1110,6 +1255,15 @@ $(document).ready(function () {
         $('.selectProduct').prop('checked', this.checked);
     });
 
+        // Helper to format image URLs
+    function formatShoeImgUrl(img) {
+        if (!img) return '/uploads/products/placeholder.png';
+        if (img.startsWith('http://') || img.startsWith('https://')) return img;
+        if (img.startsWith('/')) return img;
+        if (img.startsWith('uploads/')) return '/' + img;
+        return '/uploads/products/' + img;
+    }
+
     // ── View Product Modal ──
     $(document).on('click', '.viewProductBtn', function() {
         let productId = $(this).data('id');
@@ -1124,24 +1278,20 @@ $(document).ready(function () {
                 $('#modalLoadingSpinner').addClass('d-none');
                 $('#modalContentRow').removeClass('d-none');
 
+                // Header info
                 $('#view_item_name').text(product.item_name ?? 'Unknown');
-                $('#view_article_title').text(product.item_name ?? 'Unknown');
-                $('#view_item_subtext').text(
-                    (product.item_code ?? '') + ' | ' +
-                    (product.category_relation?.name ?? 'Footwear') + ' | ' +
-                    (product.brand?.name ?? 'Young Fashion')
-                );
-                $('#view_article_desc').text(product.meta_description || product.description || '');
-                $('#view_code_info').text(product.item_code ?? '-');
+                $('#view_item_subtext').html(`
+                    <span class="badge bg-light text-dark border">Code: <strong>${product.item_code ?? '-'}</strong></span>
+                    <span class="badge bg-light text-dark border"><i class="fas fa-tag me-1 text-primary"></i>${product.category_relation?.name ?? 'Footwear'}</span>
+                    <span class="badge bg-light text-dark border"><i class="fas fa-copyright me-1 text-secondary"></i>${product.brand?.name ?? 'Young Fashion'}</span>
+                `);
 
                 // Rack & Shelf
                 if (product.rack_shelf) {
                     $('#view_rack_badge').removeClass('d-none');
                     $('#view_rack_text').text(product.rack_shelf);
-                    $('#view_shelf_info').text(product.rack_shelf);
                 } else {
                     $('#view_rack_badge').addClass('d-none');
-                    $('#view_shelf_info').text('Not Assigned');
                 }
 
                 // Prices & Stock
@@ -1150,10 +1300,7 @@ $(document).ready(function () {
                 let wholesalePrice = product.wholesale_price || 0;
                 let totalStock = product.calculated_total_stock_qty ?? 0;
 
-                $('#view_sale_price').text('Rs. ' + parseFloat(salePrice).toLocaleString('en-US', {minimumFractionDigits: 0}));
-                $('#view_purch_price').text('Rs. ' + parseFloat(purchPrice).toLocaleString('en-US', {minimumFractionDigits: 0}));
-                $('#view_wholesale_price').text('Rs. ' + parseFloat(wholesalePrice).toLocaleString('en-US', {minimumFractionDigits: 0}));
-                $('#view_total_stock').text(totalStock);
+                $('#view_header_stock').text(totalStock + ' Pairs');
 
                 // Parse Variants
                 let variants = [];
@@ -1174,8 +1321,6 @@ $(document).ready(function () {
                     }
                 }
 
-                $('#view_variants_count_badge').text(variants.length + ' Total Variant Combinations');
-
                 // Group by Color
                 const colorGroups = {};
                 variants.forEach(v => {
@@ -1194,21 +1339,22 @@ $(document).ready(function () {
 
                     if (Array.isArray(v.images)) {
                         v.images.forEach(img => {
-                            if (!colorGroups[c].images.includes(img)) {
+                            if (img && !colorGroups[c].images.includes(img)) {
                                 colorGroups[c].images.push(img);
                             }
                         });
                     }
                 });
 
-                // Also merge web_images into respective color groups
-                if (product.web_images && product.web_images.length > 0) {
-                    product.web_images.forEach(img => {
+                // Also merge webImages / web_images into respective color groups
+                let webImgs = product.webImages || product.web_images || [];
+                if (Array.isArray(webImgs)) {
+                    webImgs.forEach(img => {
                         let c = (img.color && img.color !== '-' && img.color.trim() !== '') ? img.color.trim() : 'Standard';
                         if (!colorGroups[c]) {
                             colorGroups[c] = { color: c, variants: [], totalStock: 0, images: [] };
                         }
-                        if (!colorGroups[c].images.includes(img.image_path)) {
+                        if (img.image_path && !colorGroups[c].images.includes(img.image_path)) {
                             colorGroups[c].images.push(img.image_path);
                         }
                     });
@@ -1225,6 +1371,7 @@ $(document).ready(function () {
                             stock: totalStock,
                             sale_price: salePrice,
                             purch_price: purchPrice,
+                            wholesale_price: wholesalePrice,
                             barcode: product.barcode_path ?? product.item_code
                         }],
                         totalStock: totalStock,
@@ -1232,169 +1379,194 @@ $(document).ready(function () {
                     };
                 }
 
-                // Active Color State
                 const colorNames = Object.keys(colorGroups);
-                let activeColor = colorNames[0];
 
-                function switchActiveColor(colorName) {
-                    activeColor = colorName;
-                    $('#modalActiveColorBadge').text(colorName);
+                // Function to render Color Specific View
+                function renderColorView(colorName) {
+                    $('#modalAllVariantsView').addClass('d-none');
+                    $('#modalColorSpecificView').removeClass('d-none');
 
                     const group = colorGroups[colorName] || colorGroups[colorNames[0]];
-                    const imgs = (group && group.images.length > 0) ? group.images : (product.image ? [product.image] : []);
+                    $('#modalCurrentColorPill').text('Color: ' + group.color);
+                    $('#modalActiveColorTotalStock').text(group.totalStock + ' Pairs in Stock');
+
+                    // Photos
+                    const imgs = (group.images && group.images.length > 0) ? group.images : (product.image ? [product.image] : []);
+                    $('#modalCurrentColorPhotosCount').text(imgs.length + ' Photos');
 
                     const thumbsStrip = $('#modalColorThumbsStrip');
                     thumbsStrip.empty();
 
                     if (imgs.length > 0) {
-                        $('#modalMainImg').attr('src', '/uploads/products/' + imgs[0]);
-                        $('#modalMainImgWrap').data('full-src', '/uploads/products/' + imgs[0]);
+                        let mainSrc = formatShoeImgUrl(imgs[0]);
+                        $('#modalMainImg').attr('src', mainSrc);
+                        $('#modalMainImgWrap').data('full-src', mainSrc);
 
                         imgs.forEach((imgFile, idx) => {
-                            const fullUrl = '/uploads/products/' + imgFile;
-                            const t = $(`
-                                <div class="position-relative border rounded shadow-sm overflow-hidden modal-strip-thumb ${idx === 0 ? 'border-primary border-2 shadow' : ''}" style="width: 44px; height: 44px; cursor: pointer;">
-                                    <img src="${fullUrl}" style="width: 100%; height: 100%; object-fit: cover;">
+                            let thumbSrc = formatShoeImgUrl(imgFile);
+                            let tBtn = $(`
+                                <div class="modal-thumb-btn ${idx === 0 ? 'active' : ''}" title="View angle ${idx + 1}">
+                                    <img src="${thumbSrc}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">
                                 </div>
                             `);
-                            t.on('click', function() {
-                                $('.modal-strip-thumb').removeClass('border-primary border-2 shadow');
-                                $(this).addClass('border-primary border-2 shadow');
-                                $('#modalMainImg').attr('src', fullUrl);
-                                $('#modalMainImgWrap').data('full-src', fullUrl);
+                            tBtn.on('click', function() {
+                                $('.modal-thumb-btn').removeClass('active');
+                                $(this).addClass('active');
+                                $('#modalMainImg').attr('src', thumbSrc);
+                                $('#modalMainImgWrap').data('full-src', thumbSrc);
                             });
-                            thumbsStrip.append(t);
+                            thumbsStrip.append(tBtn);
                         });
                     } else {
-                        $('#modalMainImg').attr('src', '/uploads/products/placeholder.png');
-                        thumbsStrip.html('<small class="text-muted">No photos uploaded for this color</small>');
+                        let placeholder = '/uploads/products/placeholder.png';
+                        $('#modalMainImg').attr('src', placeholder);
+                        $('#modalMainImgWrap').data('full-src', placeholder);
+                        thumbsStrip.html('<small class="text-muted fst-italic">No photos uploaded for this color</small>');
                     }
+
+                    // Prices
+                    let v0 = group.variants[0] || {};
+                    let vSale = parseFloat(v0.sale_price || salePrice || 0);
+                    let vPurch = parseFloat(v0.purch_price || purchPrice || 0);
+                    let vWholesale = parseFloat(v0.wholesale_price || wholesalePrice || 0);
+
+                    $('#modalPriceSale').text('Rs. ' + vSale.toLocaleString('en-US', {minimumFractionDigits: 0}));
+                    $('#modalPricePurch').text('Rs. ' + vPurch.toLocaleString('en-US', {minimumFractionDigits: 0}));
+                    $('#modalPriceWholesale').text('Rs. ' + vWholesale.toLocaleString('en-US', {minimumFractionDigits: 0}));
+
+                    // Size Matrix Badges
+                    const sizeGrid = $('#modalSizesBadgesGrid');
+                    sizeGrid.empty();
+
+                    const tbody = $('#modalActiveColorSizesTbody');
+                    tbody.empty();
+
+                    group.variants.forEach(v => {
+                        let vSize = v.size || '-';
+                        let vStock = parseFloat(v.available_stock ?? v.stock ?? 0) || 0;
+                        let itemSale = parseFloat(v.sale_price || vSale);
+                        let itemPurch = parseFloat(v.purch_price || vPurch);
+                        let itemBarcode = v.barcode || product.item_code || '-';
+
+                        // Chip
+                        let chipBorder = vStock > 5 ? 'border-success' : (vStock > 0 ? 'border-warning' : 'border-danger');
+                        let chipBadge = vStock > 5 
+                            ? `<span class="badge bg-success text-white">${vStock} Pairs</span>`
+                            : (vStock > 0 
+                                ? `<span class="badge bg-warning text-dark">${vStock} Low Stock</span>` 
+                                : `<span class="badge bg-danger text-white">Out of Stock</span>`);
+
+                        sizeGrid.append(`
+                            <div class="shoe-size-chip ${chipBorder}">
+                                <span class="fw-bold text-dark fs-6">Size ${vSize}</span>
+                                ${chipBadge}
+                            </div>
+                        `);
+
+                        // Table row
+                        let stockBadge = vStock > 5 
+                            ? `<span class="badge bg-success text-white px-2 py-1"><i class="fas fa-check-circle me-1"></i>${vStock} In Stock</span>`
+                            : (vStock > 0 
+                                ? `<span class="badge bg-warning text-dark px-2 py-1"><i class="fas fa-exclamation-triangle me-1"></i>${vStock} Low Stock</span>`
+                                : `<span class="badge bg-danger text-white px-2 py-1"><i class="fas fa-times-circle me-1"></i>Out of Stock</span>`);
+
+                        tbody.append(`
+                            <tr>
+                                <td class="ps-3 py-2 fw-bold text-primary fs-6">${vSize}</td>
+                                <td class="py-2 text-center">${stockBadge}</td>
+                                <td class="py-2 text-center fw-bold text-success">Rs. ${itemSale.toLocaleString('en-US', {minimumFractionDigits: 0})}</td>
+                                <td class="py-2 text-center text-muted">Rs. ${itemPurch.toLocaleString('en-US', {minimumFractionDigits: 0})}</td>
+                                <td class="pe-3 py-2 text-end"><code class="bg-light px-2 py-1 rounded border">${itemBarcode}</code></td>
+                            </tr>
+                        `);
+                    });
                 }
 
-                // Render Color Filter Buttons
-                const filterBtnContainer = $('#modalColorFilterButtons');
-                filterBtnContainer.empty();
+                // Function to render All Variants View
+                function renderAllVariantsView() {
+                    $('#modalColorSpecificView').addClass('d-none');
+                    $('#modalAllVariantsView').removeClass('d-none');
+                    $('#modalAllVariantsTotalBadge').text(totalStock + ' Total Pairs in Stock');
 
-                // "Show All" button
-                const allBtn = $(`<button type="button" class="btn btn-sm btn-outline-dark fw-bold px-3 active color-filter-pill" data-target="all"><i class="fas fa-layer-group me-1"></i>All Colors (${colorNames.length})</button>`);
-                allBtn.on('click', function() {
-                    $('.color-filter-pill').removeClass('active btn-dark text-white').addClass('btn-outline-dark');
-                    $(this).addClass('active btn-dark text-white').removeClass('btn-outline-dark');
-                    $('.color-group-section').fadeIn(150);
-                });
-                filterBtnContainer.append(allBtn);
+                    const tbody = $('#modalAllVariantsTbody');
+                    tbody.empty();
+
+                    colorNames.forEach(cName => {
+                        const g = colorGroups[cName];
+                        let cThumb = (g.images && g.images.length > 0) ? formatShoeImgUrl(g.images[0]) : formatShoeImgUrl(product.image);
+
+                        g.variants.forEach(v => {
+                            let vSize = v.size || '-';
+                            let vStock = parseFloat(v.available_stock ?? v.stock ?? 0) || 0;
+                            let itemSale = parseFloat(v.sale_price || salePrice || 0);
+                            let itemPurch = parseFloat(v.purch_price || purchPrice || 0);
+                            let itemBarcode = v.barcode || product.item_code || '-';
+                            let vThumb = (Array.isArray(v.images) && v.images.length > 0) ? formatShoeImgUrl(v.images[0]) : cThumb;
+
+                            let stockBadge = vStock > 5 
+                                ? `<span class="badge bg-success text-white px-2 py-1">${vStock} In Stock</span>`
+                                : (vStock > 0 
+                                    ? `<span class="badge bg-warning text-dark px-2 py-1">${vStock} Low Stock</span>`
+                                    : `<span class="badge bg-danger text-white px-2 py-1">Out of Stock</span>`);
+
+                            tbody.append(`
+                                <tr>
+                                    <td class="ps-4 py-3 text-center">
+                                        <img src="${vThumb}" class="rounded border shadow-sm view-full-shoe-img" data-src="${vThumb}" data-title="${product.item_name} (${cName} - Size ${vSize})" style="width: 40px; height: 40px; object-fit: cover; cursor: pointer;" title="Click to enlarge">
+                                    </td>
+                                    <td class="py-3 text-start">
+                                        <span class="badge bg-dark text-white px-2 py-1">${cName}</span>
+                                    </td>
+                                    <td class="py-3 text-center fw-bold text-primary">${vSize}</td>
+                                    <td class="py-3 text-center">${stockBadge}</td>
+                                    <td class="py-3 text-center fw-bold text-success">Rs. ${itemSale.toLocaleString('en-US', {minimumFractionDigits: 0})}</td>
+                                    <td class="py-3 text-center text-muted">Rs. ${itemPurch.toLocaleString('en-US', {minimumFractionDigits: 0})}</td>
+                                    <td class="pe-4 py-3 text-end"><code class="bg-light px-2 py-1 rounded border">${itemBarcode}</code></td>
+                                </tr>
+                            `);
+                        });
+                    });
+                }
+
+                // Render Top Color Selector Bar
+                const tabsBar = $('#modalColorTabsBar');
+                tabsBar.empty();
 
                 colorNames.forEach((cName, idx) => {
                     const g = colorGroups[cName];
-                    const btn = $(`
-                        <button type="button" class="btn btn-sm btn-outline-primary fw-bold px-3 color-filter-pill" data-target="${cName}">
-                            <span class="me-1">●</span> ${cName} <span class="badge bg-light text-primary border ms-1">${g.variants.length} Sizes</span>
+                    const isFirst = idx === 0;
+                    const tabBtn = $(`
+                        <button type="button" class="color-tab-pill ${isFirst ? 'active' : ''}" data-color="${cName}">
+                            <i class="fas fa-shoe-prints me-1" style="font-size: 11px;"></i>
+                            <span>${cName}</span>
+                            <span class="badge ${isFirst ? 'bg-white text-primary' : 'bg-light text-dark'} ms-1">${g.totalStock} Pairs</span>
                         </button>
                     `);
-                    btn.on('click', function() {
-                        $('.color-filter-pill').removeClass('active btn-dark btn-primary text-white').addClass('btn-outline-primary btn-outline-dark');
-                        $(this).addClass('active btn-primary text-white').removeClass('btn-outline-primary');
-                        
-                        // Switch photos to this color
-                        switchActiveColor(cName);
-
-                        // Filter cards
-                        $('.color-group-section').hide();
-                        $(`.color-group-section[data-color="${cName}"]`).fadeIn(150);
+                    tabBtn.on('click', function() {
+                        $('.color-tab-pill').removeClass('active');
+                        $(this).addClass('active');
+                        renderColorView(cName);
                     });
-                    filterBtnContainer.append(btn);
+                    tabsBar.append(tabBtn);
                 });
 
-                // Initialize photo gallery with first color
-                switchActiveColor(activeColor);
-
-                // Render Color Grouped Breakdown Cards
-                const groupContainer = $('#modalColorGroupedContainers');
-                groupContainer.empty();
-
-                colorNames.forEach(cName => {
-                    const g = colorGroups[cName];
-                    const firstImg = (g.images && g.images.length > 0) ? '/uploads/products/' + g.images[0] : (product.image ? '/uploads/products/' + product.image : null);
-
-                    let rowsHtml = '';
-                    g.variants.forEach(v => {
-                        let vSize = v.size || '-';
-                        let vStock = (v.available_stock !== undefined && v.available_stock !== null) ? v.available_stock : ((v.stock !== undefined && v.stock !== null) ? v.stock : 0);
-                        let vSale = parseFloat(v.sale_price || salePrice || 0);
-                        let vPurch = parseFloat(v.purch_price || purchPrice || 0);
-                        let vBarcode = v.barcode || product.item_code;
-                        let vThumb = (Array.isArray(v.images) && v.images.length > 0) ? '/uploads/products/' + v.images[0] : firstImg;
-
-                        let stockBadge = vStock > 5 
-                            ? `<span class="badge bg-success text-white px-2 py-1">${vStock} In Stock</span>`
-                            : (vStock > 0 
-                                ? `<span class="badge bg-warning text-dark px-2 py-1">${vStock} Low Stock</span>`
-                                : `<span class="badge bg-danger text-white px-2 py-1">Out of Stock</span>`);
-
-                        let thumbHtml = vThumb 
-                            ? `<img src="${vThumb}" class="rounded border shadow-sm view-full-shoe-img" data-src="${vThumb}" data-title="${product.item_name} (${cName} - Size ${vSize})" style="width: 32px; height: 32px; object-fit: cover; cursor: pointer;" title="Click to view full photo">`
-                            : `<span class="text-muted small">—</span>`;
-
-                        rowsHtml += `
-                            <tr>
-                                <td class="fw-bold fs-6 text-primary text-center" style="width: 80px;">${vSize}</td>
-                                <td class="text-center" style="width: 70px;">${thumbHtml}</td>
-                                <td class="text-center" style="width: 140px;">${stockBadge}</td>
-                                <td class="text-center fw-bold text-success" style="width: 130px;">Rs. ${vSale.toLocaleString('en-US', {minimumFractionDigits: 0})}</td>
-                                <td class="text-center text-muted" style="width: 130px;">Rs. ${vPurch.toLocaleString('en-US', {minimumFractionDigits: 0})}</td>
-                                <td class="text-center" style="width: 130px;"><code class="bg-light px-2 py-1 rounded border">${vBarcode}</code></td>
-                            </tr>
-                        `;
-                    });
-
-                    const cardHtml = `
-                        <div class="color-group-section border rounded-3 overflow-hidden shadow-sm bg-white" data-color="${cName}">
-                            <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="badge bg-dark text-white fs-6 px-3 py-1">
-                                        <i class="fas fa-shoe-prints me-1"></i>Color: ${cName}
-                                    </span>
-                                    <span class="badge bg-primary text-white">${g.variants.length} Sizes</span>
-                                    <span class="badge bg-info text-dark">${g.images.length} Photos</span>
-                                </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="text-muted small fw-bold">Total Stock for ${cName}:</span>
-                                    <span class="badge bg-success fs-6 px-2 py-1">${g.totalStock} Pairs</span>
-                                    <button type="button" class="btn btn-xs btn-outline-primary px-2 py-1 switch-to-color-btn" data-color="${cName}" title="Preview photos of this color">
-                                        <i class="fas fa-camera me-1"></i>View Photos
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0" style="font-size: 13px;">
-                                    <thead class="table-light text-muted text-uppercase" style="font-size: 11px;">
-                                        <tr>
-                                            <th class="text-center">Shoe Size</th>
-                                            <th class="text-center">Photo</th>
-                                            <th class="text-center">Inventory Status</th>
-                                            <th class="text-center">Retail Price</th>
-                                            <th class="text-center">Cost Price</th>
-                                            <th class="text-center">Barcode</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${rowsHtml}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    `;
-                    groupContainer.append(cardHtml);
+                // Add "All Variants" Tab
+                const allTabBtn = $(`
+                    <button type="button" class="color-tab-pill" data-color="__all__">
+                        <i class="fas fa-th-list me-1" style="font-size: 11px;"></i>
+                        <span>All Variants</span>
+                        <span class="badge bg-light text-dark ms-1">${totalStock} Pairs</span>
+                    </button>
+                `);
+                allTabBtn.on('click', function() {
+                    $('.color-tab-pill').removeClass('active');
+                    $(this).addClass('active');
+                    renderAllVariantsView();
                 });
+                tabsBar.append(allTabBtn);
 
-                // Attach View Photos button within each card
-                $('.switch-to-color-btn').on('click', function() {
-                    const c = $(this).data('color');
-                    switchActiveColor(c);
-                    $('html, body, #productViewModal').animate({
-                        scrollTop: $("#modalMainImgWrap").offset().top - 100
-                    }, 300);
-                });
+                // Default: Display first color
+                renderColorView(colorNames[0]);
             },
             error: function() {
                 $('#modalLoadingSpinner').addClass('d-none');
@@ -1419,8 +1591,6 @@ $(document).ready(function () {
             backdrop: 'rgba(0,0,0,0.85)'
         });
     });
-
-    
 
     // ── Toggle Active ──
     $(document).on('click', '.toggle-active-btn', function () {
