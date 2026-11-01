@@ -167,6 +167,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/product/{id}/toggle-active', [ProductController::class, 'toggleActive'])->middleware('permission:products.edit')->name('product.toggle.active');
 
     Route::post('/product/validate-form', [ProductController::class, 'validateForm'])->name('product.validate');
+    Route::get('/products/{id}/view', [ProductController::class, 'show'])->middleware('permission:products.view')->name('products.show');
     Route::get('/products/{id}/edit', [ProductController::class, 'edit'])->middleware('permission:products.edit')->name('products.edit');
     Route::get('/generate-barcode-image/{id?}', [ProductController::class, 'generateBarcode'])->name('generate-barcode-image');
 

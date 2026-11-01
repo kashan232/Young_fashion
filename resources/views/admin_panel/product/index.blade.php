@@ -785,10 +785,7 @@
                                 </td>
                                 <td>
                                     <div class="action-group">
-                                        <button type="button" class="btn-act btn-act-view viewProductBtn"
-                                            data-id="{{ $product->id }}" title="View Details">
-                                            <i class="fas fa-eye"></i> View
-                                        </button>
+                                        <a href="{{ route('products.show', $product->id) }}" class="btn-act btn-act-view" title="View Details"><i class="fas fa-eye"></i> View</a>
                                         @if (auth()->user()->can('products.edit') || auth()->user()->email === 'admin@admin.com')
                                             <a href="{{ route('products.edit', $product->id) }}"
                                                 class="btn-act btn-act-edit" title="Edit Product">
@@ -888,9 +885,7 @@
                         </div>
                     </div>
                     <div class="prod-mcard-actions">
-                        <button type="button" class="btn-act btn-act-view viewProductBtn" data-id="{{ $product->id }}">
-                            <i class="fas fa-eye"></i> View
-                        </button>
+                        <a href="{{ route('products.show', $product->id) }}" class="btn-act btn-act-view" title="View Details"><i class="fas fa-eye"></i> View</a>
                         @if (auth()->user()->can('products.edit') || auth()->user()->email === 'admin@admin.com')
                             <a href="{{ route('products.edit', $product->id) }}" class="btn-act btn-act-edit">
                                 <i class="fas fa-pencil-alt"></i> Edit
@@ -959,9 +954,8 @@
                         <span class="text-muted d-block" style="font-size: 11px; text-transform: uppercase; font-weight: 600;">Overall Stock</span>
                         <span class="fw-bold fs-6 text-primary" id="view_header_stock">0 Pairs</span>
                     </div>
-                    <button type="button" class="btn-close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" style="background: none; border: none; font-size: 1.5rem; color: #64748b; cursor: pointer;">
-                        <i class="fas fa-times"></i>
-                    </button>
+                    <a href="#" id="view_modal_full_page_btn" class="btn btn-sm btn-outline-primary ms-2" target="_blank"><i class="fas fa-external-link-alt me-1"></i>Full Page</a>
+                    <button type="button" class="btn btn-sm btn-light border rounded-circle shadow-sm ms-2 d-flex align-items-center justify-content-center" data-dismiss="modal" data-bs-dismiss="modal" style="width: 36px; height: 36px; cursor: pointer;" aria-label="Close"><i class="fas fa-times text-secondary"></i></button>
                 </div>
             </div>
 
@@ -1277,6 +1271,7 @@ $(document).ready(function () {
 
                 // Header info
                 $('#view_item_name').text(product.item_name ?? 'Unknown');
+                $('#view_modal_full_page_btn').attr('href', '/products/' + product.id + '/view');
                 $('#view_product_code_badge').text('Code: ' + (product.item_code ?? '-'));
                 $('#view_item_subtext').html(`
                     <span class="badge bg-light text-dark border">Code: <strong>${product.item_code ?? '-'}</strong></span>

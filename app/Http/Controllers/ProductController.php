@@ -1869,6 +1869,54 @@ class ProductController extends Controller
     }
 
     // ===== Edit view =====
+        // ===== View / Show product page =====
+    public function show($id)
+    {
+        $response = $this->productview($id);
+        if ($response->status() !== 200) {
+            abort(404, 'Product not found');
+        }
+
+        $product = Product::with([
+            'category_relation',
+            'sub_category_relation',
+            'brand',
+            'unit',
+            'warehouseStocks',
+            'webImages',
+        ])->findOrFail($id);
+
+        $productData = json_decode($response->getContent(), true);
+        $variants = $productData['color'] ?? [];
+        $totalStock = $productData['calculated_total_stock_qty'] ?? 0;
+
+        // Group photos and normalize
+        $webImgs = $product->webImages ?? [];
+        $colorWebImgsMap = [];
+        foreach ($webImgs as $wi) {
+            $c = ($wi->color && $wi->color !== '-' && trim($wi->color) !== '') ? trim($wi->color) : 'General';
+            if (!isset($colorWebImgsMap[$c])) $colorWebImgsMap[$c] = [];
+            if ($wi->image_path && !in_array($wi->image_path, $colorWebImgsMap[$c])) {
+                $colorWebImgsMap[$c][] = $wi->image_path;
+            }
+        }
+
+        // Attach resolved photos to each variant
+        foreach ($variants as &$v) {
+            $vColor = ($v['color'] ?? false && $v['color'] !== '-' && trim($v['color']) !== '') ? trim($v['color']) : 'General';
+            $vPhotos = (isset($v['images']) && is_array($v['images'])) ? array_values(array_filter($v['images'])) : [];
+            if (empty($vPhotos) && !empty($colorWebImgsMap[$vColor])) {
+                $vPhotos = $colorWebImgsMap[$vColor];
+            }
+            if (empty($vPhotos) && $product->image) {
+                $vPhotos = [$product->image];
+            }
+            $v['resolved_photos'] = $vPhotos;
+        }
+        unset($v);
+
+        return view('admin_panel.product.show', compact('product', 'variants', 'totalStock', 'productData', 'colorWebImgsMap'));
+    }
     public function edit($id)
     {
         $product = Product::with('category_relation', 'sub_category_relation', 'unit', 'brand', 'warehouseStocks', 'webImages')
