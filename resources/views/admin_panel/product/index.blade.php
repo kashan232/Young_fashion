@@ -562,9 +562,12 @@
                     <button type="button" class="btn-hdr btn-hdr-warning" id="openImportModalBtn">
                         <i class="fas fa-file-upload"></i> Import CSV
                     </button>
-                    <button type="button" class="btn-hdr btn-hdr-outline" id="applyDiscountBulkBtn" style="color: #4f46e5; border-color: #cbd5e1;" title="Apply discount to selected products">
-                        <i class="fas fa-tags"></i> Apply Discount
+                    <button type="button" class="btn-hdr btn-hdr-outline apply-discount-btn" style="background: #f5f3ff; color: #4f46e5; border: 1.5px solid #a5b4fc; font-weight: 700;" title="Apply discount to selected products">
+                        <i class="fas fa-tags text-indigo"></i> Apply Discount
                     </button>
+                    <a href="{{ route('discount.index') }}" class="btn-hdr btn-hdr-outline" title="Manage Discounts & Offers" style="color: #059669; border-color: #a7f3d0; background: #ecfdf5;">
+                        <i class="fas fa-percentage"></i> Discounts List
+                    </a>
                     <a href="create_prodcut" class="btn-hdr btn-hdr-primary">
                         <i class="fas fa-plus"></i> Add Product
                     </a>
@@ -671,6 +674,26 @@
         </div>
         @endif
 
+
+        {{-- ── Bulk Actions & Discount Toolbar ── --}}
+        <div class="px-4 py-3 border-top border-bottom d-flex align-items-center justify-content-between flex-wrap gap-3" id="bulkActionsToolbar" style="background: linear-gradient(90deg, #f8fafc 0%, #eef2ff 100%);">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="badge rounded-pill bg-primary px-3 py-2 text-white fw-bold shadow-sm" id="selectedCountBadge" style="font-size: 13px; letter-spacing: 0.3px;">
+                    <i class="fas fa-check-square me-1"></i> <span id="selectedCountNum">0</span> Products Selected
+                </span>
+                <span class="text-muted small fw-medium">
+                    <i class="fas fa-info-circle text-primary me-1"></i> Check any product(s) in the list to apply discounts or offers
+                </span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-primary fw-bold px-3 py-2 shadow-sm apply-discount-btn" style="background: #4f46e5; border-color: #4f46e5; border-radius: 8px; font-size: 13px;">
+                    <i class="fas fa-tags me-1 text-warning"></i> Apply Discount to Selected
+                </button>
+                <a href="{{ route('discount.index') }}" class="btn btn-outline-secondary fw-semibold px-3 py-2 shadow-sm" style="border-radius: 8px; background: #fff; font-size: 13px;">
+                    <i class="fas fa-list-ul me-1"></i> View Active Discounts
+                </a>
+            </div>
+        </div>
 
         {{-- ── Table ── --}}
         <div class="erp-table-wrap table-responsive">
@@ -789,6 +812,7 @@
                                 <td>
                                     <div class="action-group">
                                         <a href="{{ route('products.show', $product->id) }}" class="btn-act btn-act-view" title="View Details"><i class="fas fa-eye"></i> View</a>
+                                        <a href="{{ route('discount.create') }}?products={{ $product->id }}" class="btn-act" style="color: #4f46e5; border-color: #c7d2fe; background: #eef2ff; font-weight: 600;" title="Apply Discount to this product"><i class="fas fa-tags text-indigo"></i> Discount</a>
                                         @if (auth()->user()->can('products.edit') || auth()->user()->email === 'admin@admin.com')
                                             <a href="{{ route('products.edit', $product->id) }}"
                                                 class="btn-act btn-act-edit" title="Edit Product">
@@ -889,6 +913,7 @@
                     </div>
                     <div class="prod-mcard-actions">
                         <a href="{{ route('products.show', $product->id) }}" class="btn-act btn-act-view" title="View Details"><i class="fas fa-eye"></i> View</a>
+                                        <a href="{{ route('discount.create') }}?products={{ $product->id }}" class="btn-act" style="color: #4f46e5; border-color: #c7d2fe; background: #eef2ff; font-weight: 600;" title="Apply Discount to this product"><i class="fas fa-tags text-indigo"></i> Discount</a>
                         @if (auth()->user()->can('products.edit') || auth()->user()->email === 'admin@admin.com')
                             <a href="{{ route('products.edit', $product->id) }}" class="btn-act btn-act-edit">
                                 <i class="fas fa-pencil-alt"></i> Edit
@@ -1163,30 +1188,8 @@
 $(document).ready(function () {
 
     // ── Open Import Modal ──
-        // Bulk apply discount button
-    $('#applyDiscountBulkBtn').on('click', function() {
-        let selected = [];
-        $('.selectProduct:checked').each(function() {
-            selected.push($(this).val());
-        });
-        if (selected.length === 0) {
-            Swal.fire({
-                title: 'No Products Selected',
-                text: 'Please select one or more products using the checkboxes first, then click Apply Discount.',
-                icon: 'warning',
-                confirmButtonColor: '#4f46e5'
-            });
-            return;
-        }
-        window.location.href = '/discount/create?products=' + selected.join(',');
-    });
     $('#openImportModalBtn').on('click', function () {
         $('#importModal').modal('show');
-    });
-
-    // ── Select All ──
-    $('#selectAll').click(function() {
-        $('.selectProduct').prop('checked', this.checked);
     });
 
     // ── DataTable init ── (responsive:false – we use CSS horizontal scroll instead)
@@ -1201,9 +1204,46 @@ $(document).ready(function () {
         columnDefs: [{ targets: [0, 8], orderable: false, searchable: false }]
     });   // DataTable closes here
 
+    // ── Update Selected Count Badge ──
+    function updateSelectedProductCount() {
+        let count = $('.selectProduct:checked').length;
+        $('#selectedCountNum').text(count);
+        if (count > 0) {
+            $('#selectedCountBadge').removeClass('bg-secondary').addClass('bg-primary');
+            $('.apply-discount-btn').addClass('shadow');
+        } else {
+            $('#selectedCountBadge').removeClass('bg-primary').addClass('bg-secondary');
+            $('.apply-discount-btn').removeClass('shadow');
+        }
+    }
+
+    $(document).on('change', '.selectProduct', function() {
+        updateSelectedProductCount();
+    });
+
     // ── Select All ──
     $('#selectAll').click(function() {
         $('.selectProduct').prop('checked', this.checked);
+        updateSelectedProductCount();
+    });
+
+    // ── Bulk apply discount button ──
+    $(document).on('click', '.apply-discount-btn, #applyDiscountBulkBtn', function() {
+        let selected = [];
+        $('.selectProduct:checked').each(function() {
+            selected.push($(this).val());
+        });
+        if (selected.length === 0) {
+            Swal.fire({
+                title: 'No Products Selected',
+                text: 'Pehle kisi product ke checkbox (☑) par tick lagayein, phir Apply Discount par click karein.',
+                icon: 'info',
+                confirmButtonColor: '#4f46e5',
+                confirmButtonText: 'Theek Hai'
+            });
+            return;
+        }
+        window.location.href = '/discount/create?products=' + selected.join(',');
     });
 
             // Helper to format image URLs
