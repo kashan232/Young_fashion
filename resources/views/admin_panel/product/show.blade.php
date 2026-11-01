@@ -170,6 +170,9 @@
                     <a href="{{ route('product') }}" class="btn btn-outline-secondary btn-action-hdr">
                         <i class="fas fa-list"></i> Product Catalog
                     </a>
+                    <a href="{{ route('discount.create') }}?products={{ $product->id }}" class="btn btn-outline-primary btn-action-hdr" style="color: #4f46e5; border-color: #c7d2fe; background: #f5f3ff;" title="Apply discount to this article and variants">
+                        <i class="fas fa-tags"></i> Apply Discount
+                    </a>
                     <a href="{{ route('generate-barcode-image', $product->id) }}" class="btn btn-outline-dark btn-action-hdr">
                         <i class="fas fa-barcode"></i> Print Barcode
                     </a>
@@ -241,7 +244,7 @@
                                     <div class="field-box" style="background: #f0fdf4; border-color: #bbf7d0 !important;">
                                         <div class="field-label" style="color: #166534 !important;">Overall Inventory Stock</div>
                                         <div class="field-value fs-5" style="color: #15803d !important;">
-                                            {{ $totalStock }} Pairs Available
+                                            {{ $totalStock ?? $stockDisplay ?? 0 }} Pairs Available
                                         </div>
                                     </div>
                                 </div>
@@ -273,7 +276,7 @@
                             <i class="fas fa-boxes text-primary me-2"></i>Product Variants &amp; Units
                         </span>
                         <span class="badge bg-primary text-white px-3 py-1 fs-6 ms-2">
-                            Overall Stock: {{ $totalStock }}
+                            Overall Stock: {{ $totalStock ?? $stockDisplay ?? 0 }}
                         </span>
                     </div>
 

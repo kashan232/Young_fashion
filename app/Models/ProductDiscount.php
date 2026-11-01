@@ -10,7 +10,19 @@ class ProductDiscount extends Model
     use HasFactory;
 
     protected $fillable = [
-        'product_id', 'actual_price', 'discount_percentage', 'discount_amount', 'final_price', 'status'
+        'product_id',
+        'variant_row_id',
+        'variant_name',
+        'variant_size',
+        'variant_color',
+        'variant_barcode',
+        'actual_price',
+        'discount_percentage',
+        'discount_amount',
+        'total_discount',
+        'final_price',
+        'date',
+        'status'
     ];
 
     public function product()

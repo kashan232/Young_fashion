@@ -26,14 +26,39 @@ class Product extends Model
 
     // app/Models/Product.php
 
-        public function getPriceAttribute()
+    public function getPriceAttribute()
     {
         return (float) ($this->sale_price_per_piece ?: $this->sale_price_per_box ?: 0);
     }
+
+    public function discounts()
+    {
+        return $this->hasMany(ProductDiscount::class, 'product_id');
+    }
+
+    public function activeDiscounts()
+    {
+        return $this->hasMany(ProductDiscount::class, 'product_id')->where('status', 1);
+    }
+
     public function activeDiscount()
     {
         return $this->hasOne(ProductDiscount::class, 'product_id')
             ->where('status', 1); // only active discount
+    }
+
+    public function getParsedVariantsAttribute()
+    {
+        if (empty($this->color)) {
+            return [];
+        }
+        try {
+            $parsed = is_string($this->color) ? json_decode($this->color, true) : $this->color;
+            if (is_array($parsed) && count($parsed) > 0 && isset($parsed[0]['name'])) {
+                return $parsed;
+            }
+        } catch (\Exception $e) {}
+        return [];
     }
 
     public function category_relation()

@@ -299,6 +299,23 @@ class SaleController extends Controller
             $variantJson = json_encode($computedV);
             $variantData = base64_encode($variantJson);
 
+            // Active Discount lookup for variant
+            $vRowId = $computedV['row_id'] ?? null;
+            $vBarcode = $computedV['barcode'] ?? $barcode;
+            $activeDiscount = \App\Models\ProductDiscount::where('product_id', $matchedProduct->id)
+                ->where('status', 1)
+                ->where(function ($q) use ($vRowId, $vBarcode) {
+                    if ($vRowId) $q->orWhere('variant_row_id', $vRowId);
+                    if ($vBarcode) $q->orWhere('variant_barcode', $vBarcode);
+                    $q->orWhereNull('variant_row_id');
+                })
+                ->orderByRaw('CASE WHEN variant_row_id IS NOT NULL THEN 0 ELSE 1 END')
+                ->first();
+
+            $baseRetailPrice = (float)($computedV['sale_price'] ?? ($matchedProduct->sale_price_per_piece ?? 0));
+            $finalRetailPrice = $activeDiscount ? (float)$activeDiscount->final_price : $baseRetailPrice;
+            $itemDiscountAmt = $activeDiscount ? (float)$activeDiscount->total_discount : 0;
+
             return response()->json([
                 'success' => true,
                 'is_variant' => true,
@@ -314,7 +331,10 @@ class SaleController extends Controller
                 'pieces_per_box' => $ppb,
                 'ppb' => $ppb,
                 'trade_price' => (float)($computedV['purch_price'] ?? ($matchedProduct->purchase_price_per_piece ?? 0)),
-                'retail_price' => (float)($computedV['sale_price'] ?? ($matchedProduct->sale_price_per_piece ?? 0)),
+                'retail_price' => $finalRetailPrice,
+                'original_price' => $baseRetailPrice,
+                'discount_amount' => $itemDiscountAmt,
+                'has_discount' => $activeDiscount ? true : false,
                 'wholesale_price' => (float)($computedV['wholesale_price'] ?? ($matchedProduct->wholesale_price ?? 0)),
                 'weight_per_piece' => (float)($computedV['weight_per_piece'] ?? ($matchedProduct->weight_per_piece ?? 0)),
                 'height' => $matchedProduct->height ?? '-',
@@ -335,6 +355,15 @@ class SaleController extends Controller
             $stockDisplay = $loose > 0 ? "$boxes.$loose" : (string)$boxes;
         }
 
+        $activeDiscount = \App\Models\ProductDiscount::where('product_id', $matchedProduct->id)
+            ->where('status', 1)
+            ->whereNull('variant_row_id')
+            ->first();
+
+        $baseRetailPrice = (float)($matchedProduct->sale_price_per_piece ?? 0);
+        $finalRetailPrice = $activeDiscount ? (float)$activeDiscount->final_price : $baseRetailPrice;
+        $itemDiscountAmt = $activeDiscount ? (float)$activeDiscount->total_discount : 0;
+
         return response()->json([
             'success' => true,
             'is_variant' => false,
@@ -350,7 +379,10 @@ class SaleController extends Controller
             'pieces_per_box' => $ppb,
             'ppb' => $ppb,
             'trade_price' => (float)($matchedProduct->purchase_price_per_piece ?? 0),
-            'retail_price' => (float)($matchedProduct->sale_price_per_piece ?? 0),
+            'retail_price' => $finalRetailPrice,
+            'original_price' => $baseRetailPrice,
+            'discount_amount' => $itemDiscountAmt,
+            'has_discount' => $activeDiscount ? true : false,
             'wholesale_price' => (float)($matchedProduct->wholesale_price ?? 0),
             'weight_per_piece' => (float)($matchedProduct->weight_per_piece ?? 0),
             'height' => $matchedProduct->height ?? '-',

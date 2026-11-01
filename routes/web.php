@@ -198,6 +198,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/store', [DiscountController::class, 'store'])->middleware('permission:discount.products.create')->name('discount.store');
         Route::post('/toggle-status/{id}', [DiscountController::class, 'toggleStatus'])->middleware('permission:discount.products.edit')->name('discount.toggleStatus');
         Route::get('/barcode/{id}', [DiscountController::class, 'barcode'])->middleware('permission:discount.products.view')->name('discount.barcode');
+        Route::delete('/destroy/{id}', [DiscountController::class, 'destroy'])->name('discount.destroy');
     });
 
     // routes/web.php

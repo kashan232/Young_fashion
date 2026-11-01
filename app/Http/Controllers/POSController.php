@@ -16,7 +16,7 @@ class POSController extends Controller
     public function index(Request $request = null)
     {
         // 1. Fetch all active products
-        $products = Product::where('is_active', true)->with('warehouseStocks')->get();
+        $products = Product::where('is_active', true)->with(['warehouseStocks', 'activeDiscounts'])->get();
 
         $posProducts = [];
         foreach ($products as $p) {
@@ -194,12 +194,31 @@ class POSController extends Controller
                     $v['current_stock'] = $vStockDisplay;
                     $variantJson = json_encode($v);
 
+                    // Check active variant discount
+                    $vRowId = $v['row_id'] ?? null;
+                    $vBarcode = $v['barcode'] ?? null;
+                    $vDiscount = $p->activeDiscounts->first(function($d) use ($vRowId, $vBarcode) {
+                        if ($vRowId && $d->variant_row_id === $vRowId) return true;
+                        if ($vBarcode && $d->variant_barcode === $vBarcode) return true;
+                        return false;
+                    });
+                    if (!$vDiscount) {
+                        $vDiscount = $p->activeDiscounts->firstWhere('variant_row_id', null);
+                    }
+
+                    $vOriginalPrice = (float) ($v['sale_price'] ?? $p->sale_price_per_piece ?? 0);
+                    $vFinalPrice = $vDiscount ? (float) $vDiscount->final_price : $vOriginalPrice;
+                    $vDiscountAmt = $vDiscount ? (float) $vDiscount->total_discount : 0;
+
                     $variantItems[] = [
                         'id' => $p->id . '|variant|' . base64_encode($variantJson),
                         'name' => $vName,
                         'size_val' => $v['size'] ?? '-',
                         'color_val' => $v['color'] ?? '-',
-                        'price' => $v['sale_price'] ?? $p->sale_price_per_piece ?? 0,
+                        'price' => $vFinalPrice,
+                        'original_price' => $vOriginalPrice,
+                        'discount_amount' => $vDiscountAmt,
+                        'has_discount' => $vDiscount ? true : false,
                         'wholesale_price' => $v['wholesale_price'] ?? $p->wholesale_price ?? 0,
                         'weight_per_piece' => $v['weight_per_piece'] ?? $p->weight_per_piece ?? 0,
                         'stock_pieces' => $vBalance,
@@ -215,6 +234,11 @@ class POSController extends Controller
                     $totalStockDisplay = $loose > 0 ? "$boxes.$loose" : $boxes;
                 }
 
+                $pDiscount = $p->activeDiscounts->firstWhere('variant_row_id', null);
+                $pOriginalPrice = (float) ($p->sale_price_per_piece ?? 0);
+                $pFinalPrice = $pDiscount ? (float) $pDiscount->final_price : $pOriginalPrice;
+                $pDiscountAmt = $pDiscount ? (float) $pDiscount->total_discount : 0;
+
                 $posProducts[] = [
                     'id' => $p->id,
                     'name' => $p->item_name,
@@ -223,7 +247,10 @@ class POSController extends Controller
                     'stock_pieces' => $totalStockPieces,
                     'size_mode' => $p->size_mode,
                     'pieces_per_box' => $ppb,
-                    'price' => $p->sale_price_per_piece ?? 0,
+                    'price' => $pFinalPrice,
+                    'original_price' => $pOriginalPrice,
+                    'discount_amount' => $pDiscountAmt,
+                    'has_discount' => $pDiscount ? true : false,
                     'wholesale_price' => $p->wholesale_price ?? 0,
                     'weight_per_piece' => $p->weight_per_piece ?? 0,
                     'image' => $p->image ? asset('uploads/products/'.$p->image) : null,
@@ -239,6 +266,11 @@ class POSController extends Controller
                     $stockDisplay = $loose > 0 ? "$boxes.$loose" : $boxes;
                 }
 
+                $pDiscount = $p->activeDiscounts->firstWhere('variant_row_id', null);
+                $pOriginalPrice = (float) ($p->sale_price_per_piece ?? 0);
+                $pFinalPrice = $pDiscount ? (float) $pDiscount->final_price : $pOriginalPrice;
+                $pDiscountAmt = $pDiscount ? (float) $pDiscount->total_discount : 0;
+
                 $posProducts[] = [
                     'id' => $p->id,
                     'name' => $p->item_name,
@@ -247,7 +279,10 @@ class POSController extends Controller
                     'stock_pieces' => $stockPieces,
                     'size_mode' => $p->size_mode,
                     'pieces_per_box' => $ppb,
-                    'price' => $p->sale_price_per_piece ?? 0,
+                    'price' => $pFinalPrice,
+                    'original_price' => $pOriginalPrice,
+                    'discount_amount' => $pDiscountAmt,
+                    'has_discount' => $pDiscount ? true : false,
                     'wholesale_price' => $p->wholesale_price ?? 0,
                     'weight_per_piece' => $p->weight_per_piece ?? 0,
                     'image' => $p->image ? asset('uploads/products/'.$p->image) : null,
