@@ -193,8 +193,9 @@
     .erp-table-wrap { padding: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     #productTable {
         width: 100% !important;
+        min-width: 1050px !important;
         border-collapse: collapse !important;
-        font-size: .82rem;
+        font-size: .84rem;
     }
     #productTable thead th {
         background: #f8fafc !important;
@@ -219,7 +220,7 @@
         vertical-align: middle;
         white-space: nowrap;
     }
-    #productTable tbody td.td-item-details { white-space: normal; min-width: 180px; max-width: 260px; }
+    #productTable tbody td.td-item-details { white-space: normal; min-width: 220px; }
     #productTable tbody tr { transition: background .12s ease; }
     #productTable tbody tr:hover { background: #f8fafc !important; }
     #productTable tbody tr.row-inactive { opacity: .6; background: #fafafa; }
@@ -310,7 +311,7 @@
 
     /* ── Actions column – force min-width so buttons never wrap ── */
     #productTable th:last-child,
-    #productTable td:last-child { min-width: 190px; }
+    #productTable td:last-child { min-width: 200px; text-align: center; }
 
     /* ── Select checkbox ── */
     input[type="checkbox"].row-check { width: 16px; height: 16px; accent-color: var(--erp-primary); cursor: pointer; }
@@ -676,7 +677,7 @@
 
 
         {{-- ── Bulk Actions & Discount Toolbar ── --}}
-        <div class="px-4 py-3 border-top border-bottom d-flex align-items-center justify-content-between flex-wrap gap-3" id="bulkActionsToolbar" style="background: linear-gradient(90deg, #f8fafc 0%, #eef2ff 100%);">
+        <div class="px-4 py-2 border-top border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2" id="bulkActionsToolbar" style="background: #ffffff;">
             <div class="d-flex align-items-center gap-2 flex-wrap">
                 <span class="badge rounded-pill bg-primary px-3 py-2 text-white fw-bold shadow-sm" id="selectedCountBadge" style="font-size: 13px; letter-spacing: 0.3px;">
                     <i class="fas fa-check-square me-1"></i> <span id="selectedCountNum">0</span> Products Selected
@@ -810,26 +811,15 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <div class="action-group">
-                                        <a href="{{ route('products.show', $product->id) }}" class="btn-act btn-act-view" title="View Details"><i class="fas fa-eye"></i> View</a>
-                                        <a href="{{ route('discount.create') }}?products={{ $product->id }}" class="btn-act" style="color: #4f46e5; border-color: #c7d2fe; background: #eef2ff; font-weight: 600;" title="Apply Discount to this product"><i class="fas fa-tags text-indigo"></i> Discount</a>
+                                    <div class="action-group justify-content-center">
+                                        <a href="{{ route('products.show', $product->id) }}" class="btn-act btn-act-view" title="View Article & Variants"><i class="fas fa-eye"></i> View</a>
+                                        <a href="{{ route('discount.create') }}?products={{ $product->id }}" class="btn-act" style="color: #4f46e5; border-color: #c7d2fe; background: #f5f3ff;" title="Apply Discount"><i class="fas fa-tags"></i></a>
                                         @if (auth()->user()->can('products.edit') || auth()->user()->email === 'admin@admin.com')
-                                            <a href="{{ route('products.edit', $product->id) }}"
-                                                class="btn-act btn-act-edit" title="Edit Product">
-                                                <i class="fas fa-pencil-alt"></i> Edit
-                                            </a>
+                                            <a href="{{ route('products.edit', $product->id) }}" class="btn-act btn-act-edit" title="Edit Product"><i class="fas fa-pencil-alt"></i></a>
                                         @endif
-                                        <a href="{{ route('generate-barcode-image', $product->id) }}"
-                                            class="btn-act btn-act-barcode" title="Generate Barcode">
-                                            <i class="fas fa-barcode"></i>
-                                        </a>
+                                        <a href="{{ route('generate-barcode-image', $product->id) }}" class="btn-act btn-act-barcode" title="Print Barcode"><i class="fas fa-barcode"></i></a>
                                         @if (auth()->user()->can('products.edit') || auth()->user()->email === 'admin@admin.com')
-                                            <button type="button"
-                                                class="btn-act {{ $product->is_active ? 'btn-act-deact' : 'btn-act-act' }} toggle-active-btn"
-                                                data-id="{{ $product->id }}"
-                                                data-active="{{ $product->is_active ? '1' : '0' }}"
-                                                data-name="{{ $product->item_name }}"
-                                                title="{{ $product->is_active ? 'Deactivate' : 'Activate' }}">
+                                            <button type="button" class="btn-act {{ $product->is_active ? 'btn-act-deact' : 'btn-act-act' }} toggle-active-btn" data-id="{{ $product->id }}" data-active="{{ $product->is_active ? '1' : '0' }}" data-name="{{ $product->item_name }}" title="{{ $product->is_active ? 'Deactivate' : 'Activate' }}">
                                                 <i class="fas {{ $product->is_active ? 'fa-ban' : 'fa-check' }}"></i>
                                             </button>
                                         @endif
