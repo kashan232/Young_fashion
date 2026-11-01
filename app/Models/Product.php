@@ -26,6 +26,10 @@ class Product extends Model
 
     // app/Models/Product.php
 
+        public function getPriceAttribute()
+    {
+        return (float) ($this->sale_price_per_piece ?: $this->sale_price_per_box ?: 0);
+    }
     public function activeDiscount()
     {
         return $this->hasOne(ProductDiscount::class, 'product_id')

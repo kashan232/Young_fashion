@@ -562,6 +562,9 @@
                     <button type="button" class="btn-hdr btn-hdr-warning" id="openImportModalBtn">
                         <i class="fas fa-file-upload"></i> Import CSV
                     </button>
+                    <button type="button" class="btn-hdr btn-hdr-outline" id="applyDiscountBulkBtn" style="color: #4f46e5; border-color: #cbd5e1;" title="Apply discount to selected products">
+                        <i class="fas fa-tags"></i> Apply Discount
+                    </button>
                     <a href="create_prodcut" class="btn-hdr btn-hdr-primary">
                         <i class="fas fa-plus"></i> Add Product
                     </a>
@@ -1160,6 +1163,23 @@
 $(document).ready(function () {
 
     // ── Open Import Modal ──
+        // Bulk apply discount button
+    $('#applyDiscountBulkBtn').on('click', function() {
+        let selected = [];
+        $('.selectProduct:checked').each(function() {
+            selected.push($(this).val());
+        });
+        if (selected.length === 0) {
+            Swal.fire({
+                title: 'No Products Selected',
+                text: 'Please select one or more products using the checkboxes first, then click Apply Discount.',
+                icon: 'warning',
+                confirmButtonColor: '#4f46e5'
+            });
+            return;
+        }
+        window.location.href = '/discount/create?products=' + selected.join(',');
+    });
     $('#openImportModalBtn').on('click', function () {
         $('#importModal').modal('show');
     });

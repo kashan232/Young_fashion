@@ -8,9 +8,7 @@
                 <small class="text-muted">Manage all product discounts here</small>
             </div>
             @if(auth()->user()->can('Create Discount') || auth()->user()->email === 'admin@admin.com')
-                <a href="{{ route('product') }}" class="btn btn-success btn-sm fw-bold shadow-sm" style="border-radius: 6px;">
-                    <i class="fas fa-box-open me-1"></i> View Products
-                </a>
+                <a href="{{ route('product') }}" class="btn btn-outline-secondary btn-sm fw-bold shadow-sm me-2" style="border-radius: 6px;"><i class="fas fa-boxes me-1"></i> Select From Products</a><a href="{{ route('discount.create') }}" class="btn btn-primary btn-sm fw-bold shadow-sm" style="border-radius: 6px;"><i class="fas fa-plus me-1"></i> Create Discount</a>
             @endif
         </div>
 

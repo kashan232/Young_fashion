@@ -20,9 +20,16 @@ class DiscountController extends Controller
     // Show Create Discount Page
     public function create(Request $request)
     {
-        $productIds = $request->products ? explode(',', $request->products) : [];
-        $products = Product::with(['category_relation', 'sub_category_relation', 'unit', 'brand', 'stock'])
-            ->whereIn('id', $productIds)->get();
+        $productIds = $request->products ? array_filter(explode(',', $request->products)) : [];
+        if (empty($productIds)) {
+            $products = Product::with(['category_relation', 'sub_category_relation', 'unit', 'brand', 'stock'])
+                ->where('is_active', 1)
+                ->orderBy('item_name')
+                ->get();
+        } else {
+            $products = Product::with(['category_relation', 'sub_category_relation', 'unit', 'brand', 'stock'])
+                ->whereIn('id', $productIds)->get();
+        }
 
         return view('admin_panel.product.discount.discount_create', compact('products'));
     }
