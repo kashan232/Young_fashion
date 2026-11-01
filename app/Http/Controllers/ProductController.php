@@ -1908,6 +1908,7 @@ class ProductController extends Controller
             'unit',
             'warehouseStocks',
             'webImages',
+            'activeDiscounts',
         ])->findOrFail($id);
 
         $productData = json_decode($response->getContent(), true);
@@ -1936,6 +1937,19 @@ class ProductController extends Controller
                 $vPhotos = [$product->image];
             }
             $v['resolved_photos'] = $vPhotos;
+
+            // Check active discount for this variant
+            $vRowId = $v['row_id'] ?? null;
+            $vBarcode = $v['barcode'] ?? null;
+            $vDiscount = $product->activeDiscounts->first(function($d) use ($vRowId, $vBarcode) {
+                if ($vRowId && $d->variant_row_id === $vRowId) return true;
+                if ($vBarcode && $d->variant_barcode === $vBarcode) return true;
+                return false;
+            });
+            if (!$vDiscount) {
+                $vDiscount = $product->activeDiscounts->first(function($d) { return empty($d->variant_row_id) && empty($d->variant_barcode); });
+            }
+            $v['active_discount'] = $vDiscount;
         }
         unset($v);
 

@@ -117,6 +117,18 @@
         background: rgba(255,255,255,0.25) !important;
         color: #ffffff !important;
     }
+    .view-color-chip[data-color="discounted"].active {
+        background: #dc2626 !important;
+        color: #ffffff !important;
+        border-color: #dc2626 !important;
+        box-shadow: 0 4px 10px rgba(220, 38, 38, 0.25) !important;
+    }
+    .variant-data-row.variant-promo-active {
+        background-color: #fffdf5 !important;
+    }
+    .variant-data-row.variant-promo-active:hover {
+        background-color: #fef9e7 !important;
+    }
 
     .btn-action-hdr {
         display: inline-flex;
@@ -134,6 +146,12 @@
 <div class="main-content">
     <div class="main-content-inner">
         <div class="container-fluid px-4 py-4">
+            @php
+                $discountedVariants = collect($variants)->filter(function($item) {
+                    return !empty($item['active_discount']);
+                });
+                $discountCount = $discountedVariants->count();
+            @endphp
 
             {{-- ── Top Navigation & Action Header ── --}}
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
@@ -153,6 +171,11 @@
                                 <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">Active</span>
                             @else
                                 <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">Inactive</span>
+                            @endif
+                            @if($discountCount > 0)
+                                <span class="badge bg-danger text-white px-2 py-1 shadow-sm" style="font-size: 12px; font-weight: 600;">
+                                    <i class="fas fa-tag me-1"></i>On Discount ({{ $discountCount }} Variants)
+                                </span>
                             @endif
                         </div>
                         <div class="text-muted small mt-1">
@@ -268,6 +291,36 @@
                 </div>
             </div>
 
+            {{-- ── Promotional Discount Live Banner (If any variant is discounted) ── --}}
+            @if($discountCount > 0)
+                <div class="card border-0 mb-4 shadow-sm" style="background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%); border-left: 5px solid #4f46e5 !important; border-radius: 12px;">
+                    <div class="card-body p-3 d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-sm" style="width: 44px; height: 44px; font-size: 20px; background: #4f46e5;">
+                                <i class="fas fa-tags"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark fs-6 d-flex align-items-center gap-2">
+                                    Active Promotional Discount is Live!
+                                    <span class="badge bg-danger text-white px-2 py-0.5" style="font-size: 11px;">PROMO ACTIVE</span>
+                                </div>
+                                <div class="small text-muted mt-0.5">
+                                    <strong class="text-primary">{{ $discountCount }}</strong> of {{ count($variants) }} shoe variants currently have discounted customer sale prices.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary bg-white fw-bold px-3 py-1.5 filter-discount-trigger shadow-sm" style="border-radius: 8px;">
+                                <i class="fas fa-filter text-primary me-1"></i> Filter Discounted Variants ({{ $discountCount }})
+                            </button>
+                            <a href="{{ route('discount.create') }}?products={{ $product->id }}" class="btn btn-sm btn-primary fw-bold px-3 py-1.5 shadow-sm" style="background: #4f46e5; border-color: #4f46e5; border-radius: 8px;">
+                                <i class="fas fa-edit me-1"></i> Modify Discounts
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             {{-- ── 2. Product Variants & Units Card (Exact Match to Create Page) ── --}}
             <div class="view-card">
                 <div class="view-card-header flex-wrap gap-3">
@@ -290,6 +343,12 @@
                             <button type="button" class="view-color-chip active color-filter-btn" data-color="all">
                                 <span>All Variants</span> <span class="badge bg-light text-dark ms-1">{{ count($variants) }}</span>
                             </button>
+                            @if($discountCount > 0)
+                                <button type="button" class="view-color-chip color-filter-btn" data-color="discounted" style="border-color: #fca5a5; color: #dc2626; background: #fff1f2;">
+                                    <i class="fas fa-tag text-danger me-1"></i>
+                                    <span>On Discount</span> <span class="badge bg-danger text-white ms-1">{{ $discountCount }}</span>
+                                </button>
+                            @endif
                             @php
                                 $colorCounts = [];
                                 foreach ($variants as $v) {
@@ -319,7 +378,7 @@
                                 <th class="py-3 text-center" style="width: 160px; min-width: 140px;"><i class="fas fa-camera text-primary me-1"></i>Photos</th>
                                 <th class="py-3 text-center" style="width: 80px;">Unit</th>
                                 <th class="py-3 text-center" style="width: 140px;">Available Stock</th>
-                                <th class="py-3 text-end" style="width: 120px;">Sale Price</th>
+                                <th class="py-3 text-end" style="min-width: 165px; width: 175px;">Sale / Offer Price</th>
                                 <th class="py-3 text-end" style="width: 120px;">Wholesale</th>
                                 <th class="py-3 text-end" style="width: 120px;">Purch Price</th>
                                 <th class="py-3 text-center" style="width: 80px;">Alert</th>
@@ -341,7 +400,7 @@
                                     $vBarcode = $v['barcode'] ?? '-';
                                     $vPhotos = $v['resolved_photos'] ?? [];
                                 @endphp
-                                <tr class="variant-data-row" data-color="{{ $vColor }}" data-search="{{ strtolower("$vName $vSize $vColor $vBarcode") }}">
+                                <tr class="variant-data-row {{ !empty($v['active_discount']) ? 'variant-promo-active' : '' }}" data-has-discount="{{ !empty($v['active_discount']) ? '1' : '0' }}" data-color="{{ $vColor }}" data-search="{{ strtolower("$vName $vSize $vColor $vBarcode") }}">
                                     <td class="ps-4 py-3 text-center text-muted fw-bold">{{ $idx + 1 }}</td>
                                     <td class="py-3 text-start fw-bold text-dark">{{ $vName }}</td>
                                     <td class="py-3 text-center"><span class="badge bg-light text-dark border px-2 py-1 fs-6">{{ $vSize }}</span></td>
@@ -377,7 +436,38 @@
                                             <span class="badge bg-danger text-white px-2 py-1"><i class="fas fa-times-circle me-1"></i>Out of Stock</span>
                                         @endif
                                     </td>
-                                    <td class="py-3 text-end fw-bold text-success">Rs. {{ number_format($vSale) }}</td>
+                                    <td class="py-3 text-end" style="min-width: 155px;">
+                                        @if(!empty($v['active_discount']))
+                                            @php
+                                                $vDisc = $v['active_discount'];
+                                                $discPerc = floatval($vDisc->discount_percentage);
+                                                $totalOff = floatval($vDisc->total_discount);
+                                                $finalPrice = floatval($vDisc->final_price);
+                                                if ($finalPrice <= 0) {
+                                                    $finalPrice = max(0, $vSale - $totalOff);
+                                                }
+                                            @endphp
+                                            <div class="d-flex flex-column align-items-end">
+                                                <div class="d-flex align-items-center gap-1 mb-1">
+                                                    <span class="badge bg-danger text-white fw-bold px-1.5 py-0.5" style="font-size: 10px; letter-spacing: 0.3px;">
+                                                        <i class="fas fa-tag me-0.5"></i>{{ $discPerc > 0 ? rtrim(rtrim(number_format($discPerc, 2), '0'), '.') . '% Off' : 'Rs. ' . number_format($totalOff) . ' Off' }}
+                                                    </span>
+                                                    <span class="text-decoration-line-through text-muted small" style="font-size: 11px;">
+                                                        Rs. {{ number_format($vSale) }}
+                                                    </span>
+                                                </div>
+                                                <div class="fw-bold text-success fs-6" style="line-height: 1.1;">
+                                                    Rs. {{ number_format($finalPrice) }}
+                                                </div>
+                                                <div class="text-danger fw-semibold mt-0.5" style="font-size: 10.5px;">
+                                                    Save Rs. {{ number_format($totalOff) }}
+                                                </div>
+                                            </div>
+                                        @else
+                                            <div class="fw-bold text-dark fs-6" style="line-height: 1.1;">Rs. {{ number_format($vSale) }}</div>
+                                            <span class="badge bg-light text-muted border mt-1" style="font-size: 10px; font-weight: 500;">Regular Price</span>
+                                        @endif
+                                    </td>
                                     <td class="py-3 text-end text-dark">Rs. {{ number_format($vWholesale) }}</td>
                                     <td class="py-3 text-end text-muted">Rs. {{ number_format($vPurch) }}</td>
                                     <td class="py-3 text-center text-muted">{{ $vAlert }}</td>
@@ -548,7 +638,16 @@ $(document).ready(function() {
             const rowColor = $(this).data('color');
             const searchData = $(this).data('search') || '';
 
-            let matchesColor = (activeColor === 'all' || rowColor === activeColor);
+            const hasDiscount = $(this).data('has-discount') == 1;
+
+            let matchesColor = false;
+            if (activeColor === 'all') {
+                matchesColor = true;
+            } else if (activeColor === 'discounted') {
+                matchesColor = hasDiscount;
+            } else {
+                matchesColor = (rowColor === activeColor);
+            }
             let matchesSearch = (search === '' || searchData.includes(search));
 
             if (matchesColor && matchesSearch) {
@@ -567,6 +666,13 @@ $(document).ready(function() {
         $(this).addClass('active');
         activeColor = $(this).data('color');
         filterTable();
+    });
+
+    $('.filter-discount-trigger').on('click', function() {
+        $('.color-filter-btn[data-color="discounted"]').click();
+        $('html, body').animate({
+            scrollTop: $("#showVariantsTable").offset().top - 120
+        }, 300);
     });
 
     $('#variantSearchInput').on('input', function() {
