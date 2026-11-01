@@ -64,8 +64,20 @@ class DiscountController extends Controller
             $status             = (int) ($request->status[$key] ?? 1);
             $date               = $request->date[$key] ?? now()->toDateString();
 
-            $percDiscount  = round($actualPrice * $discountPercentage / 100, 2);
-            $totalDiscount = round($percDiscount + $discountAmount, 2);
+            // Correct Discount Calculation:
+            // Discount % and PKR are alternate/synchronized representations of the SAME discount.
+            // NEVER add % discount and PKR discount together.
+            if ($discountPercentage > 0) {
+                $totalDiscount = round($actualPrice * $discountPercentage / 100, 2);
+                $discountAmount = $totalDiscount;
+            } elseif ($discountAmount > 0) {
+                $totalDiscount = min($actualPrice, $discountAmount);
+                $discountPercentage = $actualPrice > 0 ? round(($totalDiscount / $actualPrice) * 100, 2) : 0;
+            } else {
+                $totalDiscount = 0;
+                $discountAmount = 0;
+                $discountPercentage = 0;
+            }
 
             if ($totalDiscount > $actualPrice && $actualPrice > 0) {
                 $displayName = $variantName ? "{$product->item_name} [{$variantName}]" : $product->item_name;

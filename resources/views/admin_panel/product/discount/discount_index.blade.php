@@ -146,10 +146,13 @@
                                 {{-- Discount Column --}}
                                 <td>
                                     @if($discount->discount_percentage > 0)
-                                        <span class="badge bg-info text-dark fw-bold">{{ $discount->discount_percentage }}% Off</span>
-                                    @endif
-                                    @if($discount->discount_amount > 0)
-                                        <span class="badge bg-warning text-dark fw-bold">- Rs. {{ number_format($discount->discount_amount, 2) }}</span>
+                                        <span class="badge text-white fw-bold px-2 py-1" style="background: #4f46e5; font-size: 12px;">
+                                            {{ floatval($discount->discount_percentage) }}% Off
+                                        </span>
+                                    @elseif($discount->discount_amount > 0)
+                                        <span class="badge bg-warning text-dark fw-bold px-2 py-1" style="font-size: 12px;">
+                                            Flat Rs. {{ number_format($discount->discount_amount, 2) }} Off
+                                        </span>
                                     @endif
                                     <div class="small text-danger fw-bold mt-1">
                                         Save: Rs. {{ number_format($discount->total_discount, 2) }}

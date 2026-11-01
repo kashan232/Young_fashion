@@ -370,8 +370,16 @@
 
                                                     $initPerc = old('discount_percentage.'.$rowGlobalIdx, $existingDiscount->discount_percentage ?? 0);
                                                     $initAmt = old('discount_amount.'.$rowGlobalIdx, $existingDiscount->discount_amount ?? 0);
-                                                    $initTotal = old('total_discount.'.$rowGlobalIdx, $existingDiscount->total_discount ?? 0);
-                                                    $initFinal = old('final_price.'.$rowGlobalIdx, $existingDiscount->final_price ?? $vPrice);
+                                                    if ($initPerc > 0) {
+                                                        $initTotal = round($vPrice * $initPerc / 100, 2);
+                                                        $initAmt = $initTotal;
+                                                    } elseif ($initAmt > 0) {
+                                                        $initTotal = min($vPrice, $initAmt);
+                                                        $initPerc = $vPrice > 0 ? round(($initTotal / $vPrice) * 100, 2) : 0;
+                                                    } else {
+                                                        $initTotal = 0;
+                                                    }
+                                                    $initFinal = max(0, $vPrice - $initTotal);
                                                     $initDate = old('date.'.$rowGlobalIdx, $existingDiscount ? \Carbon\Carbon::parse($existingDiscount->date)->format('Y-m-d') : now()->toDateString());
                                                     $initStatus = old('status.'.$rowGlobalIdx, $existingDiscount->status ?? 1);
                                                 @endphp
@@ -493,8 +501,16 @@
                                                 $existingDiscount = $productDiscounts->firstWhere('variant_row_id', null);
                                                 $initPerc = old('discount_percentage.'.$rowGlobalIdx, $existingDiscount->discount_percentage ?? 0);
                                                 $initAmt = old('discount_amount.'.$rowGlobalIdx, $existingDiscount->discount_amount ?? 0);
-                                                $initTotal = old('total_discount.'.$rowGlobalIdx, $existingDiscount->total_discount ?? 0);
-                                                $initFinal = old('final_price.'.$rowGlobalIdx, $existingDiscount->final_price ?? $productPrice);
+                                                if ($initPerc > 0) {
+                                                    $initTotal = round($productPrice * $initPerc / 100, 2);
+                                                    $initAmt = $initTotal;
+                                                } elseif ($initAmt > 0) {
+                                                    $initTotal = min($productPrice, $initAmt);
+                                                    $initPerc = $productPrice > 0 ? round(($initTotal / $productPrice) * 100, 2) : 0;
+                                                } else {
+                                                    $initTotal = 0;
+                                                }
+                                                $initFinal = max(0, $productPrice - $initTotal);
                                                 $initDate = old('date.'.$rowGlobalIdx, $existingDiscount ? \Carbon\Carbon::parse($existingDiscount->date)->format('Y-m-d') : now()->toDateString());
                                                 $initStatus = old('status.'.$rowGlobalIdx, $existingDiscount->status ?? 1);
                                             @endphp
