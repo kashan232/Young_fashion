@@ -1540,9 +1540,33 @@ class ProductController extends Controller
                 $vColor = trim((string)($variants[$i]['color'] ?? 'General'));
                 if ($vColor === '-' || empty($vColor)) $vColor = 'General';
                 
-                // Keep existing images if any
-                $existingImages = $variants[$i]['images'] ?? [];
+                // Keep existing images from request or database
+                $existingImages = $request->input("variant_existing_images.{$vid}", []);
+                if (!is_array($existingImages) || empty($existingImages)) {
+                    $existingImages = $request->input("variant_existing_images.{$i}", []);
+                }
                 if (!is_array($existingImages)) $existingImages = [];
+
+                // Fallback to existing variant images from DB if empty
+                if (empty($existingImages)) {
+                    $currentDbProduct = Product::find($id);
+                    if ($currentDbProduct && $currentDbProduct->color) {
+                        $oldVarList = is_string($currentDbProduct->color) ? json_decode($currentDbProduct->color, true) : $currentDbProduct->color;
+                        if (is_array($oldVarList)) {
+                            foreach ($oldVarList as $oldV) {
+                                $match = false;
+                                if (!empty($oldV['row_id']) && $oldV['row_id'] === $vid) $match = true;
+                                elseif (!empty($oldV['name']) && $oldV['name'] === $variants[$i]['name'] && ($oldV['size'] ?? '') === ($variants[$i]['size'] ?? '')) $match = true;
+                                elseif ($i < count($oldVarList) && empty($oldV['row_id']) && $oldV['name'] === $variants[$i]['name']) $match = true;
+
+                                if ($match && !empty($oldV['images']) && is_array($oldV['images'])) {
+                                    $existingImages = $oldV['images'];
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
 
                 if ($request->hasFile("variant_photos.{$vid}")) {
                     $files = $request->file("variant_photos.{$vid}");

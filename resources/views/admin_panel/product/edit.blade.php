@@ -679,6 +679,13 @@
 @section('js')
     <script>
         let variantMode = 'standard';
+        function formatShoeImgUrl(img) {
+            if (!img) return '';
+            if (img.startsWith('http://') || img.startsWith('https://')) return img;
+            if (img.startsWith('/')) return img;
+            if (img.startsWith('uploads/')) return '/' + img;
+            return '/uploads/products/' + img;
+        }
         const availableSizes = @json($sizes ?? []);
         document.addEventListener('DOMContentLoaded', function() {
             // --- UI Elements ---
@@ -1062,7 +1069,7 @@
                 const productName = productNameInput.value || '';
                 const baseUnitName = unitDropdown ? unitDropdown.options[unitDropdown.selectedIndex].text : 'Kg';
                 const isCartonMode = unitDropdown && unitDropdown.value === 'by_cartons';
-                const vid = 'base_' + Date.now();
+                const vid = (v && v.row_id) ? v.row_id : ('base_' + Date.now());
                 
                 const nameVal = v ? (v.name || productName) : productName;
                 const sizeVal = v ? (v.size || '') : '';
@@ -1152,7 +1159,7 @@
                     </td>
                 `;
                 variantsBody.appendChild(tr);
-                wireVariantRowPhotos(tr, vid, (v && Array.isArray(v.images)) ? v.images.map(i => `/uploads/products/${i}`) : []);
+                wireVariantRowPhotos(tr, vid, (v && Array.isArray(v.images)) ? v.images.map(formatShoeImgUrl) : []);
 
                 const baseSaleInp = tr.querySelector('.base-sale-input');
                 const basePurchInp = tr.querySelector('.base-purch-input');
@@ -1361,7 +1368,7 @@
                     </td>
                 `;
                 variantsBody.appendChild(tr);
-                wireVariantRowPhotos(tr, vid, (v && Array.isArray(v.images)) ? v.images.map(i => `/uploads/products/${i}`) : []);
+                wireVariantRowPhotos(tr, vid, (v && Array.isArray(v.images)) ? v.images.map(formatShoeImgUrl) : []);
 
                 const saleInput = tr.querySelector('.sale-price-input');
                 const purchInput = tr.querySelector('.purch-price-input');
@@ -1456,6 +1463,29 @@
                 }
             }    
 
+                        // Quick Shoe Size Chips handler
+            $(document).on('click', '.quick-size-chip', function(e) {
+                e.preventDefault();
+                const sizeVal = $(this).data('size');
+                let filled = false;
+                $('#variantsBody tr').each(function() {
+                    const sel = $(this).find('select[name="variant_size[]"]');
+                    if (sel.length && !sel.val()) {
+                        sel.val(sizeVal).trigger('change');
+                        filled = true;
+                        return false;
+                    }
+                });
+                if (!filled) {
+                    addVariantRow();
+                    const lastRow = $('#variantsBody tr:last-child');
+                    const sel = lastRow.find('select[name="variant_size[]"]');
+                    if (sel.length) {
+                        sel.val(sizeVal).trigger('change');
+                    }
+                }
+            });
+
             enableVariantsBtn.addEventListener('click', function() {
                 if (variantsBody.children.length === 0) {
                     addBaseVariantRow();
@@ -1479,6 +1509,8 @@
                 const newRow = variantsBody.lastElementChild;
                 
                 const sourceName = sourceRow.querySelector('input[name="variant_name[]"]')?.value || '';
+                const sourceColor = sourceRow.querySelector('input[name="variant_color[]"]')?.value || '';
+                const sourceSize = sourceRow.querySelector('select[name="variant_size[]"]')?.value || '';
                 const sourceUnit = sourceRow.querySelector('select[name="variant_unit[]"]')?.value || '';
                 const sourceConv = sourceRow.querySelector('input[name="variant_conv_factor[]"]')?.value || '';
                 const sourcePieceWt = sourceRow.querySelector('input[name="variant_weight_per_piece[]"]')?.value || '';
@@ -1489,6 +1521,8 @@
                 const sourceStock = sourceRow.querySelector('input[name="variant_stock[]"]')?.value || '0';
                 
                 if(newRow.querySelector('input[name="variant_name[]"]')) newRow.querySelector('input[name="variant_name[]"]').value = sourceName;
+                if(newRow.querySelector('input[name="variant_color[]"]')) newRow.querySelector('input[name="variant_color[]"]').value = sourceColor;
+                if(newRow.querySelector('select[name="variant_size[]"]')) newRow.querySelector('select[name="variant_size[]"]').value = sourceSize;
                 if(newRow.querySelector('select[name="variant_unit[]"]')) newRow.querySelector('select[name="variant_unit[]"]').value = sourceUnit;
                 if(newRow.querySelector('input[name="variant_conv_factor[]"]')) newRow.querySelector('input[name="variant_conv_factor[]"]').value = sourceConv;
                 if(newRow.querySelector('input[name="variant_weight_per_piece[]"]')) newRow.querySelector('input[name="variant_weight_per_piece[]"]').value = sourcePieceWt;
@@ -1583,7 +1617,7 @@
                     variantsContainer.classList.remove('d-none');
                     variantsBody.innerHTML = ''; // clear default empty row
                     
-                    parsed.forEach(v => {
+                    parsed.forEach((v, idx) => {
                         if (variantMode === 'weight') {
                             if (v.is_base_variant == 1) {
                                 addBaseVariantRow(v);
@@ -1591,7 +1625,11 @@
                                 addVariantRow(null, v);
                             }
                         } else {
-                            addVariantRow(null, v);
+                            if (idx === 0 || v.is_base_variant == 1) {
+                                addBaseVariantRow(v);
+                            } else {
+                                addVariantRow(null, v);
+                            }
                         }
                     });
                 }
