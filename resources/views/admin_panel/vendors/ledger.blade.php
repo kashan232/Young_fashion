@@ -15,20 +15,35 @@
     .vdetail-header {
         background: #ffffff;
         border: 1px solid #e2e8f0;
-        padding: 20px 24px;
+        padding: 22px 28px;
         border-radius: 16px;
-        margin-bottom: 20px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        margin-bottom: 24px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .vdetail-hdr-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 14px;
+        background: #eff6ff;
+        color: #4f46e5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.45rem;
+        flex-shrink: 0;
+        border: 1px solid #dbeafe;
+        box-shadow: 0 2px 6px rgba(79, 70, 229, 0.08);
     }
     .vdetail-title {
         font-weight: 800;
-        font-size: 1.35rem;
+        font-size: 1.45rem;
         color: #0f172a;
-        margin-bottom: 2px;
+        margin-bottom: 3px;
         letter-spacing: -0.02em;
+        line-height: 1.2;
     }
     .vdetail-sub {
-        font-size: 0.82rem;
+        font-size: 0.85rem;
         color: #64748b;
     }
 
@@ -259,13 +274,18 @@
     }
 </style>
 
-<div class="vdetail-page container-fluid px-3 px-md-4 pt-3">
+<div class="vdetail-page container-fluid px-3 px-md-4 py-4">
     
     {{-- Header Row --}}
     <div class="vdetail-header d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-        <div>
-            <h3 class="vdetail-title"><i class="fas fa-receipt text-primary me-2"></i>Vendor Ledger Details</h3>
-            <div class="vdetail-sub">Transaction history for <span class="fw-bold text-primary">{{ $vendor->name }}</span></div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="vdetail-hdr-icon">
+                <i class="fas fa-receipt"></i>
+            </div>
+            <div>
+                <h3 class="vdetail-title">Vendor Ledger Details</h3>
+                <div class="vdetail-sub">Transaction history for <span class="fw-bold text-primary">{{ $vendor->name }}</span></div>
+            </div>
         </div>
         <div>
             <a href="{{ route('vendors-ledger') }}" class="btn-vdetail-back">

@@ -15,20 +15,35 @@
     .vledger-header {
         background: #ffffff;
         border: 1px solid #e2e8f0;
-        padding: 20px 24px;
+        padding: 22px 28px;
         border-radius: 16px;
-        margin-bottom: 20px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        margin-bottom: 24px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .vledger-hdr-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 14px;
+        background: #eff6ff;
+        color: #4f46e5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.45rem;
+        flex-shrink: 0;
+        border: 1px solid #dbeafe;
+        box-shadow: 0 2px 6px rgba(79, 70, 229, 0.08);
     }
     .vledger-title {
         font-weight: 800;
-        font-size: 1.35rem;
+        font-size: 1.45rem;
         color: #0f172a;
-        margin-bottom: 2px;
+        margin-bottom: 3px;
         letter-spacing: -0.02em;
+        line-height: 1.2;
     }
     .vledger-sub {
-        font-size: 0.82rem;
+        font-size: 0.85rem;
         color: #64748b;
     }
 
@@ -234,13 +249,18 @@
     }
 </style>
 
-<div class="vledger-page container-fluid px-3 px-md-4 pt-3">
+<div class="vledger-page container-fluid px-3 px-md-4 py-4">
     
     {{-- Header Row --}}
     <div class="vledger-header d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-        <div>
-            <h3 class="vledger-title"><i class="fas fa-file-invoice-dollar text-primary me-2"></i>Vendor Ledger</h3>
-            <div class="vledger-sub">View and manage vendor balances, opening balances, and ledger history</div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="vledger-hdr-icon">
+                <i class="fas fa-file-invoice-dollar"></i>
+            </div>
+            <div>
+                <h3 class="vledger-title">Vendor Ledger</h3>
+                <div class="vledger-sub">View and manage supplier balances, opening balances, and ledger history</div>
+            </div>
         </div>
         <div>
             <a href="{{ url('vendor') }}" class="btn-vledger-back">
@@ -249,14 +269,45 @@
         </div>
     </div>
 
+    @php
+        $totalPayable = 0;
+        $totalAdvance = 0;
+        foreach ($VendorLedgers as $l) {
+            $bal = (float)($l->formatted_closing_balance ?? $l->closing_balance);
+            if ($bal >= 0) {
+                $totalPayable += $bal;
+            } else {
+                $totalAdvance += abs($bal);
+            }
+        }
+    @endphp
+
     {{-- Stats Row --}}
     <div class="row g-3 mb-4">
-        <div class="col-12 col-sm-6 col-md-4">
+        <div class="col-12 col-md-4">
             <div class="vledger-stat-card">
-                <div class="vledger-stat-icon"><i class="fas fa-book"></i></div>
+                <div class="vledger-stat-icon" style="background: #e0e7ff; color: #4338ca;"><i class="fas fa-users"></i></div>
                 <div>
                     <div class="vledger-stat-val">{{ count($VendorLedgers) }}</div>
-                    <div class="vledger-stat-lbl">Total Vendors in Ledger</div>
+                    <div class="vledger-stat-lbl">Total Registered Vendors</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="vledger-stat-card">
+                <div class="vledger-stat-icon" style="background: #fee2e2; color: #dc2626;"><i class="fas fa-arrow-trend-up"></i></div>
+                <div>
+                    <div class="vledger-stat-val text-danger">Rs. {{ number_format($totalPayable, 2) }}</div>
+                    <div class="vledger-stat-lbl">Total Outstanding (Payable / Cr)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="vledger-stat-card">
+                <div class="vledger-stat-icon" style="background: #dcfce7; color: #16a34a;"><i class="fas fa-arrow-trend-down"></i></div>
+                <div>
+                    <div class="vledger-stat-val text-success">Rs. {{ number_format($totalAdvance, 2) }}</div>
+                    <div class="vledger-stat-lbl">Total Advance Paid (Debit / Dr)</div>
                 </div>
             </div>
         </div>
@@ -281,11 +332,11 @@
             <table class="table table-hover align-middle datanew">
                 <thead>
                     <tr>
-                        <th class="text-center" style="width: 80px;">ID</th>
-                        <th class="text-start">Vendor Name</th>
-                        <th class="text-start">Address</th>
-                        <th class="text-end">Opening Bal</th>
-                        <th class="text-end">Current Balance</th>
+                        <th class="text-center" style="width: 70px;">ID</th>
+                        <th class="text-start" style="min-width: 200px;">Vendor Name</th>
+                        <th class="text-start" style="min-width: 180px;">Address</th>
+                        <th class="text-end" style="min-width: 140px;">Opening Bal</th>
+                        <th class="text-end" style="min-width: 180px;">Current Balance</th>
                         <th class="text-end pe-4" style="width: 130px;">Action</th>
                     </tr>
                 </thead>
@@ -321,17 +372,19 @@
                                     $balance = $ledger->formatted_closing_balance ?? $ledger->closing_balance;
                                     $isPayable = $balance >= 0;
                                 @endphp
-                                <div class="fw-bold {{ $isPayable ? 'text-danger' : 'text-success' }}">
-                                    Rs. {{ number_format(abs((float)$balance), 2) }}
-                                    <span class="badge {{ $isPayable ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success' }} border ms-1 fw-bold" style="font-size: 0.72rem;">
+                                <div class="d-inline-flex align-items-center justify-content-end gap-2 flex-wrap">
+                                    <span class="fw-bold fs-6 {{ $isPayable ? 'text-danger' : 'text-success' }}">
+                                        Rs. {{ number_format(abs((float)$balance), 2) }}
+                                    </span>
+                                    <span class="badge px-2.5 py-1 fw-bold" style="font-size: 11px; border-radius: 6px; {{ $isPayable ? 'background-color: #fee2e2; color: #dc2626; border: 1px solid #fca5a5;' : 'background-color: #dcfce7; color: #16a34a; border: 1px solid #86efac;' }}">
                                         {{ $isPayable ? 'Cr (Payable)' : 'Dr (Advance)' }}
                                     </span>
                                 </div>
                             </td>
 
                             <td class="text-end pe-4">
-                                <a href="{{ route('vendor.ledger', $ledger->vendor_id) }}" class="btn btn-sm btn-outline-primary px-3 fw-bold" title="View Detailed Ledger" style="border-radius: 8px;">
-                                    <i class="fas fa-file-alt me-1"></i> Details
+                                <a href="{{ route('vendor.ledger', $ledger->vendor_id) }}" class="btn btn-sm btn-outline-primary px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-1.5" title="View Detailed Ledger" style="border-radius: 8px; font-size: 12.5px;">
+                                    <i class="fas fa-file-alt"></i> Details
                                 </a>
                             </td>
                         </tr>
