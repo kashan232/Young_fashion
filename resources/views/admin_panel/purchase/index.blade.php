@@ -481,7 +481,7 @@
                 <div class="modal-body p-4" style="background-color: #f8fafc;">
                     
                     {{-- Quick Summary Cards --}}
-                    <div class="row g-3 mb-4">
+                    <div class="row g-3">
                         {{-- Quick Purchase Card --}}
                         <div class="col-md-6">
                             <div class="card h-100 border-0 shadow-sm" style="border-radius: 14px; border-left: 5px solid #10b981 !important; background: #ffffff;">
@@ -532,58 +532,6 @@
                                     </a>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    {{-- Detailed Comparison Table --}}
-                    <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: 12px;">
-                        <div class="card-header bg-white py-2.5 px-3 border-bottom d-flex align-items-center justify-content-between">
-                            <span class="fw-bold text-dark small text-uppercase" style="letter-spacing: 0.5px;">
-                                <i class="fas fa-table text-muted me-1"></i> Quick Comparison Table (Roman Urdu)
-                            </span>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0" style="font-size: 13px;">
-                                <thead class="table-light text-muted text-uppercase" style="font-size: 11px;">
-                                    <tr>
-                                        <th class="ps-3 py-2.5" style="width: 25%;">Feature / Sawal</th>
-                                        <th class="py-2.5 text-success" style="width: 37%;">⚡ Quick Purchase</th>
-                                        <th class="py-2.5 text-primary" style="width: 38%;">➕ Add Purchase</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td class="ps-3 fw-bold text-dark">Naya Joota Create Karna?</td>
-                                        <td><span class="badge bg-success-subtle text-success border border-success-subtle me-1">Haan</span> Screen par hi naya article + sizes ban jate hain</td>
-                                        <td><span class="badge bg-light text-muted border me-1">Nahi</span> Pehle se bane hue products select hote hain</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="ps-3 fw-bold text-dark">Naya Vendor Banana?</td>
-                                        <td><span class="badge bg-success-subtle text-success border border-success-subtle me-1">Haan</span> Screen par naye vendor ka naam type karein</td>
-                                        <td><span class="badge bg-light text-muted border me-1">Nahi</span> Pehle se saved vendor dropdown se select hota hai</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="ps-3 fw-bold text-dark">Multiple Alag Articles?</td>
-                                        <td>Ek specific article ke multiple sizes/colors</td>
-                                        <td><strong>10 alag-alag shoe articles</strong> ek hi bill me add ho sakte hain</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="ps-3 fw-bold text-dark">Carton &amp; Bilti Kharcha?</td>
-                                        <td>Direct pieces aur khareed rate entry</td>
-                                        <td>Pieces per box, Cartons, Bilti No, aur Freight kharcha</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="ps-3 fw-bold text-dark">Draft Rakhna?</td>
-                                        <td>Direct Approved / Live Stock Post</td>
-                                        <td>Draft save kar ke tasdeeq ke baad Post karein</td>
-                                    </tr>
-                                    <tr class="table-light">
-                                        <td class="ps-3 fw-bold text-dark">Asan Lafzon Me</td>
-                                        <td class="text-success fw-bold">"Naya Joota banao aur fauran stock khareed lo"</td>
-                                        <td class="text-primary fw-bold">"Bane hue jooton ka formal invoice bill banao"</td>
-                                    </tr>
-                                </tbody>
-                            </table>
                         </div>
                     </div>
 
