@@ -262,6 +262,12 @@
                         <p class="text-muted mb-0 small">View and manage your purchase invoices</p>
                     </div>
                     <div class="purch-hdr-actions">
+                        <button type="button" class="btn btn-outline-info px-3 shadow-sm fw-semibold d-inline-flex align-items-center gap-1.5 justify-content-center"
+                            data-bs-toggle="modal" data-bs-target="#purchaseDifferenceModal" data-toggle="modal" data-target="#purchaseDifferenceModal" 
+                            style="border-radius: 8px; border-color: #38bdf8; color: #0284c7; background: #f0f9ff;" title="Quick aur Add Purchase me fark samjhein">
+                            <i class="fas fa-question-circle"></i> Quick vs Add Purchase?
+                        </button>
+
                         <a class="btn btn-outline-danger px-3 shadow-sm fw-medium d-inline-flex align-items-center gap-1 justify-content-center"
                             href="{{ route('purchase.return.index') }}" style="border-radius: 8px;">
                             <i class="fas fa-undo"></i> Returns
@@ -448,6 +454,144 @@
                     </div>
                 </div>
 
+            </div>
+        </div>
+    </div>
+
+    {{-- ── Difference Between Quick Purchase & Add Purchase Modal ── --}}
+    <div class="modal fade" id="purchaseDifferenceModal" tabindex="-1" aria-labelledby="purchaseDifferenceModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+                <div class="modal-header text-white px-4 py-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary text-white" style="width: 38px; height: 38px; font-size: 16px;">
+                            <i class="fas fa-balance-scale"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fw-bold text-white mb-0" id="purchaseDifferenceModalLabel" style="font-size: 1.15rem;">
+                                Quick Purchase vs Add Purchase (Fark Samjhein)
+                            </h5>
+                            <small class="text-white-50">Janiye kab konsi purchase option use karni chahiye</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" data-dismiss="modal" aria-label="Close" style="background:none; border:none; color:#fff; font-size:1.3rem; cursor:pointer;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body p-4" style="background-color: #f8fafc;">
+                    
+                    {{-- Quick Summary Cards --}}
+                    <div class="row g-3 mb-4">
+                        {{-- Quick Purchase Card --}}
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm" style="border-radius: 14px; border-left: 5px solid #10b981 !important; background: #ffffff;">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <span class="badge bg-success text-white px-2.5 py-1 fw-bold" style="font-size: 11px;">
+                                            <i class="fas fa-bolt me-1"></i> QUICK PURCHASE
+                                        </span>
+                                        <small class="text-muted fw-bold">Instant Setup</small>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1">Naya Joota + Fauran Stock Khareedari</h6>
+                                    <p class="text-muted small mb-3">
+                                        Agar factory ya karigar se koi <strong>bilkul naya shoe model</strong> aya hai jo system me create hi nahi hua.
+                                    </p>
+                                    <ul class="list-unstyled small mb-3 text-secondary" style="line-height: 1.7;">
+                                        <li><i class="fas fa-check-circle text-success me-1"></i> <strong>Pehle Product banane ki zaroorat nahi:</strong> Naya Joota aur uske sizes/colors yahin ban jate hain.</li>
+                                        <li><i class="fas fa-check-circle text-success me-1"></i> <strong>Naya Vendor:</strong> Agar vendor naya hai toh uska naam bhi on-the-spot likhein.</li>
+                                        <li><i class="fas fa-check-circle text-success me-1"></i> <strong>1-Click:</strong> Save karne par Product Catalog + Purchase Invoice + Stock teeno ek sath ready.</li>
+                                    </ul>
+                                    <a href="{{ route('purchase.quick_create') }}" class="btn btn-sm btn-success w-100 fw-bold py-2 shadow-xs" style="border-radius: 8px;">
+                                        <i class="fas fa-bolt me-1"></i> Open Quick Purchase
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Add Purchase Card --}}
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm" style="border-radius: 14px; border-left: 5px solid #4f46e5 !important; background: #ffffff;">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <span class="badge bg-primary text-white px-2.5 py-1 fw-bold" style="font-size: 11px;">
+                                            <i class="fas fa-plus me-1"></i> ADD PURCHASE
+                                        </span>
+                                        <small class="text-muted fw-bold">Standard Invoice</small>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1">Formal Consignment / Multi-Item Bill</h6>
+                                    <p class="text-muted small mb-3">
+                                        Jab regular delivery aye jisme <strong>pehle se registered</strong> jooton ka poora invoice bill daalna ho.
+                                    </p>
+                                    <ul class="list-unstyled small mb-3 text-secondary" style="line-height: 1.7;">
+                                        <li><i class="fas fa-check-circle text-primary me-1"></i> <strong>Multiple Shoes 1 Bill Me:</strong> 5-10 mukhtalif designs (Loafers, Boots, Joggers) ek sath.</li>
+                                        <li><i class="fas fa-check-circle text-primary me-1"></i> <strong>Cartons &amp; Gatepass:</strong> Pieces per box, Bilti No, Transport kharcha shamil karein.</li>
+                                        <li><i class="fas fa-check-circle text-primary me-1"></i> <strong>Draft Option:</strong> Bill ko draft rakh kar baad me check kar ke Post kar sakte hain.</li>
+                                    </ul>
+                                    <a href="{{ route('add_purchase') }}" class="btn btn-sm btn-primary w-100 fw-bold py-2 shadow-xs" style="border-radius: 8px; background: #4f46e5; border-color: #4f46e5;">
+                                        <i class="fas fa-plus me-1"></i> Open Add Purchase
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Detailed Comparison Table --}}
+                    <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: 12px;">
+                        <div class="card-header bg-white py-2.5 px-3 border-bottom d-flex align-items-center justify-content-between">
+                            <span class="fw-bold text-dark small text-uppercase" style="letter-spacing: 0.5px;">
+                                <i class="fas fa-table text-muted me-1"></i> Quick Comparison Table (Roman Urdu)
+                            </span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0" style="font-size: 13px;">
+                                <thead class="table-light text-muted text-uppercase" style="font-size: 11px;">
+                                    <tr>
+                                        <th class="ps-3 py-2.5" style="width: 25%;">Feature / Sawal</th>
+                                        <th class="py-2.5 text-success" style="width: 37%;">⚡ Quick Purchase</th>
+                                        <th class="py-2.5 text-primary" style="width: 38%;">➕ Add Purchase</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="ps-3 fw-bold text-dark">Naya Joota Create Karna?</td>
+                                        <td><span class="badge bg-success-subtle text-success border border-success-subtle me-1">Haan</span> Screen par hi naya article + sizes ban jate hain</td>
+                                        <td><span class="badge bg-light text-muted border me-1">Nahi</span> Pehle se bane hue products select hote hain</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="ps-3 fw-bold text-dark">Naya Vendor Banana?</td>
+                                        <td><span class="badge bg-success-subtle text-success border border-success-subtle me-1">Haan</span> Screen par naye vendor ka naam type karein</td>
+                                        <td><span class="badge bg-light text-muted border me-1">Nahi</span> Pehle se saved vendor dropdown se select hota hai</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="ps-3 fw-bold text-dark">Multiple Alag Articles?</td>
+                                        <td>Ek specific article ke multiple sizes/colors</td>
+                                        <td><strong>10 alag-alag shoe articles</strong> ek hi bill me add ho sakte hain</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="ps-3 fw-bold text-dark">Carton &amp; Bilti Kharcha?</td>
+                                        <td>Direct pieces aur khareed rate entry</td>
+                                        <td>Pieces per box, Cartons, Bilti No, aur Freight kharcha</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="ps-3 fw-bold text-dark">Draft Rakhna?</td>
+                                        <td>Direct Approved / Live Stock Post</td>
+                                        <td>Draft save kar ke tasdeeq ke baad Post karein</td>
+                                    </tr>
+                                    <tr class="table-light">
+                                        <td class="ps-3 fw-bold text-dark">Asan Lafzon Me</td>
+                                        <td class="text-success fw-bold">"Naya Joota banao aur fauran stock khareed lo"</td>
+                                        <td class="text-primary fw-bold">"Bane hue jooton ka formal invoice bill banao"</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer py-2 px-4 bg-white justify-content-between">
+                    <small class="text-muted"><i class="fas fa-lightbulb text-warning me-1"></i> Tip: Agar naya shoe sample aye toh <strong>Quick Purchase</strong> use karein; regular shipment par <strong>Add Purchase</strong> use karein.</small>
+                    <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal" data-dismiss="modal">Close</button>
+                </div>
             </div>
         </div>
     </div>
