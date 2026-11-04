@@ -45,6 +45,7 @@
         align-items: center !important;
         gap: 8px !important;
         text-decoration: none !important;
+        cursor: pointer !important;
         transition: all 0.15s ease-in-out !important;
     }
     .btn-action-primary:hover {
@@ -207,7 +208,7 @@
     .vpay-modal .modal-content {
         border-radius: 12px;
         border: 1px solid #cbd5e1;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
     }
     .vpay-modal .modal-header {
         background: #f8fafc;
@@ -234,6 +235,19 @@
         margin-bottom: 16px;
         display: none;
     }
+    .modal-header .close {
+        background: none;
+        border: none;
+        font-size: 26px;
+        line-height: 1;
+        color: #64748b;
+        cursor: pointer;
+        padding: 0;
+        margin: -4px 0 0 0;
+    }
+    .modal-header .close:hover {
+        color: #0f172a;
+    }
 </style>
 
 <div class="main-content">
@@ -248,7 +262,7 @@
                 </div>
 
                 <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <button type="button" class="btn-action-primary" data-bs-toggle="modal" data-bs-target="#paymentModal" onclick="clearPaymentForm()">
+                    <button type="button" class="btn-action-primary" id="btnMakePayment" onclick="openPaymentModal()" data-toggle="modal" data-target="#paymentModal" data-bs-toggle="modal" data-bs-target="#paymentModal">
                         <i class="fas fa-plus"></i> Make Payment
                     </button>
                     <a href="{{ route('vendors-ledger') }}" class="btn-action-secondary">
@@ -408,8 +422,8 @@
 </div>
 
 {{-- ── 5. Payment Modal ── --}}
-<div class="modal fade vpay-modal" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+<div class="modal fade vpay-modal" id="paymentModal" tabindex="-1" role="dialog" aria-labelledby="paymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
         <form action="{{ route('vendor.payments.store') }}" method="POST" id="vendorPaymentForm">
             @csrf
             <div class="modal-content">
@@ -417,7 +431,9 @@
                     <h5 class="modal-title fw-bold text-dark mb-0" id="paymentModalLabel">
                         <i class="fas fa-money-bill-wave text-primary me-2"></i> Record Vendor Payment
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="close" data-dismiss="modal" data-bs-dismiss="modal" onclick="closePaymentModal()" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
 
                 <div class="modal-body">
@@ -425,7 +441,7 @@
                     {{-- Vendor Select --}}
                     <div class="mb-3">
                         <label class="form-label fw-bold text-dark" style="font-size: 13px;">Select Vendor / Supplier <span class="text-danger">*</span></label>
-                        <select name="vendor_id" id="vendor_id" class="form-select" required>
+                        <select name="vendor_id" id="vendor_id" class="form-control form-select" required>
                             <option value="">-- Choose Vendor --</option>
                             @foreach($vendors as $vendor)
                                 <option value="{{ $vendor->id }}" data-balance="{{ $vendor->live_balance ?? 0 }}">
@@ -456,7 +472,7 @@
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-bold text-dark" style="font-size: 12.5px;">Payment Type <span class="text-danger">*</span></label>
-                            <select name="adjustment_type" class="form-select" required>
+                            <select name="adjustment_type" class="form-control form-select" required>
                                 <option value="minus" selected>Vendor Payment (Reduces Balance)</option>
                                 <option value="plus">Refund / Adjustment (Increases Balance)</option>
                             </select>
@@ -467,7 +483,9 @@
                     <div class="mb-3">
                         <label class="form-label fw-bold text-dark" style="font-size: 13px;">Payment Amount (Rs.) <span class="text-danger">*</span></label>
                         <div class="input-group">
-                            <span class="input-group-text fw-bold bg-light">Rs.</span>
+                            <div class="input-group-prepend">
+                                <span class="input-group-text fw-bold bg-light">Rs.</span>
+                            </div>
                             <input type="number" step="0.01" min="0.01" name="amount" id="payment_amount" class="form-control form-control-lg fw-bold font-monospace" placeholder="0.00" required>
                         </div>
                     </div>
@@ -476,7 +494,7 @@
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label class="form-label fw-bold text-dark" style="font-size: 12.5px;">Payment Account</label>
-                            <select name="account_id" class="form-select">
+                            <select name="account_id" class="form-control form-select">
                                 @foreach($accounts as $acc)
                                     @if(in_array($acc->id, [1, 2]) || str_contains(strtolower($acc->title), 'cash') || str_contains(strtolower($acc->title), 'bank'))
                                         <option value="{{ $acc->id }}" {{ str_contains(strtolower($acc->title), 'cash') ? 'selected' : '' }}>
@@ -488,7 +506,7 @@
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-bold text-dark" style="font-size: 12.5px;">Payment Method</label>
-                            <select name="payment_method" class="form-select">
+                            <select name="payment_method" class="form-control form-select">
                                 <option value="Cash in Hand" selected>Cash in Hand</option>
                                 <option value="Bank Transfer">Bank Transfer / Online</option>
                                 <option value="Cheque">Cheque</option>
@@ -506,7 +524,7 @@
                 </div>
 
                 <div class="modal-footer d-flex align-items-center justify-content-between">
-                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-secondary px-3" data-dismiss="modal" data-bs-dismiss="modal" onclick="closePaymentModal()">Cancel</button>
                     <button type="submit" class="btn btn-primary fw-bold px-4">
                         <i class="fas fa-check-circle me-1"></i> Submit Payment
                     </button>
@@ -516,56 +534,103 @@
     </div>
 </div>
 
-@endsection
-
-@push('scripts')
 <script>
-    let currentVendorBalance = 0;
+    var currentVendorBalance = 0;
+
+    function openPaymentModal() {
+        clearPaymentForm();
+        if (window.jQuery) {
+            $('#paymentModal').modal('show');
+        } else {
+            var m = document.getElementById('paymentModal');
+            if (m) {
+                m.style.display = 'block';
+                m.classList.add('show');
+            }
+        }
+    }
+
+    function closePaymentModal() {
+        if (window.jQuery) {
+            $('#paymentModal').modal('hide');
+        } else {
+            var m = document.getElementById('paymentModal');
+            if (m) {
+                m.style.display = 'none';
+                m.classList.remove('show');
+            }
+        }
+    }
 
     function clearPaymentForm() {
-        document.getElementById('vendorPaymentForm').reset();
-        document.getElementById('payment_date').value = "{{ date('Y-m-d') }}";
-        $('#balanceBox').hide();
+        var form = document.getElementById('vendorPaymentForm');
+        if (form) form.reset();
+        var dateInput = document.getElementById('payment_date');
+        if (dateInput) dateInput.value = "{{ date('Y-m-d') }}";
+        var bBox = document.getElementById('balanceBox');
+        if (bBox) bBox.style.display = 'none';
         currentVendorBalance = 0;
     }
 
-    $(document).ready(function () {
-        $('#vendor_id').on('change', function () {
-            const vendorId = $(this).val();
-            if (vendorId) {
-                $.ajax({
-                    url: '/get-vendor-balance/' + vendorId,
-                    type: 'GET',
-                    success: function (res) {
-                        currentVendorBalance = parseFloat(res.closing_balance || 0);
-                        $('#balanceText').text(res.formatted);
-                        if (currentVendorBalance > 0) {
-                            $('#balanceText').removeClass('text-success').addClass('text-danger');
-                            $('#btnPayFull').show();
-                        } else {
-                            $('#balanceText').removeClass('text-danger').addClass('text-success');
-                            $('#btnPayFull').hide();
-                        }
-                        $('#balanceBox').slideDown();
-                    },
-                    error: function () {
-                        const fallbackBal = parseFloat($('#vendor_id option:selected').data('balance') || 0);
-                        currentVendorBalance = fallbackBal;
-                        $('#balanceText').text('Rs. ' + fallbackBal.toFixed(2));
-                        $('#balanceBox').slideDown();
-                    }
-                });
-            } else {
-                $('#balanceBox').slideUp();
-                currentVendorBalance = 0;
-            }
-        });
+    // Direct event listener to button to ensure clicking ALWAYS triggers modal
+    document.addEventListener('DOMContentLoaded', function () {
+        var btn = document.getElementById('btnMakePayment');
+        if (btn) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                openPaymentModal();
+            });
+        }
 
-        $('#btnPayFull').on('click', function() {
-            if (currentVendorBalance > 0) {
-                $('#payment_amount').val(currentVendorBalance.toFixed(2));
-            }
-        });
+        // Vendor Change Listener
+        var vendorSelect = document.getElementById('vendor_id');
+        if (vendorSelect) {
+            vendorSelect.addEventListener('change', function () {
+                var vId = this.value;
+                var bBox = document.getElementById('balanceBox');
+                var bText = document.getElementById('balanceText');
+                var btnPay = document.getElementById('btnPayFull');
+
+                if (vId) {
+                    if (window.jQuery) {
+                        $.ajax({
+                            url: '/get-vendor-balance/' + vId,
+                            type: 'GET',
+                            success: function (res) {
+                                currentVendorBalance = parseFloat(res.closing_balance || 0);
+                                if (bText) bText.innerText = res.formatted;
+                                if (bBox) bBox.style.display = 'block';
+                                if (btnPay) {
+                                    btnPay.style.display = currentVendorBalance > 0 ? 'inline-block' : 'none';
+                                }
+                            },
+                            error: function () {
+                                var selectedOpt = vendorSelect.options[vendorSelect.selectedIndex];
+                                var fallback = parseFloat(selectedOpt.getAttribute('data-balance') || 0);
+                                currentVendorBalance = fallback;
+                                if (bText) bText.innerText = 'Rs. ' + fallback.toFixed(2);
+                                if (bBox) bBox.style.display = 'block';
+                            }
+                        });
+                    }
+                } else {
+                    if (bBox) bBox.style.display = 'none';
+                    currentVendorBalance = 0;
+                }
+            });
+        }
+
+        // Pay Full Balance click
+        var btnPay = document.getElementById('btnPayFull');
+        if (btnPay) {
+            btnPay.addEventListener('click', function () {
+                if (currentVendorBalance > 0) {
+                    var amtInput = document.getElementById('payment_amount');
+                    if (amtInput) amtInput.value = currentVendorBalance.toFixed(2);
+                }
+            });
+        }
     });
 </script>
-@endpush
+
+@endsection
