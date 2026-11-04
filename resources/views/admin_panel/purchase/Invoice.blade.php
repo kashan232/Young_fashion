@@ -19,7 +19,7 @@
             background-color: #f1f5f9;
             color: #0f172a;
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            font-size: 11px;
+            font-size: 11.5px;
             margin: 0;
             padding: 0;
             -webkit-print-color-adjust: exact !important;
@@ -30,59 +30,79 @@
         .action-bar {
             background: #ffffff;
             border-bottom: 1px solid #cbd5e1;
-            padding: 10px 20px;
+            padding: 12px 24px;
             position: sticky;
             top: 0;
             z-index: 1000;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .action-bar .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 13px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
         }
 
         /* ── Screen Invoice Container (Styled as A5 Landscape Preview) ── */
         .invoice-sheet-wrap {
-            padding: 20px 10px;
+            padding: 24px 16px 40px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 20px;
+            gap: 24px;
         }
 
         .invoice-half-sheet {
             width: 210mm;
-            min-height: 140mm;
             max-width: 100%;
             background: #ffffff;
-            padding: 14px 18px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            border-radius: 8px;
+            padding: 22px 26px;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.07);
+            border-radius: 10px;
             border: 1px solid #cbd5e1;
             box-sizing: border-box;
             position: relative;
         }
 
         .copy-watermark {
-            font-size: 10px;
+            font-size: 10.5px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #64748b;
-            background: #f8fafc;
-            padding: 2px 8px;
-            border-radius: 4px;
-            border: 1px solid #e2e8f0;
+            letter-spacing: 0.8px;
+            color: #475569;
+            background: #f1f5f9;
+            padding: 3px 10px;
+            border-radius: 5px;
+            border: 1px solid #cbd5e1;
+        }
+
+        /* Clean Table with Breathing Room */
+        .half-inv-table {
+            border-collapse: collapse;
+            width: 100%;
+            border: 1.5px solid #0f172a;
+            border-radius: 6px;
         }
 
         .half-inv-table th,
         .half-inv-table td {
-            padding: 4px 6px !important;
+            padding: 7px 10px !important;
             vertical-align: middle;
-            border-color: #000000 !important;
+            border: 1px solid #cbd5e1 !important;
         }
 
         .half-inv-table thead th {
             background-color: #0f172a !important;
             color: #ffffff !important;
             font-weight: 700;
-            letter-spacing: 0.3px;
+            font-size: 11px;
+            letter-spacing: 0.4px;
+            border-color: #0f172a !important;
         }
 
         .cut-line-separator {
@@ -91,7 +111,7 @@
             display: none;
             text-align: center;
             position: relative;
-            margin: 6px 0;
+            margin: 14px 0;
         }
         .cut-line-separator::before {
             content: "";
@@ -99,17 +119,19 @@
             top: 50%;
             left: 0;
             right: 0;
-            border-top: 1px dashed #64748b;
+            border-top: 1.5px dashed #94a3b8;
             z-index: 1;
         }
         .cut-line-separator span {
             position: relative;
             z-index: 2;
             background: #f1f5f9;
-            padding: 0 12px;
-            font-size: 10px;
+            padding: 2px 14px;
+            font-size: 11px;
             font-weight: 600;
             color: #64748b;
+            border-radius: 20px;
+            border: 1px solid #cbd5e1;
         }
 
         /* ── Print Media Queries (Landscape Half Page - Zero Waste) ── */
@@ -122,7 +144,7 @@
                 background: #ffffff !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                font-size: 10px !important;
+                font-size: 10.5px !important;
             }
 
             .invoice-sheet-wrap {
@@ -135,7 +157,7 @@
             /* Single Half-Page (A5 Landscape) Default */
             @page {
                 size: 210mm 148mm; /* Standard A5 Landscape */
-                margin: 3mm 5mm 3mm 5mm;
+                margin: 4mm 6mm;
             }
 
             .invoice-half-sheet {
@@ -143,7 +165,7 @@
                 max-width: 200mm !important;
                 min-height: auto !important;
                 max-height: 142mm !important;
-                padding: 4px 6px !important;
+                padding: 5mm 7mm !important;
                 margin: 0 auto !important;
                 box-shadow: none !important;
                 border: none !important;
@@ -152,15 +174,22 @@
                 page-break-inside: avoid !important;
             }
 
+            .half-inv-table th,
+            .half-inv-table td {
+                padding: 5px 8px !important;
+            }
+
             /* ── Mode: Print 2-in-1 on A4 Portrait (Store + Vendor Copy) ── */
             body.print-double-mode @page {
                 size: A4 portrait !important; /* 210mm x 297mm */
-                margin: 5mm !important;
+                margin: 4mm !important;
             }
 
             body.print-double-mode .invoice-half-sheet {
                 max-height: 138mm !important;
-                padding: 6px 8px !important;
+                padding: 4mm 6mm !important;
+                border: 1px dashed #cbd5e1 !important;
+                margin-bottom: 2mm !important;
             }
 
             body.print-double-mode .cut-line-separator {
@@ -184,11 +213,11 @@
     <div class="action-bar no-print">
         <div class="container-fluid d-flex align-items-center justify-content-between flex-wrap gap-2">
             <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-dark text-white fw-bold px-2 py-1 fs-6">
+                <span class="badge bg-dark text-white fw-bold px-3 py-2 fs-6 d-inline-flex align-items-center gap-1.5">
                     <i class="fas fa-file-invoice text-warning me-1"></i>
                     {{ $purchase->invoice_no ?? ('PUR-' . str_pad($purchase->id, 3, '0', STR_PAD_LEFT)) }}
                 </span>
-                <span class="badge bg-success text-white px-2 py-1">
+                <span class="badge bg-success text-white px-2.5 py-1.5 text-uppercase">
                     {{ $purchase->status_purchase ?? 'Approved' }}
                 </span>
                 <span class="text-muted small ms-2 d-none d-md-inline">
@@ -199,22 +228,22 @@
 
             <div class="d-flex align-items-center gap-2 flex-wrap">
                 <!-- 1. Print Half Page (A5 Landscape) -->
-                <button type="button" onclick="printSingleCopy()" class="btn btn-primary btn-sm px-3 fw-bold shadow-sm d-flex align-items-center gap-1.5" style="border-radius: 8px;">
-                    <i class="fas fa-print"></i> Print Half-Page (A5 Landscape)
+                <button type="button" onclick="printSingleCopy()" class="btn btn-primary btn-sm px-3 shadow-sm">
+                    <i class="fas fa-print me-1"></i> Print Half-Page (A5 Landscape)
                 </button>
 
                 <!-- 2. Print 2-Copies on Single A4 Sheet -->
-                <button type="button" onclick="printDoubleCopy()" class="btn btn-dark btn-sm px-3 fw-bold shadow-sm d-flex align-items-center gap-1.5" style="border-radius: 8px; background: #1e293b;" title="Prints Store Copy on Top & Vendor Copy on Bottom of 1 A4 page">
-                    <i class="fas fa-copy text-warning"></i> Print 2-in-1 on A4 (Double Copy)
+                <button type="button" onclick="printDoubleCopy()" class="btn btn-dark btn-sm px-3 shadow-sm" style="background: #1e293b;" title="Prints Store Copy on Top & Vendor Copy on Bottom of 1 A4 page">
+                    <i class="fas fa-copy text-warning me-1"></i> Print 2-in-1 on A4 (Double Copy)
                 </button>
 
                 <!-- 3. Thermal Receipt Option -->
-                <a href="{{ route('purchase.receipt', $purchase->id) }}" class="btn btn-outline-secondary btn-sm px-2.5 fw-semibold d-flex align-items-center gap-1" style="border-radius: 8px;" title="Thermal Roll Receipt (72mm)">
-                    <i class="fas fa-receipt"></i> Thermal Slip
+                <a href="{{ route('purchase.receipt', $purchase->id) }}" class="btn btn-outline-secondary btn-sm px-3" title="Thermal Roll Receipt (72mm)">
+                    <i class="fas fa-receipt me-1"></i> Thermal Slip
                 </a>
 
                 <!-- 4. Back Button -->
-                <a href="{{ route('Purchase.home') }}" class="btn btn-outline-dark btn-sm px-3 fw-semibold" style="border-radius: 8px;">
+                <a href="{{ route('Purchase.home') }}" class="btn btn-outline-dark btn-sm px-3">
                     <i class="fas fa-arrow-left me-1"></i> Back
                 </a>
             </div>
