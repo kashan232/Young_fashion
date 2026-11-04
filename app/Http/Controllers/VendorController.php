@@ -9,6 +9,10 @@ use App\Models\VendorLedger;
 use App\Models\VendorPayment;
 use App\Models\VendorBilty;
 use App\Models\Purchase;
+use App\Models\Account;
+use App\Models\VoucherMaster;
+use App\Services\BalanceService;
+use App\Services\VoucherService;
 
 class VendorController extends Controller
 {
@@ -107,46 +111,147 @@ class VendorController extends Controller
     // Show all vendor payments
     public function vendor_payments()
     {
-        $userId = Auth::id();
         $payments = VendorPayment::with('vendor')
-            ->where('admin_or_user_id', $userId)
             ->orderByDesc('payment_date')
+            ->orderByDesc('id')
             ->get();
 
         $vendors = Vendor::all();
-        return view('admin_panel.vendors.vendor_payments', compact('payments', 'vendors'));
+        $balanceService = app(BalanceService::class);
+
+        foreach ($vendors as $v) {
+            $v->live_balance = $balanceService->getVendorBalance($v->id);
+        }
+
+        // Available payment accounts (Cash, Bank)
+        $accounts = Account::where('is_active', 1)->orWhereNull('is_active')->get();
+
+        $totalPaidAmount = (float) $payments->sum('amount');
+        $totalPaymentsCount = $payments->count();
+        $totalPayables = 0;
+        foreach ($vendors as $v) {
+            if ($v->live_balance > 0) {
+                $totalPayables += $v->live_balance;
+            }
+        }
+
+        return view('admin_panel.vendors.vendor_payments', compact(
+            'payments',
+            'vendors',
+            'accounts',
+            'totalPaidAmount',
+            'totalPaymentsCount',
+            'totalPayables'
+        ));
     }
 
     // Store vendor payment and update ledger
     public function store_vendor_payment(Request $request)
     {
         $request->validate([
-            'vendor_id' => 'required|exists:vendors,id',
-            'payment_date' => 'required|date',
-            'amount' => 'required|numeric|min:0',
-            'payment_method' => 'nullable|string',
-            'note' => 'nullable|string',
+            'vendor_id'       => 'required|exists:vendors,id',
+            'payment_date'    => 'required|date',
+            'amount'          => 'required|numeric|min:0.01',
+            'payment_method'  => 'nullable|string',
+            'account_id'      => 'nullable|exists:accounts,id',
+            'note'            => 'nullable|string',
             'adjustment_type' => 'required|in:plus,minus',
         ]);
 
-        // Save the vendor payment
-        VendorPayment::create([
-            'vendor_id' => $request->vendor_id,
+        $vendor = Vendor::findOrFail($request->vendor_id);
+        $amount = (float) $request->amount;
+        $isPayment = ($request->adjustment_type === 'minus');
+
+        // 1. Save vendor payment record
+        $payment = VendorPayment::create([
+            'vendor_id'        => $vendor->id,
             'admin_or_user_id' => Auth::id(),
-            'payment_date' => $request->payment_date,
-            'amount' => $request->amount,
-            'payment_method' => $request->payment_method,
-            'note' => $request->note,
+            'payment_date'     => $request->payment_date,
+            'amount'           => $amount,
+            'payment_method'   => $request->payment_method ?? 'Cash',
+            'note'             => $request->note,
         ]);
 
-        // Update vendor ledger
-        $ledger = VendorLedger::where('vendor_id', $request->vendor_id)->first();
+        // 2. Update legacy vendor ledger
+        $ledger = VendorLedger::where('vendor_id', $vendor->id)->first();
         if ($ledger) {
-            $ledger->closing_balance += ($request->adjustment_type === 'minus' ? -1 : 1) * $request->amount;
+            $multiplier = $isPayment ? -1 : 1;
+            $ledger->closing_balance += ($multiplier * $amount);
             $ledger->save();
         }
 
-        return redirect()->back()->with('success', 'Vendor payment recorded.');
+        // 3. Post to General Ledger via VoucherService
+        try {
+            $balanceService = app(BalanceService::class);
+            $apId = $balanceService->getAccountsPayableId();
+            $cashAccountId = $request->account_id ?: $balanceService->getCashAccountId();
+
+            if ($isPayment) {
+                // Payment to vendor (reduces vendor payable)
+                $lines = [
+                    [
+                        'account_id' => $apId,
+                        'debit'      => $amount,
+                        'credit'     => 0,
+                        'narration'  => $request->note ?: "Payment to vendor: {$vendor->name}",
+                    ],
+                    [
+                        'account_id' => $cashAccountId,
+                        'debit'      => 0,
+                        'credit'     => $amount,
+                        'narration'  => "Cash/Bank paid to {$vendor->name} (" . ($request->payment_method ?? 'Cash') . ")",
+                    ]
+                ];
+            } else {
+                // Refund from vendor
+                $lines = [
+                    [
+                        'account_id' => $cashAccountId,
+                        'debit'      => $amount,
+                        'credit'     => 0,
+                        'narration'  => "Refund received from {$vendor->name}",
+                    ],
+                    [
+                        'account_id' => $apId,
+                        'debit'      => 0,
+                        'credit'     => $amount,
+                        'narration'  => $request->note ?: "Adjustment from vendor: {$vendor->name}",
+                    ]
+                ];
+            }
+
+            app(VoucherService::class)->createVoucher([
+                'voucher_type' => 'payment',
+                'date'         => $request->payment_date,
+                'status'       => VoucherMaster::STATUS_POSTED,
+                'party_type'   => Vendor::class,
+                'party_id'     => $vendor->id,
+                'remarks'      => $request->note ?: ("Vendor Payment: {$vendor->name} [Payment #{$payment->id}]"),
+            ], $lines, Auth::id());
+
+        } catch (\Exception $e) {
+            \Log::error('Vendor Payment Voucher sync error: ' . $e->getMessage());
+        }
+
+        return redirect()->back()->with('success', 'Vendor payment of Rs. ' . number_format($amount, 2) . ' recorded successfully.');
+    }
+
+    // Delete vendor payment and revert ledger
+    public function destroy_vendor_payment($id)
+    {
+        $payment = VendorPayment::findOrFail($id);
+        $vendorId = $payment->vendor_id;
+        $amount = (float) $payment->amount;
+
+        $ledger = VendorLedger::where('vendor_id', $vendorId)->first();
+        if ($ledger) {
+            $ledger->closing_balance += $amount;
+            $ledger->save();
+        }
+
+        $payment->delete();
+
+        return redirect()->back()->with('success', 'Vendor payment deleted and ledger updated successfully.');
     }
 
     // Show all vendor bilties
@@ -179,9 +284,20 @@ class VendorController extends Controller
     // Get vendor balance by vendor id
     public function getVendorBalance($id)
     {
-        $ledger = VendorLedger::where('vendor_id', $id)->first();
+        $vendor = Vendor::find($id);
+        if (!$vendor) {
+            return response()->json(['closing_balance' => 0, 'formatted' => 'Rs. 0.00', 'vendor_name' => '']);
+        }
+
+        $balanceService = app(BalanceService::class);
+        $closingBalance = (float) $balanceService->getVendorBalance((int) $id);
+
         return response()->json([
-            'closing_balance' => $ledger ? $ledger->closing_balance : 0
+            'closing_balance' => $closingBalance,
+            'formatted'       => 'Rs. ' . number_format(abs($closingBalance), 2) . ($closingBalance >= 0 ? ' (Payable / Cr)' : ' (Advance / Dr)'),
+            'vendor_name'     => $vendor->name,
+            'phone'           => $vendor->phone ?? 'N/A',
+            'address'         => $vendor->address ?? 'N/A',
         ]);
     }
 
