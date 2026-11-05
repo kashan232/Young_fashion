@@ -13,10 +13,12 @@ use Illuminate\Support\Facades\Route;
 Route::post('/receive-sync', [SyncController::class, 'receiveSync'])->name('api.receive_sync');
 
 // ---------------------------------------------------------
-// LEGACY FRONTEND HEADLESS API ROUTES
+// SHORT AUTH ROUTES (Compatible with Flutter default routes)
 // ---------------------------------------------------------
-Route::post('/register', [\App\Http\Controllers\Api\AuthApiController::class, 'register']);
-Route::post('/login', [\App\Http\Controllers\Api\AuthApiController::class, 'login']);
+Route::post('/register', [\App\Http\Controllers\Api\Flutter\FlutterAuthController::class, 'register']);
+Route::post('/login', [\App\Http\Controllers\Api\Flutter\FlutterAuthController::class, 'login']);
+
+// Legacy website routes
 Route::get('/settings', [\App\Http\Controllers\Api\WebsiteSettingsApiController::class, 'index']);
 Route::get('/categories', [\App\Http\Controllers\Api\CategoryApiController::class, 'index']);
 Route::get('/products', [\App\Http\Controllers\Api\ProductApiController::class, 'index']);
@@ -25,8 +27,13 @@ Route::post('/checkout', [\App\Http\Controllers\Api\CheckoutApiController::class
 Route::post('/checkout/validate-coupon', [\App\Http\Controllers\Api\CheckoutApiController::class, 'validateCoupon']);
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/logout', [\App\Http\Controllers\Api\AuthApiController::class, 'logout']);
-    Route::get('/user', [\App\Http\Controllers\Api\AuthApiController::class, 'user']);
+    Route::post('/logout', [\App\Http\Controllers\Api\Flutter\FlutterAuthController::class, 'logout']);
+    Route::get('/user', function (Request $request) {
+        return response()->json([
+            'status' => true,
+            'user'   => $request->user()
+        ]);
+    });
     Route::get('/customer/orders', [\App\Http\Controllers\Api\CustomerDashboardController::class, 'getOrders']);
 });
 
@@ -40,7 +47,7 @@ Route::prefix('v1/flutter')->group(function () {
     Route::get('/app/splash-onboarding', [\App\Http\Controllers\Api\Flutter\FlutterAppController::class, 'splashOnboarding']); // Splash & 3 Onboarding slides
     Route::get('/app/settings', [\App\Http\Controllers\Api\Flutter\FlutterAppController::class, 'settings']); // Store info, helpline, Urdu/English
 
-    Route::post('/auth/register', [\App\Http\Controllers\Api\Flutter\FlutterAuthController::class, 'register']); // Signup
+    Route::post('/auth/register', [\App\Http\Controllers\Api\Flutter\FlutterAuthController::class, 'register']); // Signup (creates in users table with usertype: App_user)
     Route::post('/auth/login', [\App\Http\Controllers\Api\Flutter\FlutterAuthController::class, 'login']); // Login (Email or Phone)
     Route::post('/auth/social-login', [\App\Http\Controllers\Api\Flutter\FlutterAuthController::class, 'socialLogin']); // Google / Apple Sign In
     Route::post('/auth/forgot-password', [\App\Http\Controllers\Api\Flutter\FlutterAuthController::class, 'forgotPassword']); // OTP generation

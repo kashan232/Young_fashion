@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Flutter;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Models\WebCustomer;
 use App\Models\Customer;
 use Illuminate\Http\Request;
@@ -15,8 +16,8 @@ use Illuminate\Support\Facades\Cache;
  * FLUTTER APP API: AUTHENTICATION & ONBOARDING CONTROLLER (Screen A)
  * ============================================================================
  * Handles:
- * - Customer Registration (Sign up)
- * - Customer Login (Email/Phone + Password)
+ * - Customer Registration (Sign up saved into `users` table with usertype: 'App_user')
+ * - Customer Login (Email/Phone + Password with instant token return)
  * - Social Login (Google / Apple Token Exchange)
  * - Forgot Password & OTP Generation
  * - OTP Verification (4-6 digit box input with resend timer)
@@ -27,17 +28,26 @@ use Illuminate\Support\Facades\Cache;
 class FlutterAuthController extends Controller
 {
     /**
-     * POST /api/v1/flutter/auth/register
-     * Register a new customer from the Flutter App
+     * POST /api/v1/flutter/auth/register (also /api/register)
+     * Register a new user into `users` table with usertype = 'App_user'
+     *
+     * Expected Payload (JSON / Form-data):
+     * - name: string (required)
+     * - email: string/email (required, unique in users)
+     * - phone: string (optional/recommended)
+     * - password: string (required, min 6)
+     * - confirm_password OR password_confirmation: string (optional, must match password)
      */
     public function register(Request $request)
     {
+        // 1. Validation
         $validator = Validator::make($request->all(), [
             'name'                  => 'required|string|max:255',
-            'email'                 => 'required|string|email|max:255|unique:web_customers,email',
-            'phone'                 => 'nullable|string|max:25',
+            'email'                 => 'required|string|email|max:255|unique:users,email',
+            'phone'                 => 'nullable|string|max:30',
             'password'              => 'required|string|min:6',
-            'terms_accepted'        => 'nullable|boolean',
+            'confirm_password'      => 'nullable|string',
+            'password_confirmation' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -48,45 +58,42 @@ class FlutterAuthController extends Controller
             ], 422);
         }
 
-        // Link or create ERP Customer record
-        $existingCustomer = null;
-        if ($request->email) {
-            $existingCustomer = Customer::where('email_address', $request->email)->first();
-        }
-        if (!$existingCustomer && $request->phone) {
-            $existingCustomer = Customer::where('mobile', $request->phone)->first();
-        }
-
-        if ($existingCustomer) {
-            $customerId = $existingCustomer->customer_id;
-            if (empty($existingCustomer->source) || $existingCustomer->source === 'Manual') {
-                $existingCustomer->source = 'Mobile App';
-                $existingCustomer->save();
-            }
-        } else {
-            $customerId = 'CUST-' . str_pad((Customer::max('id') ?? 0) + 1, 4, '0', STR_PAD_LEFT);
-            Customer::create([
-                'customer_id'     => $customerId,
-                'customer_name'   => $request->name,
-                'mobile'          => $request->phone,
-                'email_address'   => $request->email,
-                'opening_balance' => 0,
-                'customer_type'   => 'Main Customer',
-                'status'          => 'active',
-                'source'          => 'Mobile App',
-            ]);
+        // Check password confirmation if passed either as confirm_password or password_confirmation
+        $confirmation = $request->confirm_password ?: $request->password_confirmation;
+        if ($confirmation !== null && $confirmation !== $request->password) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Password confirmation does not match',
+                'errors'  => [
+                    'confirm_password' => ['The password confirmation does not match.']
+                ]
+            ], 422);
         }
 
-        // Create Web/App Customer account
-        $user = WebCustomer::create([
-            'customer_id' => $customerId,
-            'name'        => $request->name,
-            'email'       => $request->email,
-            'phone'       => $request->phone,
-            'password'    => Hash::make($request->password),
+        // 2. Create User in `users` table with usertype = 'App_user'
+        $user = User::create([
+            'name'     => $request->name,
+            'email'    => $request->email,
+            'phone'    => $request->phone,
+            'password' => Hash::make($request->password),
+            'usertype' => 'App_user',
         ]);
 
-        // Generate Sanctum Bearer Token
+        // 3. Keep WebCustomer in sync for ecommerce order processing
+        try {
+            WebCustomer::updateOrCreate(
+                ['email' => $request->email],
+                [
+                    'name'     => $request->name,
+                    'phone'    => $request->phone,
+                    'password' => Hash::make($request->password),
+                ]
+            );
+        } catch (\Exception $e) {
+            \Log::warning("WebCustomer sync skipped: " . $e->getMessage());
+        }
+
+        // 4. Generate Sanctum Bearer Token for immediate Flutter login
         $token = $user->createToken('flutter_mobile_token')->plainTextToken;
 
         return response()->json([
@@ -96,41 +103,79 @@ class FlutterAuthController extends Controller
             'token_type' => 'Bearer',
             'user'       => [
                 'id'          => $user->id,
-                'customer_id' => $user->customer_id,
                 'name'        => $user->name,
                 'email'       => $user->email,
                 'phone'       => $user->phone,
+                'usertype'    => $user->usertype,
                 'avatar'      => asset('assets/images/user-avatar.png'),
+                'created_at'  => $user->created_at ? $user->created_at->format('Y-m-d H:i:s') : null,
             ]
         ], 201);
     }
 
     /**
-     * POST /api/v1/flutter/auth/login
-     * Login using email or phone number
+     * POST /api/v1/flutter/auth/login (also /api/login)
+     * Login using email or phone + password
+     *
+     * Expected Payload (JSON / Form-data):
+     * - email OR phone OR login: string (required)
+     * - password: string (required)
      */
     public function login(Request $request)
     {
+        // 1. Validation
         $validator = Validator::make($request->all(), [
-            'login'    => 'required|string', // can be email or phone
+            'email'    => 'nullable|string',
+            'phone'    => 'nullable|string',
+            'login'    => 'nullable|string',
             'password' => 'required|string',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'status'  => false,
-                'message' => 'Please provide valid credentials',
+                'message' => 'Please provide credentials',
                 'errors'  => $validator->errors()
             ], 422);
         }
 
-        $loginInput = $request->login;
+        // Accept email, phone, or login parameter
+        $loginInput = $request->email ?: ($request->phone ?: $request->login);
 
-        // Check by email or phone
-        $user = WebCustomer::where('email', $loginInput)
-            ->orWhere('phone', $loginInput)
-            ->first();
+        if (empty($loginInput)) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Please provide an email or phone number',
+                'errors'  => [
+                    'email' => ['The email or phone field is required.']
+                ]
+            ], 422);
+        }
 
+        // 2. Search user in `users` table by email or phone
+        $user = User::where(function ($q) use ($loginInput) {
+            $q->where('email', $loginInput)
+              ->orWhere('phone', $loginInput);
+        })->first();
+
+        // 3. Fallback check in web_customers if not yet in users table
+        if (!$user) {
+            $webCust = WebCustomer::where('email', $loginInput)->orWhere('phone', $loginInput)->first();
+            if ($webCust && Hash::check($request->password, $webCust->password)) {
+                // Auto migrate to users table with App_user type
+                $user = User::updateOrCreate(
+                    ['email' => $webCust->email],
+                    [
+                        'name'     => $webCust->name,
+                        'phone'    => $webCust->phone,
+                        'password' => $webCust->password,
+                        'usertype' => 'App_user',
+                    ]
+                );
+            }
+        }
+
+        // 4. Verify password
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
                 'status'  => false,
@@ -138,7 +183,7 @@ class FlutterAuthController extends Controller
             ], 401);
         }
 
-        // Revoke old tokens if single device login desired, or generate new token
+        // 5. Generate Sanctum Bearer Token
         $token = $user->createToken('flutter_mobile_token')->plainTextToken;
 
         return response()->json([
@@ -147,14 +192,12 @@ class FlutterAuthController extends Controller
             'token'      => $token,
             'token_type' => 'Bearer',
             'user'       => [
-                'id'          => $user->id,
-                'customer_id' => $user->customer_id,
-                'name'        => $user->name,
-                'email'       => $user->email,
-                'phone'       => $user->phone,
-                'address'     => $user->address,
-                'city'        => $user->city,
-                'avatar'      => asset('assets/images/user-avatar.png'),
+                'id'         => $user->id,
+                'name'       => $user->name,
+                'email'      => $user->email,
+                'phone'      => $user->phone,
+                'usertype'   => $user->usertype ?? 'App_user',
+                'avatar'     => asset('assets/images/user-avatar.png'),
             ]
         ], 200);
     }
@@ -181,25 +224,14 @@ class FlutterAuthController extends Controller
             ], 422);
         }
 
-        $user = WebCustomer::where('email', $request->email)->first();
+        $user = User::where('email', $request->email)->first();
 
         if (!$user) {
-            $customerId = 'CUST-' . str_pad((Customer::max('id') ?? 0) + 1, 4, '0', STR_PAD_LEFT);
-            Customer::create([
-                'customer_id'     => $customerId,
-                'customer_name'   => $request->name,
-                'email_address'   => $request->email,
-                'opening_balance' => 0,
-                'customer_type'   => 'Main Customer',
-                'status'          => 'active',
-                'source'          => 'Mobile App Social',
-            ]);
-
-            $user = WebCustomer::create([
-                'customer_id' => $customerId,
-                'name'        => $request->name,
-                'email'       => $request->email,
-                'password'    => Hash::make('social_' . uniqid()),
+            $user = User::create([
+                'name'     => $request->name,
+                'email'    => $request->email,
+                'password' => Hash::make('social_' . uniqid()),
+                'usertype' => 'App_user',
             ]);
         }
 
@@ -211,12 +243,12 @@ class FlutterAuthController extends Controller
             'token'      => $token,
             'token_type' => 'Bearer',
             'user'       => [
-                'id'          => $user->id,
-                'customer_id' => $user->customer_id,
-                'name'        => $user->name,
-                'email'       => $user->email,
-                'phone'       => $user->phone,
-                'avatar'      => $request->avatar ?: asset('assets/images/user-avatar.png'),
+                'id'       => $user->id,
+                'name'     => $user->name,
+                'email'    => $user->email,
+                'phone'    => $user->phone,
+                'usertype' => $user->usertype,
+                'avatar'   => $request->avatar ?: asset('assets/images/user-avatar.png'),
             ]
         ]);
     }
@@ -228,7 +260,7 @@ class FlutterAuthController extends Controller
     public function forgotPassword(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email|exists:web_customers,email',
+            'email' => 'required|email|exists:users,email',
         ]);
 
         if ($validator->fails()) {
@@ -239,15 +271,14 @@ class FlutterAuthController extends Controller
             ], 404);
         }
 
-        // Generate 6-digit OTP (for testing/demo: 123456 or random)
         $otp = (string) rand(100000, 999999);
         Cache::put('otp_' . $request->email, $otp, 300); // 5 minutes validity
 
         return response()->json([
             'status'         => true,
             'message'        => 'Verification code sent to your email',
-            'resend_seconds' => 60, // Timer in Flutter
-            'demo_otp'       => $otp, // Helpful for Flutter team during development
+            'resend_seconds' => 60,
+            'demo_otp'       => $otp,
         ]);
     }
 
@@ -272,7 +303,6 @@ class FlutterAuthController extends Controller
             return response()->json(['status' => false, 'message' => 'Invalid or expired OTP code'], 400);
         }
 
-        // Mark OTP as verified for password reset token
         $resetToken = bin2hex(random_bytes(20));
         Cache::put('reset_token_' . $request->email, $resetToken, 600);
 
@@ -304,7 +334,7 @@ class FlutterAuthController extends Controller
             return response()->json(['status' => false, 'message' => 'Reset session expired. Please request OTP again.'], 403);
         }
 
-        $user = WebCustomer::where('email', $request->email)->first();
+        $user = User::where('email', $request->email)->first();
         if ($user) {
             $user->password = Hash::make($request->password);
             $user->save();
