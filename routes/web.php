@@ -46,30 +46,9 @@ use Illuminate\Support\Facades\Route;
     |
     */
 
-// 1. Direct Domain / Root: Redirects to Next.js Storefront Website (Prevents self-redirect loops)
+// 1. Direct Domain / Root: Welcome Landing Page
 Route::get('/', function () {
-    $frontendUrl = env('FRONTEND_URL') ?: \App\Models\Setting::get('website_link');
-
-    // Only redirect if FRONTEND_URL is set and points to an external port/host (e.g. localhost:3000 or Vercel)
-    if (!empty($frontendUrl)) {
-        $parsedHost = parse_url($frontendUrl, PHP_URL_HOST);
-        $parsedPort = parse_url($frontendUrl, PHP_URL_PORT);
-        $currentHost = request()->getHost();
-        $currentPort = request()->getPort();
-
-        // Check if destination is different from current request
-        if (($parsedHost && $parsedHost !== $currentHost) || ($parsedPort && $parsedPort != $currentPort)) {
-            return redirect()->away($frontendUrl);
-        }
-    }
-
-    // If static Next.js build exists in public folder, serve it
-    if (file_exists(public_path('index.html'))) {
-        return response()->file(public_path('index.html'));
-    }
-
-    // Fallback: If on same domain without separate Node app, open software
-    return redirect('/software');
+    return view('welcome');
 })->name('website');
 
 // 2. /software: Software Login Page (or Dashboard if already logged in)
