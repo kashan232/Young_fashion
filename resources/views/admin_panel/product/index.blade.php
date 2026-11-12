@@ -298,6 +298,8 @@
     .btn-act-edit:hover    { background: var(--erp-primary); color: #fff; }
     .btn-act-barcode { background: var(--erp-success-lt); color: var(--erp-success); border-color: #a7f3d0; }
     .btn-act-barcode:hover { background: var(--erp-success); color: #fff; }
+    .btn-act-shelf   { background: #fef3c7; color: #b45309; border-color: #fde68a; }
+    .btn-act-shelf:hover   { background: #d97706; color: #fff; }
     .btn-act-deact   { background: var(--erp-danger-lt); color: var(--erp-danger); border-color: #fecaca; }
     .btn-act-deact:hover   { background: var(--erp-danger); color: #fff; }
     .btn-act-act     { background: var(--erp-success-lt); color: var(--erp-success); border-color: #a7f3d0; }
@@ -506,9 +508,17 @@
         <div class="stat-card">
             <div class="stat-icon" style="background:#eef2ff; color:#4f46e5;"><i class="fas fa-box-open"></i></div>
             <div>
-                <div class="stat-label">Total Products</div>
+                <div class="stat-label">Total Articles</div>
                 <div class="stat-value">{{ $products->total() }}</div>
-                <div class="stat-sub">in catalog</div>
+                <div class="stat-sub">products in catalog</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#f5f3ff; color:#7c3aed;"><i class="fas fa-cubes"></i></div>
+            <div>
+                <div class="stat-label">Total Variants</div>
+                <div class="stat-value">{{ $totalVariantsCount ?? 0 }}</div>
+                <div class="stat-sub">across {{ $products->total() }} articles</div>
             </div>
         </div>
         <div class="stat-card">
@@ -525,20 +535,6 @@
                 <div class="stat-label">Inactive</div>
                 <div class="stat-value">{{ $products->getCollection()->where('is_active',0)->count() }}</div>
                 <div class="stat-sub">on this page</div>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon" style="background:#fffbeb; color:#d97706;"><i class="fas fa-filter"></i></div>
-            <div>
-                <div class="stat-label">Filtered Results</div>
-                <div class="stat-value">{{ $products->total() }}</div>
-                <div class="stat-sub">
-                    @if(request()->hasAny(['search','category_id','brand_id','status']))
-                        <span style="color:#d97706; font-weight:700;">Filters active</span>
-                    @else
-                        all products
-                    @endif
-                </div>
             </div>
         </div>
     </div>
@@ -710,6 +706,7 @@
                             <th>Purchase Price</th>
                             <th>Sale Price</th>
                             <th style="width:90px;">Status</th>
+                            <th style="width:115px;">Created At</th>
                             <th class="text-center" style="width:180px;">Actions</th>
                         </tr>
                     </thead>
@@ -737,6 +734,39 @@
                                     $tradePrice  = (float)$product->purchase_price_per_piece;
                                     $retailPrice = (float)$product->sale_price_per_piece ?: (float)$product->sale_price_per_box;
                                 }
+
+                                // Discount info for list display
+                                $activeDiscounts = $product->activeDiscounts ?? collect();
+                                $hasDiscount     = $activeDiscounts->count() > 0;
+                                $productWideDisc = $activeDiscounts->first(fn($d) => empty($d->variant_row_id) && empty($d->variant_barcode));
+                                $discCount       = $activeDiscounts->count();
+                                $minFinalPrice   = $hasDiscount ? (float) $activeDiscounts->min('final_price') : $retailPrice;
+                                $maxDiscPerc     = $hasDiscount ? (float) $activeDiscounts->max('discount_percentage') : 0;
+                                $maxDiscAmt      = $hasDiscount ? (float) $activeDiscounts->max('total_discount') : 0;
+
+                                // Variants & Colors count + grouped breakdown
+                                $parsedVariants = is_string($product->color) ? json_decode($product->color, true) : $product->color;
+                                $variantCount   = is_array($parsedVariants) ? count($parsedVariants) : 0;
+                                $colorGroups    = [];
+                                if (is_array($parsedVariants)) {
+                                    foreach ($parsedVariants as $pv) {
+                                        if (!is_array($pv)) continue;
+                                        $cLabel = trim((string)($pv['color'] ?? ''));
+                                        if ($cLabel === '' || $cLabel === '-') {
+                                            $cLabel = trim((string)($pv['name'] ?? 'Default'));
+                                        }
+                                        $sLabel = trim((string)($pv['size'] ?? ''));
+                                        if ($sLabel === '-') $sLabel = '';
+                                        $keyLower = strtolower($cLabel);
+                                        if (!isset($colorGroups[$keyLower])) {
+                                            $colorGroups[$keyLower] = ['label' => $cLabel, 'sizes' => []];
+                                        }
+                                        if ($sLabel !== '' && !in_array($sLabel, $colorGroups[$keyLower]['sizes'], true)) {
+                                            $colorGroups[$keyLower]['sizes'][] = $sLabel;
+                                        }
+                                    }
+                                }
+                                $uniqueColors = count($colorGroups);
                             @endphp
                             <tr id="product-row-{{ $product->id }}" class="{{ $product->is_active ? '' : 'row-inactive' }}">
                                 <td><input type="checkbox" class="selectProduct row-check" value="{{ $product->id }}"></td>
@@ -750,9 +780,25 @@
                                     @endif
                                 </td>
                                 <td class="td-item-details">
-                                    <div class="item-name">{{ $product->item_name }}</div>
+                                    <div class="item-name d-flex align-items-center gap-2 flex-wrap">
+                                        <span>{{ $product->item_name }}</span>
+                                        @if($hasDiscount)
+                                            <span class="badge bg-danger text-white" style="font-size: 0.65rem; font-weight: 700; padding: 3px 7px;">
+                                                <i class="fas fa-tags me-1"></i>{{ $maxDiscPerc > 0 ? rtrim(rtrim(number_format($maxDiscPerc, 2), '0'), '.') . '% OFF' : 'Rs. ' . number_format($maxDiscAmt) . ' OFF' }}
+                                            </span>
+                                        @endif
+                                    </div>
                                     <div class="item-meta">
                                         <span class="item-code">{{ $product->item_code }}</span>
+                                        @if($variantCount > 0)
+                                            <span class="meta-chip" style="background:#eef2ff; color:#4f46e5; border-color:#c7d2fe; font-weight:700;" title="Total variants in this article">
+                                                <i class="fas fa-cubes" style="font-size:.58rem;"></i> {{ $variantCount }} {{ $variantCount === 1 ? 'Variant' : 'Variants' }}@if($uniqueColors > 0) · {{ $uniqueColors }} {{ $uniqueColors === 1 ? 'Color' : 'Colors' }}@endif
+                                            </span>
+                                        @else
+                                            <span class="meta-chip" style="background:#f8fafc; color:#64748b;" title="No variants added">
+                                                <i class="fas fa-cube" style="font-size:.58rem;"></i> 0 Variants
+                                            </span>
+                                        @endif
                                 @if(!empty($product->rack_shelf))
                                     <span class="meta-chip" style="background:#f0fdf4; color:#15803d; border-color:#bbf7d0; font-size:10px;"><i class="fas fa-layer-group" style="font-size:.55rem;"></i> {{ $product->rack_shelf }}</span>
                                 @endif
@@ -766,6 +812,15 @@
                                             <span class="meta-chip" title="Main Barcode"><i class="fas fa-barcode" style="font-size:.6rem;"></i> {{ $product->barcode_path }}</span>
                                         @endif
                                     </div>
+                                    @if(!empty($colorGroups))
+                                        <div class="d-flex flex-wrap gap-1 mt-1">
+                                            @foreach($colorGroups as $cg)
+                                                <span class="meta-chip" style="background:#fff7ed; color:#9a3412; border-color:#fed7aa; font-size:10px; font-weight:600;" title="Variant Color &amp; Sizes">
+                                                    <i class="fas fa-palette" style="font-size:.55rem;"></i> {{ $cg['label'] }}@if(!empty($cg['sizes'])) ({{ implode(', ', $cg['sizes']) }})@endif
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    @endif
                                     @if(request('search'))
                                         @php
                                             $searchQ = trim(request('search'));
@@ -802,13 +857,43 @@
                                     </span>
                                 </td>
                                 <td class="price-purchase">Rs. {{ number_format($tradePrice, 2) }}</td>
-                                <td class="price-sale">Rs. {{ number_format($retailPrice, 2) }}</td>
+                                <td class="price-sale">
+                                    @if($hasDiscount)
+                                        <div style="text-decoration: line-through; color: #94a3b8; font-size: 0.72rem; font-weight: 500; line-height: 1.1;">
+                                            Rs. {{ number_format($retailPrice, 2) }}
+                                        </div>
+                                        <div class="fw-bold text-success" style="font-size: 0.88rem; line-height: 1.2;">
+                                            @if($productWideDisc)
+                                                Rs. {{ number_format((float)$productWideDisc->final_price, 2) }}
+                                            @else
+                                                From Rs. {{ number_format($minFinalPrice, 2) }}
+                                            @endif
+                                        </div>
+                                        <div style="font-size: 0.65rem; color: #dc2626; font-weight: 700;">
+                                            @if(!$productWideDisc)
+                                                ({{ $discCount }} {{ \Illuminate\Support\Str::plural('variant', $discCount) }} on offer)
+                                            @else
+                                                (Offer Active)
+                                            @endif
+                                        </div>
+                                    @else
+                                        Rs. {{ number_format($retailPrice, 2) }}
+                                    @endif
+                                </td>
                                 <td>
                                     @if($product->is_active)
                                         <span class="status-active" id="status-badge-{{ $product->id }}">Active</span>
                                     @else
                                         <span class="status-inactive" id="status-badge-{{ $product->id }}">Inactive</span>
                                     @endif
+                                </td>
+                                <td data-order="{{ $product->created_at ? $product->created_at->timestamp : 0 }}" style="white-space: nowrap;">
+                                    <div style="font-size: 0.78rem; font-weight: 600; color: #1e293b;">
+                                        {{ $product->created_at ? $product->created_at->format('d M, Y') : '—' }}
+                                    </div>
+                                    <div style="font-size: 0.68rem; color: #64748b;">
+                                        <i class="far fa-clock me-1" style="font-size: 0.62rem;"></i>{{ $product->created_at ? $product->created_at->format('h:i A') : '' }}
+                                    </div>
                                 </td>
                                 <td>
                                     <div class="action-group justify-content-center">
@@ -818,9 +903,15 @@
                                             <a href="{{ route('products.edit', $product->id) }}" class="btn-act btn-act-edit" title="Edit Product"><i class="fas fa-pencil-alt"></i></a>
                                         @endif
                                         <a href="{{ route('generate-barcode-image', $product->id) }}" class="btn-act btn-act-barcode" title="Print Barcode"><i class="fas fa-barcode"></i></a>
+                                        <a href="{{ route('generate-shelf-tag', $product->id) }}" class="btn-act btn-act-shelf" title="Print Rack / Shelf Tag"><i class="fas fa-layer-group"></i></a>
                                         @if (auth()->user()->can('products.edit') || auth()->user()->email === 'admin@admin.com')
                                             <button type="button" class="btn-act {{ $product->is_active ? 'btn-act-deact' : 'btn-act-act' }} toggle-active-btn" data-id="{{ $product->id }}" data-active="{{ $product->is_active ? '1' : '0' }}" data-name="{{ $product->item_name }}" title="{{ $product->is_active ? 'Deactivate' : 'Activate' }}">
                                                 <i class="fas {{ $product->is_active ? 'fa-ban' : 'fa-check' }}"></i>
+                                            </button>
+                                        @endif
+                                        @if (auth()->user()->can('products.delete') || auth()->user()->can('products.edit') || auth()->user()->email === 'admin@admin.com')
+                                            <button type="button" class="btn-act btn-act-deact delete-product-btn" data-id="{{ $product->id }}" data-name="{{ $product->item_name }}" title="Delete Article">
+                                                <i class="fas fa-trash-alt"></i>
                                             </button>
                                         @endif
                                     </div>
@@ -856,6 +947,14 @@
                         $tradePrice  = (float)$product->purchase_price_per_piece;
                         $retailPrice = (float)$product->sale_price_per_piece ?: (float)$product->sale_price_per_box;
                     }
+
+                    $activeDiscounts = $product->activeDiscounts ?? collect();
+                    $hasDiscount     = $activeDiscounts->count() > 0;
+                    $productWideDisc = $activeDiscounts->first(fn($d) => empty($d->variant_row_id) && empty($d->variant_barcode));
+                    $discCount       = $activeDiscounts->count();
+                    $minFinalPrice   = $hasDiscount ? (float) $activeDiscounts->min('final_price') : $retailPrice;
+                    $maxDiscPerc     = $hasDiscount ? (float) $activeDiscounts->max('discount_percentage') : 0;
+                    $maxDiscAmt      = $hasDiscount ? (float) $activeDiscounts->max('total_discount') : 0;
                 @endphp
                 <div class="prod-mcard {{ $product->is_active ? '' : 'row-inactive' }}" id="pmcard-{{ $product->id }}">
                     <div class="prod-mcard-hd">
@@ -876,6 +975,30 @@
                             </div>
                             <div class="item-meta mt-1">
                                 <span class="item-code">{{ $product->item_code }}</span>
+                                @php
+                                    $mVariants = is_string($product->color) ? json_decode($product->color, true) : $product->color;
+                                    $mVarCount = is_array($mVariants) ? count($mVariants) : 0;
+                                    $mColorGroups = [];
+                                    if (is_array($mVariants)) {
+                                        foreach ($mVariants as $pv) {
+                                            if (!is_array($pv)) continue;
+                                            $cLabel = trim((string)($pv['color'] ?? ''));
+                                            if ($cLabel === '' || $cLabel === '-') $cLabel = trim((string)($pv['name'] ?? 'Default'));
+                                            $sLabel = trim((string)($pv['size'] ?? ''));
+                                            if ($sLabel === '-') $sLabel = '';
+                                            $k = strtolower($cLabel);
+                                            if (!isset($mColorGroups[$k])) $mColorGroups[$k] = ['label' => $cLabel, 'sizes' => []];
+                                            if ($sLabel !== '' && !in_array($sLabel, $mColorGroups[$k]['sizes'], true)) $mColorGroups[$k]['sizes'][] = $sLabel;
+                                        }
+                                    }
+                                @endphp
+                                <span class="meta-chip" style="background:#eef2ff; color:#4f46e5; border-color:#c7d2fe; font-weight:700;"><i class="fas fa-cubes"></i> {{ $mVarCount }} {{ $mVarCount === 1 ? 'Variant' : 'Variants' }}</span>
+                                @foreach($mColorGroups as $cg)
+                                    <span class="meta-chip" style="background:#fff7ed; color:#9a3412; border-color:#fed7aa; font-size:10px; font-weight:600;"><i class="fas fa-palette" style="font-size:.55rem;"></i> {{ $cg['label'] }}@if(!empty($cg['sizes'])) ({{ implode(', ', $cg['sizes']) }})@endif</span>
+                                @endforeach
+                                @if($hasDiscount)
+                                    <span class="badge bg-danger text-white" style="font-size:10px;"><i class="fas fa-tags me-1"></i>{{ $maxDiscPerc > 0 ? rtrim(rtrim(number_format($maxDiscPerc, 2), '0'), '.') . '% OFF' : 'Rs. ' . number_format($maxDiscAmt) . ' OFF' }}</span>
+                                @endif
                                 @if(!empty($product->rack_shelf))
                                     <span class="meta-chip" style="background:#f0fdf4; color:#15803d; border-color:#bbf7d0; font-size:10px;"><i class="fas fa-layer-group" style="font-size:.55rem;"></i> {{ $product->rack_shelf }}</span>
                                 @endif
@@ -885,13 +1008,23 @@
                                 @if($product->brand)
                                     <span class="meta-chip"><i class="fas fa-trademark"></i> {{ $product->brand->name }}</span>
                                 @endif
+                                @if($product->created_at)
+                                    <span class="meta-chip" title="Created At"><i class="far fa-clock"></i> {{ $product->created_at->format('d M Y, h:i A') }}</span>
+                                @endif
                             </div>
                         </div>
                     </div>
                     <div class="prod-mcard-body">
                         <div>
                             <div style="font-size:.68rem; font-weight:700; color:var(--erp-muted); text-transform:uppercase;">Sale Price</div>
-                            <div class="prod-mcard-price">Rs. {{ number_format($retailPrice, 2) }}</div>
+                            @if($hasDiscount)
+                                <div style="text-decoration:line-through; color:#94a3b8; font-size:.7rem;">Rs. {{ number_format($retailPrice, 2) }}</div>
+                                <div class="prod-mcard-price text-success">
+                                    {{ $productWideDisc ? 'Rs. ' . number_format((float)$productWideDisc->final_price, 2) : 'From Rs. ' . number_format($minFinalPrice, 2) }}
+                                </div>
+                            @else
+                                <div class="prod-mcard-price">Rs. {{ number_format($retailPrice, 2) }}</div>
+                            @endif
                             <div style="font-size:.7rem; color:var(--erp-muted);">Cost: Rs. {{ number_format($tradePrice, 2) }}</div>
                         </div>
                         <div class="text-end">
@@ -912,6 +1045,9 @@
                         <a href="{{ route('generate-barcode-image', $product->id) }}" class="btn-act btn-act-barcode">
                             <i class="fas fa-barcode"></i> Barcode
                         </a>
+                        <a href="{{ route('generate-shelf-tag', $product->id) }}" class="btn-act btn-act-shelf">
+                            <i class="fas fa-layer-group"></i> Shelf Tag
+                        </a>
                         @if (auth()->user()->can('products.edit') || auth()->user()->email === 'admin@admin.com')
                             <button type="button"
                                 class="btn-act {{ $product->is_active ? 'btn-act-deact' : 'btn-act-act' }} toggle-active-btn"
@@ -919,6 +1055,15 @@
                                 data-active="{{ $product->is_active ? '1' : '0' }}"
                                 data-name="{{ $product->item_name }}">
                                 <i class="fas {{ $product->is_active ? 'fa-ban' : 'fa-check' }}"></i>
+                            </button>
+                        @endif
+                        @if (auth()->user()->can('products.delete') || auth()->user()->can('products.edit') || auth()->user()->email === 'admin@admin.com')
+                            <button type="button"
+                                class="btn-act btn-act-deact delete-product-btn"
+                                data-id="{{ $product->id }}"
+                                data-name="{{ $product->item_name }}"
+                                title="Delete Article">
+                                <i class="fas fa-trash-alt"></i> Delete
                             </button>
                         @endif
                     </div>
@@ -1188,10 +1333,10 @@ $(document).ready(function () {
         paging:     false,
         ordering:   true,
         info:       false,
-        order:      [[3, 'asc']],
+        order:      [],
         dom:        'rt',
         scrollX:    false,
-        columnDefs: [{ targets: [0, 8], orderable: false, searchable: false }]
+        columnDefs: [{ targets: [0, 9], orderable: false, searchable: false }]
     });   // DataTable closes here
 
     // ── Update Selected Count Badge ──
@@ -1525,16 +1670,19 @@ $(document).ready(function () {
             let vSale = parseFloat(v.sale_price || 0);
             let vWholesale = parseFloat(v.wholesale_price || 0);
             let vPurch = parseFloat(v.purch_price || 0);
-            let vAlert = v.alert || 0;
+            let vAlert = parseFloat(v.alert !== undefined && v.alert !== '' ? v.alert : (product.alert_carton_quantity || product.alert_qty || product.alert_quantity || 0)) || 0;
             let vBarcode = v.barcode || '-';
             let photos = v.resolved_photos || [];
 
-            // Stock badge
-            let stockBadge = vStock > 5 
-                ? `<span class="badge bg-success text-white px-2 py-1"><i class="fas fa-check-circle me-1"></i>${vStock} In Stock</span>`
-                : (vStock > 0 
-                    ? `<span class="badge bg-warning text-dark px-2 py-1"><i class="fas fa-exclamation-triangle me-1"></i>${vStock} Low Stock</span>`
-                    : `<span class="badge bg-danger text-white px-2 py-1"><i class="fas fa-times-circle me-1"></i>Out of Stock</span>`);
+            // Stock badge: compare against alert threshold
+            let stockBadge = '';
+            if (vStock <= 0) {
+                stockBadge = `<span class="badge bg-danger text-white px-2 py-1"><i class="fas fa-times-circle me-1"></i>Out of Stock</span>`;
+            } else if (vAlert > 0 && vStock <= vAlert) {
+                stockBadge = `<span class="badge bg-warning text-dark px-2 py-1"><i class="fas fa-exclamation-triangle me-1"></i>${vStock} Low Stock</span>`;
+            } else {
+                stockBadge = `<span class="badge bg-success text-white px-2 py-1"><i class="fas fa-check-circle me-1"></i>${vStock} In Stock</span>`;
+            }
 
             // Photos Column HTML (Matches create_prodcut row preview)
             let photosCellHtml = '';
@@ -1655,6 +1803,82 @@ $(document).ready(function () {
                 },
                 error: () => Swal.fire('Error', 'Could not update product status.', 'error')
             });
+        });
+    });
+
+    // ── Delete Article (with active stock / invoice confirmation) ──
+    function executeDeleteProduct(id, name, forceDelete) {
+        var row = $('#product-row-' + id);
+        var card = $('#product-card-' + id);
+
+        $.ajax({
+            url: '/products/' + id,
+            type: 'DELETE',
+            data: {
+                _token: '{{ csrf_token() }}',
+                force: forceDelete ? 1 : 0
+            },
+            success: function(res) {
+                if (res.success) {
+                    if ($.fn.DataTable && $.fn.DataTable.isDataTable('#productTable') && row.length) {
+                        $('#productTable').DataTable().row(row).remove().draw(false);
+                    } else {
+                        row.fadeOut(250, function() { $(this).remove(); });
+                    }
+                    card.fadeOut(250, function() { $(this).remove(); });
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: res.message || ('Article "' + name + '" deleted.'),
+                        showConfirmButton: false,
+                        timer: 2800,
+                        timerProgressBar: true
+                    });
+                }
+            },
+            error: function(xhr) {
+                var json = xhr.responseJSON || {};
+                if (xhr.status === 422 && json.requires_force) {
+                    Swal.fire({
+                        title: 'Confirm Force Delete',
+                        text: json.message,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc2626',
+                        cancelButtonColor: '#64748b',
+                        confirmButtonText: 'Yes, Delete Anyway',
+                        cancelButtonText: 'Cancel'
+                    }).then(function(confirmRes) {
+                        if (confirmRes.isConfirmed) {
+                            executeDeleteProduct(id, name, true);
+                        }
+                    });
+                } else {
+                    Swal.fire('Error', json.message || 'Could not delete article.', 'error');
+                }
+            }
+        });
+    }
+
+    $(document).on('click', '.delete-product-btn', function() {
+        var btn = $(this);
+        var id = btn.data('id');
+        var name = btn.data('name');
+
+        Swal.fire({
+            title: 'Delete Article?',
+            html: 'Are you sure you want to delete <strong>' + $('<div>').text(name).html() + '</strong> and all its variants from the catalog?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Yes, Delete Article',
+            cancelButtonText: 'Cancel'
+        }).then(function(result) {
+            if (result.isConfirmed) {
+                executeDeleteProduct(id, name, false);
+            }
         });
     });
 

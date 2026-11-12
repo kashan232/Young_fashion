@@ -112,6 +112,19 @@
                 <td class="text-center text-muted fw-bold">{{ $idx + 1 }}</td>
                 <td class="text-start fw-bold text-dark">
                     {{ $item->product->item_name ?? 'Shoe Item' }}
+                    @if(!empty($item->description))
+                        <div class="text-muted fw-normal" style="font-size: 9.5px;">{{ $item->description }}</div>
+                    @endif
+                    @if(!empty($item->mfg_date) || !empty($item->exp_date))
+                        <div class="d-flex gap-2 text-muted fw-normal mt-0.5" style="font-size: 9px;">
+                            @if(!empty($item->mfg_date))
+                                <span><strong>Mfg:</strong> {{ \Carbon\Carbon::parse($item->mfg_date)->format('d-M-Y') }}</span>
+                            @endif
+                            @if(!empty($item->exp_date))
+                                <span class="text-danger"><strong>Exp:</strong> {{ \Carbon\Carbon::parse($item->exp_date)->format('d-M-Y') }}</span>
+                            @endif
+                        </div>
+                    @endif
                 </td>
                 <td class="text-center">
                     <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 10px;">{{ $vSize }}</span>

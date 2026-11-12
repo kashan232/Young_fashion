@@ -12,6 +12,8 @@ class PurchaseItem extends Model
         'price'         => 'decimal:2',
         'item_discount' => 'decimal:2',
         'line_total'    => 'decimal:2',
+        'mfg_date'      => 'date',
+        'exp_date'      => 'date',
     ];
 
     

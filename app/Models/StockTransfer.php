@@ -8,15 +8,17 @@ class StockTransfer extends Model
 {
     use HasFactory;
 
-  protected $fillable = [
-    'from_warehouse_id',
-    'to_warehouse_id',
-    'to_shop',
-    'product_id',
-    'quantity',
-    'remarks',
-];
-
+    protected $fillable = [
+        'from_warehouse_id',
+        'to_warehouse_id',
+        'to_shop',
+        'product_id',
+        'size',
+        'color',
+        'variant_data',
+        'quantity',
+        'remarks',
+    ];
 
     public function fromWarehouse() {
         return $this->belongsTo(Warehouse::class, 'from_warehouse_id');

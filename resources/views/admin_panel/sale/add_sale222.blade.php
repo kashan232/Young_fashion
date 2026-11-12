@@ -739,6 +739,7 @@
                                                         R
                                                     </button>
                                                 </div>
+                                                <div class="product-offer-badge text-danger fw-bold d-none" style="font-size:0.65rem; line-height:1.15; margin-top:2px;"></div>
                                                 <input type="hidden" class="price-per-piece" name="price_per_piece[]">
                                                 <input type="hidden" class="retail-price">
                                                 <input type="hidden" class="wholesale-price">
@@ -910,16 +911,21 @@
                                 </div>
                             </div>
                             <div class="d-flex align-items-center gap-2">
-                                <div class="pos-product-price">{{ number_format($prod->retail_price ?? 0, 2) }}</div>
+                                <div class="pos-product-price text-end">
+                                    @if(!empty($prod->has_discount))
+                                        <div class="text-danger fw-bold">{{ number_format($prod->retail_price ?? 0, 2) }}</div>
+                                        <div class="text-muted text-decoration-line-through" style="font-size:0.65rem;">{{ number_format($prod->original_price ?? 0, 2) }}</div>
+                                        <span class="badge bg-danger" style="font-size:0.55rem;">{{ rtrim(rtrim(number_format($prod->discount_percentage ?? 0, 2), '0'), '.') }}% OFF</span>
+                                    @else
+                                        <div>{{ number_format($prod->retail_price ?? 0, 2) }}</div>
+                                    @endif
+                                </div>
                                 <button type="button" class="pos-product-add-btn add-product-direct-btn" data-id="{{ $prod->id }}" title="Add to Grid"><i class="fas fa-plus"></i></button>
                             </div>
                         </div>
                     @endforeach
                 @endif
             </div>
-        </div>
-    </div>
-            </form>
         </div>
     </div>
 
@@ -971,91 +977,12 @@
         </div>
     </div>
 
-    {{-- ===== QUICK ADD PRODUCT MODAL ===== --}}
-<!-- <div class="modal fade" id="quickAddProductModal" tabindex="-1" aria-labelledby="quickAddProductModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-light border-bottom-0 pb-2">
-                <h5 class="modal-title fw-bold" id="quickAddProductModalLabel">
-                    <i class="fa fa-plus-circle text-primary me-2"></i>Quick Add Product
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form id="quickAddProductForm">
-                @csrf
-                <div class="modal-body pt-2">
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label fw-bold small text-muted">Product Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="product_name" required placeholder="Enter product name">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small text-muted">Category <span class="text-danger">*</span></label>
-                            <select class="form-select" name="category_id" id="qap_category" required>
-                                <option value="">Select Category</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small text-muted">Sub Category</label>
-                            <select class="form-select" name="sub_category_id" id="qap_subcategory">
-                                <option value="">Select Sub Category</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small text-muted">Brand <span class="text-danger">*</span></label>
-                            <select class="form-select" name="brand_id" id="qap_brand" required>
-                                <option value="">Select Brand</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small text-muted">Model / Series</label>
-                            <input type="text" class="form-control" name="model" placeholder="Optional">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small text-muted">Size Mode <span class="text-danger">*</span></label>
-                            <select class="form-select" name="size_mode" id="qap_size_mode" required>
-                                <option value="by_cartons" selected>By Cartons</option>
-                                <option value="by_pieces">By Pieces</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6" id="qap_ppb_wrap">
-                            <label class="form-label fw-bold small text-muted">Pieces Per Box</label>
-                            <input type="number" class="form-control" name="pieces_per_box" id="qap_ppb" value="1" min="1" placeholder="e.g. 12">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small text-muted">Low Stock (Cartons)</label>
-                            <input type="number" class="form-control" name="alert_carton_quantity" min="0" placeholder="e.g. 5">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small text-muted">Purchase Price /pc</label>
-                            <input type="number" step="0.01" class="form-control" name="purchase_price_per_piece" value="0" placeholder="0.00">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small text-muted">Sale Price /pc</label>
-                            <input type="number" step="0.01" class="form-control" name="sale_price_per_box" value="0" placeholder="0.00">
-                        </div>
-                    </div>
-                    {{-- Hidden defaults for validation --}}
-                    <input type="hidden" name="boxes_quantity" value="0">
-                    <input type="hidden" name="loose_pieces" value="0">
-                    <input type="hidden" name="piece_quantity" value="0">
-                </div>
-                <div class="modal-footer border-top-0 pt-0">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary px-4 fw-bold" id="btnQuickSaveProduct">
-                        <i class="fa fa-save me-1"></i>Save Product
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
     {{-- Quick Add Product Modal --}}
     @include('admin_panel.partials.quick_add_product_modal')
 @endsection
 
 @section('js')
+    <script src="{{ asset('assets/vendors/bootstrap5/js/bootstrap.bundle.min.js') }}"></script>
     @include('admin_panel.sale.scripts.shared_logic')
 
     <script>

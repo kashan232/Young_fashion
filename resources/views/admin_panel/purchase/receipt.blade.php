@@ -186,6 +186,15 @@
                 <tr>
                     <td colspan="3" style="font-weight: 600;">
                         {{ \Illuminate\Support\Str::limit($item->product->item_name ?? 'Item', 25) }}
+                        @if(!empty($item->description))
+                            <div style="font-size: 9px; font-weight: normal; color: #555;">{{ $item->description }}</div>
+                        @endif
+                        @if(!empty($item->mfg_date) || !empty($item->exp_date))
+                            <div style="font-size: 8.5px; font-weight: normal; color: #555;">
+                                @if(!empty($item->mfg_date)) Mfg: {{ \Carbon\Carbon::parse($item->mfg_date)->format('d/m/y') }} @endif
+                                @if(!empty($item->exp_date)) Exp: {{ \Carbon\Carbon::parse($item->exp_date)->format('d/m/y') }} @endif
+                            </div>
+                        @endif
                     </td>
                 </tr>
                 <tr>

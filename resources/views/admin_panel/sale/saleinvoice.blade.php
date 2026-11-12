@@ -512,16 +512,25 @@
                             </div>
 
                             <div style="font-size: 11px; color: #555; line-height: 1.2;">
-                                @if (!empty($item['color']))
-                                    <span class="badge bg-light text-dark border p-1"
-                                        style="font-size: 9px; line-height:1;">
-                                        @if(is_array($item['color']))
-                                            @foreach ($item['color'] as $clr)
-                                                {{ $clr }}
-                                            @endforeach
-                                        @else
-                                            {{ $item['color'] }}
-                                        @endif
+                                @php
+                                    $vSize = !empty($item['size_val']) && $item['size_val'] !== '-' ? $item['size_val'] : '';
+                                    $vColor = !empty($item['color_val']) && $item['color_val'] !== '-' ? $item['color_val'] : '';
+                                    $vLabel = implode(' | ', array_filter([$vSize ? 'Size: ' . $vSize : '', $vColor ? 'Color: ' . $vColor : '']));
+                                    if (empty($vLabel) && !empty($item['color'])) {
+                                        if (is_array($item['color'])) {
+                                            $skipKeys = ['row_id', 'barcode', 'stock', 'orig_initial_stock', 'available_stock', 'uncapped_stock', 'purch_price', 'wholesale_price', 'sale_price', 'alert', 'images', 'resolved_photos'];
+                                            $scalarColors = array_filter($item['color'], function ($v, $k) use ($skipKeys) {
+                                                return is_scalar($v) && $v !== '' && $v !== '-' && !in_array((string) $k, $skipKeys, true);
+                                            }, ARRAY_FILTER_USE_BOTH);
+                                            $vLabel = implode(' | ', $scalarColors);
+                                        } elseif (is_scalar($item['color']) && $item['color'] !== '-') {
+                                            $vLabel = (string) $item['color'];
+                                        }
+                                    }
+                                @endphp
+                                @if (!empty($vLabel))
+                                    <span class="badge bg-light text-dark border p-1" style="font-size: 9px; line-height:1;">
+                                        {{ $vLabel }}
                                     </span>
                                 @endif
 

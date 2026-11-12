@@ -313,7 +313,7 @@
         .table-responsive {
             border: 1px solid #cbd5e1 !important;
             border-radius: 8px !important;
-            overflow-x: hidden !important;
+            overflow-x: auto !important;
             overflow-y: visible !important;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03) !important;
             min-height: 150px;
@@ -324,17 +324,21 @@
             border-collapse: collapse !important;
             margin-bottom: 0 !important;
             width: 100% !important;
+            min-width: 1260px;
             table-layout: auto !important;
         }
 
-        .col-product { width: 36%; }
-        .col-unit { width: 10%; text-align: center; }
-        .col-qty { width: 12%; text-align: center; }
-        .col-price { width: 13%; text-align: right; }
-        .col-disc { width: 8%; text-align: right; }
-        .col-disc-amt { width: 9%; text-align: right; }
-        .col-amount { width: 12%; text-align: right; }
-        .col-action { width: 4%; text-align: center; }
+        .col-product { min-width: 240px; }
+        .col-desc { min-width: 180px; }
+        .col-mfg { width: 135px; min-width: 130px; text-align: center; }
+        .col-exp { width: 135px; min-width: 130px; text-align: center; }
+        .col-unit { width: 65px; text-align: center; }
+        .col-qty { width: 85px; text-align: center; }
+        .col-price { width: 105px; text-align: right; }
+        .col-disc { width: 75px; text-align: right; }
+        .col-disc-amt { width: 90px; text-align: right; }
+        .col-amount { width: 110px; text-align: right; }
+        .col-action { width: 45px; text-align: center; }
 
         /* Product Search Dropdown */
         .search-results {
@@ -473,6 +477,9 @@
                             <thead>
                                 <tr>
                                     <th class="col-product">Product</th>
+                                    <th class="col-desc">Description / Note</th>
+                                    <th class="col-mfg">Mfg Date</th>
+                                    <th class="col-exp">Exp Date</th>
                                     <th class="col-unit">Unit</th>
                                     <th class="col-qty">Qty</th>
                                     <th class="col-price">Purchase Price</th>
@@ -487,7 +494,7 @@
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <td colspan="6" class="text-end fw-bold text-muted">Total Amount:</td>
+                                    <td colspan="9" class="text-end fw-bold text-muted">Total Amount:</td>
                                     <td class="text-end fw-bold fs-6 text-dark"><span id="totalAmount">0.00</span>
                                     </td>
                                     <td></td>
@@ -927,6 +934,15 @@
                         <input type="hidden" name="length[]" class="hidden-length" value="">
                         <input type="hidden" name="width[]" class="hidden-width" value="">
                         <input type="hidden" name="color[]" class="hidden-variant-data" value="">
+                    </td>
+                    <td>
+                        <input type="text" name="description[]" class="form-control text-start item-desc-input" placeholder="Article description / notes" style="text-align: left !important; padding-left: 10px !important;">
+                    </td>
+                    <td>
+                        <input type="date" name="mfg_date[]" class="form-control text-center mfg-date-input" title="Manufacture Date">
+                    </td>
+                    <td>
+                        <input type="date" name="exp_date[]" class="form-control text-center exp-date-input" title="Expiry Date">
                     </td>
                     <td class="text-center align-middle">
                         <button type="button" class="btn btn-sm btn-outline-primary fw-bold unit-toggle-btn py-0 px-2" data-unit="Pcs" style="font-size:0.72rem;">Pcs</button>

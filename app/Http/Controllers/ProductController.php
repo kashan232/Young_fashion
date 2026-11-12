@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductDiscount;
 use App\Models\Stock;
 use App\Models\StockMovement;
 use App\Models\Size;
 use App\Models\Subcategory;
 use App\Models\Unit;
 use App\Models\WarehouseStock;
+use App\Services\ProductVariantStockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -18,35 +20,50 @@ use Milon\Barcode\DNS1D;
 
 class ProductController extends Controller
 {
+    protected $variantStockService;
+
+    public function __construct(ProductVariantStockService $variantStockService)
+    {
+        $this->variantStockService = $variantStockService;
+    }
+
     public function getPrice(Request $request)
     {
-        $product = Product::find($request->product_id);
+        $product = Product::with('activeDiscounts')->find($request->product_id);
 
         if (! $product) {
             return response()->json(['retail_price' => 0]);
         }
 
-        // Determine price based on mode
-        $price = 0;
+        // Determine base prices before discount
+        $basePiecePrice = (float) ($product->sale_price_per_piece ?: ($product->sale_price_per_box ?? 0));
         if ($product->size_mode === 'by_size') {
-            $price = $product->price_per_m2;
+            $baseMainPrice = (float) ($product->price_per_m2 ?? 0);
+        } elseif (in_array($product->size_mode, ['by_pieces', 'by_kg', 'by_gm', 'by_meter'])) {
+            $baseMainPrice = $basePiecePrice;
         } else {
-            // For by_cartons or by_pieces, use the box/piece price
-            $price = $product->sale_price_per_box;
+            $baseMainPrice = (float) ($product->sale_price_per_box ?: $basePiecePrice);
         }
 
+        $discPiece = \App\Models\ProductDiscount::resolveForPrice($product->activeDiscounts, $basePiecePrice);
+        $discMain = \App\Models\ProductDiscount::resolveForPrice($product->activeDiscounts, $baseMainPrice);
+
         return response()->json([
-            'retail_price'          => $price,
-            'wholesale_price'       => (float)($product->wholesale_price ?? 0),
-            'weight_per_piece'      => (float)($product->weight_per_piece ?? 0),
-            'size_mode'             => $product->size_mode,
-            'pieces_per_box'        => $product->pieces_per_box,
-            'price_per_m2'          => $product->price_per_m2,
-            'sale_price_per_box'    => $product->sale_price_per_box,
-            'sale_price_per_piece'  => $product->sale_price_per_piece,
-            'height'                => $product->height,
-            'width'                 => $product->width,
-            'item_code'             => $product->item_code,
+            'retail_price'              => $discMain['final_price'],
+            'original_price'            => $discPiece['original_price'],
+            'discount_amount'           => $discPiece['discount_amount'],
+            'discount_percentage'       => $discPiece['discount_percentage'],
+            'has_discount'              => $discPiece['has_discount'],
+            'wholesale_price'           => (float) ($product->wholesale_price ?? 0),
+            'weight_per_piece'          => (float) ($product->weight_per_piece ?? 0),
+            'size_mode'                 => $product->size_mode,
+            'pieces_per_box'            => $product->pieces_per_box,
+            'price_per_m2'              => $product->size_mode === 'by_size' ? $discMain['final_price'] : $product->price_per_m2,
+            'sale_price_per_box'        => $product->sale_price_per_box,
+            'sale_price_per_piece'      => $discPiece['final_price'],
+            'height'                    => $product->height,
+            'width'                     => $product->width,
+            'item_code'                 => $product->item_code,
             'purchase_discount_percent' => $product->purchase_discount_percent ?? 0,
             'sale_discount_percent'     => $product->sale_discount_percent ?? 0,
         ]);
@@ -102,8 +119,8 @@ class ProductController extends Controller
         $term = $request->get('term') ?? $request->get('q') ?? '';
 
         $query = Product::query()
-            ->select('id', 'item_name', 'item_code', 'barcode_path', 'size_mode', 'unit_id', 'height', 'width', 'pieces_per_box', 'purchase_price_per_box', 'purchase_price_per_m2', 'purchase_price_per_piece', 'pieces_per_m2', 'purchase_discount_percent', 'sale_discount_percent', 'color', 'sale_price_per_piece')
-            ->with(['unit', 'webImages'])
+            ->select('id', 'item_name', 'item_code', 'barcode_path', 'size_mode', 'unit_id', 'height', 'width', 'pieces_per_box', 'purchase_price_per_box', 'purchase_price_per_m2', 'purchase_price_per_piece', 'pieces_per_m2', 'purchase_discount_percent', 'sale_discount_percent', 'color', 'sale_price_per_piece', 'wholesale_price', 'weight_per_piece')
+            ->with(['unit', 'webImages', 'activeDiscounts'])
             ->withSum('warehouseStocks', 'total_pieces') /* Sum PIECES, not boxes */
             ->where('is_active', true) /* Only active products */
             ->where(function ($q) use ($term) {
@@ -317,6 +334,14 @@ class ProductController extends Controller
                     $v['current_stock'] = $vStockDisplay;
                     $variantJson = json_encode($v);
 
+                    $baseRetailPrice = (float) ($v['sale_price'] ?? $p->sale_price_per_piece ?? 0);
+                    $discInfo = \App\Models\ProductDiscount::resolveForPrice(
+                        $p->activeDiscounts,
+                        $baseRetailPrice,
+                        isset($v['row_id']) ? (string) $v['row_id'] : null,
+                        isset($v['barcode']) ? (string) $v['barcode'] : null
+                    );
+
                     $expanded[] = [
                         'id' => $p->id . '|variant|' . base64_encode($variantJson),
                         'text' => $vName." (SKU: {$p->item_code})",
@@ -329,7 +354,11 @@ class ProductController extends Controller
                         'pieces_per_box' => $ppb,
                         'ppb' => $ppb,
                         'trade_price' => $v['purch_price'] ?? $p->purchase_price_per_piece ?? 0,
-                        'retail_price' => $v['sale_price'] ?? $p->sale_price_per_piece ?? 0,
+                        'retail_price' => $discInfo['final_price'],
+                        'original_price' => $discInfo['original_price'],
+                        'discount_amount' => $discInfo['discount_amount'],
+                        'discount_percentage' => $discInfo['discount_percentage'],
+                        'has_discount' => $discInfo['has_discount'],
                         'wholesale_price' => $v['wholesale_price'] ?? $p->wholesale_price ?? 0,
                         'weight_per_piece' => $v['weight_per_piece'] ?? $p->weight_per_piece ?? 0,
                         'purchase_price_per_piece' => $v['purch_price'] ?? $p->purchase_price_per_piece ?? 0,
@@ -340,6 +369,9 @@ class ProductController extends Controller
                 }
                 return $expanded;
             }
+
+            $baseRetailPrice = (float) ($p->sale_price_per_piece ?? 0);
+            $discInfo = \App\Models\ProductDiscount::resolveForPrice($p->activeDiscounts, $baseRetailPrice);
 
             return [[
                 'id' => $p->id,
@@ -353,7 +385,11 @@ class ProductController extends Controller
                 'pieces_per_box' => $ppb,
                 'ppb' => $ppb,
                 'trade_price' => $p->purchase_price_per_piece ?? 0,
-                'retail_price' => $p->sale_price_per_piece ?? 0,
+                'retail_price' => $discInfo['final_price'],
+                'original_price' => $discInfo['original_price'],
+                'discount_amount' => $discInfo['discount_amount'],
+                'discount_percentage' => $discInfo['discount_percentage'],
+                'has_discount' => $discInfo['has_discount'],
                 'wholesale_price' => $p->wholesale_price ?? 0,
                 'weight_per_piece' => $p->weight_per_piece ?? 0,
                 'purchase_price_per_piece' => $p->purchase_price_per_piece ?? 0,
@@ -430,6 +466,7 @@ class ProductController extends Controller
             'unit',
             'brand',
             'webImages',
+            'activeDiscounts',
         ])->withSum('warehouseStocks', 'total_pieces');
 
         // ── Filters ──
@@ -455,11 +492,21 @@ class ProductController extends Controller
             $query->where('is_active', $request->status === 'active' ? 1 : 0);
         }
 
+        $totalVariantsCount = 0;
+        (clone $query)->select('id', 'color')->chunk(500, function ($chunk) use (&$totalVariantsCount) {
+            foreach ($chunk as $item) {
+                $decoded = is_string($item->color) ? json_decode($item->color, true) : $item->color;
+                if (is_array($decoded)) {
+                    $totalVariantsCount += count($decoded);
+                }
+            }
+        });
+
         $products   = $query->latest()->paginate(20)->withQueryString();
         $categories = Category::orderBy('name')->get();
         $brands     = Brand::orderBy('name')->get();
 
-        return view('admin_panel.product.index', compact('products', 'categories', 'brands'));
+        return view('admin_panel.product.index', compact('products', 'categories', 'brands', 'totalVariantsCount'));
     }
 
     public function productview($id)
@@ -478,7 +525,9 @@ class ProductController extends Controller
         }
 
         // Calculate derived fields
-        $totalPieces = (float) $product->warehouseStocks->sum('total_pieces');
+        $warehouseStock = (float) $product->warehouseStocks->sum('total_pieces');
+        $shopStock = $this->variantStockService->getShopTotalStock($product);
+        $totalPieces = $shopStock; // On retail/counter view, shop stock is the primary stock
         $ppb = $product->pieces_per_box > 0 ? $product->pieces_per_box : 1;
 
         $boxes = 0;
@@ -489,13 +538,14 @@ class ProductController extends Controller
             $loose = $totalPieces % $ppb;
         } else {
             // For by_pieces, boxes is essentially the piece count if we treat it largely
-            // But strict interpretation:
             $boxes = $totalPieces;
             $loose = 0;
         }
 
         // Append these purely for the view (not saved in DB)
-        $product->setAttribute('calculated_total_stock_qty', $totalPieces);
+        $product->setAttribute('calculated_total_stock_qty', $shopStock);
+        $product->setAttribute('calculated_shop_stock_qty', $shopStock);
+        $product->setAttribute('calculated_warehouse_stock_qty', $warehouseStock);
         $product->setAttribute('calculated_boxes_quantity', $boxes);
         $product->setAttribute('calculated_loose_pieces', $loose);
 
@@ -514,177 +564,62 @@ class ProductController extends Controller
         }
 
         if (count($variants) > 0) {
-            if (count($variants) === 1) {
-                $v = &$variants[0];
-                $vBalance = max(0, $totalPieces);
-                $vStockDisplay = ((float)$vBalance == (int)$vBalance) ? (int)$vBalance : round($vBalance, 2);
+            $shopVariants = $this->variantStockService->getShopVariantsWithStock($product);
+            $whVariants   = $this->variantStockService->getVariantsWithStock($product);
+
+            $shopMap = [];
+            foreach ($shopVariants as $sv) {
+                $shopMap[$sv['variant_key']] = $sv;
+            }
+            $whMap = [];
+            foreach ($whVariants as $wv) {
+                $whMap[$wv['variant_key']] = $wv;
+            }
+
+            foreach ($variants as &$v) {
+                $vName = $v['name'] ?? $product->item_name;
+                $vSize = (string)($v['size'] ?? '-');
+                $vColor = (string)($v['color'] ?? '-');
+                $vKey = $vName . '|' . $vSize . '|' . $vColor;
+
+                $sVar = $shopMap[$vKey] ?? null;
+                $wVar = $whMap[$vKey] ?? null;
+
+                $vShopStock = $sVar ? (float)$sVar['shop_stock'] : 0;
+                $vWhStock = $wVar ? (float)$wVar['current_stock'] : 0;
+
+                $vStockDisplay = ((float)$vShopStock == (int)$vShopStock) ? (int)$vShopStock : round($vShopStock, 2);
+
                 if (isset($v['conv_factor']) && $product->size_mode === 'by_kg') {
                     $factor = (float) $v['conv_factor'];
-                    $factor = $factor > 0 ? $factor : 1;
-                    if ($factor != 1) {
-                        $vStockDisplay = (int) floor($vBalance / $factor);
+                    if ($factor == 1) {
+                        if ($vShopStock < 0.001) {
+                            $vStockDisplay = "0 Kg (0 Gm)";
+                        } elseif ($vShopStock < 1 && $vShopStock > 0) {
+                            $gmVal = (int) round($vShopStock * 1000);
+                            $vStockDisplay = "{$vShopStock} Kg ({$gmVal} Gm)";
+                        } else {
+                            $vStockDisplay = "{$vShopStock} Kg";
+                        }
+                    } else {
+                        $pcsCount = (int) floor($vShopStock);
+                        $vStockDisplay = "{$pcsCount}";
                     }
                 } elseif (($product->size_mode === 'by_cartons' || $product->size_mode === 'by_size') && $ppb > 1) {
-                    $vBoxes = floor($vBalance / $ppb);
-                    $vLoose = $vBalance % $ppb;
+                    $vBoxes = floor($vShopStock / $ppb);
+                    $vLoose = $vShopStock % $ppb;
                     $vStockDisplay = $vLoose > 0 ? "$vBoxes.$vLoose" : $vBoxes;
                 }
+
+                $v['shop_stock'] = $vShopStock;
+                $v['warehouse_stock'] = $vWhStock;
+                $v['total_stock'] = $vShopStock + $vWhStock;
                 $v['stock'] = $vStockDisplay;
                 $v['current_stock'] = $vStockDisplay;
                 $v['available_stock'] = $vStockDisplay;
-                $v['stock_pieces'] = $vBalance;
-                unset($v);
-            } else {
-                $salesList = DB::table('sale_items')
-                    ->where('product_id', $product->id)
-                    ->select('total_pieces', 'color')
-                    ->get();
-
-                $webSalesList = DB::table('ecommerce_order_items as eoi')
-                    ->join('ecommerce_orders as eo', 'eo.id', '=', 'eoi.ecommerce_order_id')
-                    ->where('eoi.product_id', $product->id)
-                    ->where('eo.is_stock_deducted', 1)
-                    ->select('eoi.quantity as total_pieces', 'eoi.color', 'eoi.size')
-                    ->get();
-
-                $salesListArray = $salesList->toArray();
-                foreach ($webSalesList as $wItem) {
-                    $salesListArray[] = (object) [
-                        'total_pieces' => $wItem->total_pieces,
-                        'color' => json_encode([
-                            'color' => $wItem->color ?: '-',
-                            'size' => $wItem->size ?: '-'
-                        ])
-                    ];
-                }
-                $salesList = collect($salesListArray);
-
-                $returnsList = DB::table('sale_return_items as sri')
-                    ->join('sale_returns as sr', 'sr.id', '=', 'sri.sale_return_id')
-                    ->where('sri.product_id', $product->id)
-                    ->select('sri.qty', 'sri.color', 'sr.sale_id')
-                    ->get();
-
-                $saleIds = $returnsList->pluck('sale_id')->unique()->toArray();
-                $saleItemsMap = [];
-                if (!empty($saleIds)) {
-                    $siList = DB::table('sale_items')
-                        ->whereIn('sale_id', $saleIds)
-                        ->where('product_id', $product->id)
-                        ->select('sale_id', 'color')
-                        ->get();
-                    foreach ($siList as $si) {
-                        $saleItemsMap[$si->sale_id][] = $si->color;
-                    }
-                }
-
-                $purchasesList = DB::table('purchase_items as pi')
-                    ->join('purchases as pur', 'pur.id', '=', 'pi.purchase_id')
-                    ->where('pi.product_id', $product->id)
-                    ->whereIn('pur.status_purchase', ['approved', 'Returned', 'Partial'])
-                    ->select('pi.qty as total_pieces', 'pi.color')
-                    ->get();
-
-                $purchaseReturnsList = DB::table('purchase_return_items as pri')
-                    ->where('pri.product_id', $product->id)
-                    ->select('pri.qty', 'pri.color')
-                    ->get();
-
-                $adjList = DB::table('stock_movements')
-                    ->where('product_id', $product->id)
-                    ->where('type', 'adjustment')
-                    ->whereNotIn('ref_type', ['INIT'])
-                    ->select('qty', 'note')
-                    ->get();
-
-                foreach ($variants as &$v) {
-                    $initial = (float) ($v['stock'] ?? 0);
-
-                    if (isset($v['conv_factor']) && $product->size_mode === 'by_kg') {
-                        $factor = (float) $v['conv_factor'];
-                        $factor = $factor > 0 ? $factor : 1;
-                        if ($factor == 1) {
-                            $vBalance = max(0, $totalPieces);
-                        } else {
-                            $vBalance = (int) floor(max(0, $totalPieces) / $factor);
-                        }
-                    } else {
-                        $purchased = 0;
-                        foreach ($purchasesList as $pItem) {
-                            if ($this->matchSaleItemToVariant($pItem, $v)) {
-                                $purchased += (float) $pItem->total_pieces;
-                            }
-                        }
-
-                        $pReturned = 0;
-                        foreach ($purchaseReturnsList as $prItem) {
-                            if ($this->matchSaleItemToVariant($prItem, $v)) {
-                                $pReturned += (float) $prItem->qty;
-                            }
-                        }
-
-                        $sold = 0;
-                        foreach ($salesList as $sItem) {
-                            if ($this->matchSaleItemToVariant($sItem, $v)) {
-                                $sold += (float) $sItem->total_pieces;
-                            }
-                        }
-
-                        $returnedQty = 0;
-                        foreach ($returnsList as $rItem) {
-                            $rColor = $rItem->color;
-                            if (empty($rColor)) {
-                                $saleColors = $saleItemsMap[$rItem->sale_id] ?? [];
-                                $rColor = !empty($saleColors) ? $saleColors[0] : '';
-                            }
-                            $rItemCopy = (object)[
-                                'qty' => $rItem->qty,
-                                'color' => $rColor
-                            ];
-                            if ($this->matchSaleItemToVariant($rItemCopy, $v)) {
-                                $returnedQty += (float) $rItem->qty;
-                            }
-                        }
-
-                        $adjustments = 0;
-                        foreach ($adjList as $adjItem) {
-                            if ($this->matchAdjustmentToVariant($adjItem, $v)) {
-                                $adjustments += (float) $adjItem->qty;
-                            }
-                        }
-
-                        $vBalance = max(0, $initial + $purchased - $sold + $returnedQty - $pReturned + $adjustments);
-                    }
-
-                    $vStockDisplay = ((float)$vBalance == (int)$vBalance) ? (int)$vBalance : round($vBalance, 2);
-                    if (isset($v['conv_factor']) && $product->size_mode === 'by_kg') {
-                        $factor = (float) $v['conv_factor'];
-                        if ($factor == 1) {
-                            if ($vBalance < 0.001) {
-                                $vStockDisplay = "0 Kg (0 Gm)";
-                            } elseif ($vBalance < 1 && $vBalance > 0) {
-                                $gmVal = (int) round($vBalance * 1000);
-                                $vStockDisplay = "{$vBalance} Kg ({$gmVal} Gm)";
-                            } else {
-                                $vStockDisplay = "{$vBalance} Kg";
-                            }
-                        } else {
-                            $pcsCount = (int) floor($vBalance);
-                            $vStockDisplay = "{$pcsCount}";
-                        }
-                    } elseif (($product->size_mode === 'by_cartons' || $product->size_mode === 'by_size') && $ppb > 1) {
-                        $vBoxes = floor($vBalance / $ppb);
-                        $vLoose = $vBalance % $ppb;
-                        $vStockDisplay = $vLoose > 0 ? "$vBoxes.$vLoose" : $vBoxes;
-                    }
-
-                    $v['stock'] = $vStockDisplay;
-                    $v['current_stock'] = $vStockDisplay;
-                    $v['available_stock'] = $vStockDisplay;
-                    $v['stock_pieces'] = $vBalance;
-                }
-                unset($v);
+                $v['stock_pieces'] = $vShopStock;
             }
+            unset($v);
 
             $product->color = $variants;
         }
@@ -703,8 +638,9 @@ class ProductController extends Controller
         $units = Unit::select('id', 'name')->get();
         $brands = Brand::select('id', 'name')->get();
         $sizes = Size::select('id', 'name', 'size_code')->orderBy('name', 'asc')->get();
+        $colors = \App\Models\Color::select('id', 'name', 'color_code')->orderBy('name', 'asc')->get();
 
-        return view('admin_panel.product.create', compact('categories', 'units', 'brands', 'sizes'));
+        return view('admin_panel.product.create', compact('categories', 'units', 'brands', 'sizes', 'colors'));
     }
 
     // ===== Dependent subcategories =====
@@ -751,6 +687,30 @@ class ProductController extends Controller
             'barcode_number' => $barcodeNumber,
             'barcode_image'  => $barcodeImage,
         ]);
+    }
+
+    /**
+     * Render printable Shelf Tag view showing Rack/Shelf, Product Name, Price, % Discount, and Offer Price.
+     */
+    public function generateShelfTag($id)
+    {
+        $product = Product::with('activeDiscounts')->findOrFail($id);
+
+        $basePrice = (float) ($product->sale_price_per_piece ?: ($product->sale_price_per_box ?: 0));
+        if ($basePrice <= 0) {
+            $variants = json_decode($product->color, true) ?? [];
+            foreach ($variants as $v) {
+                $vp = (float) ($v['sale_price'] ?? 0);
+                if ($vp > 0) {
+                    $basePrice = $vp;
+                    break;
+                }
+            }
+        }
+
+        $discInfo = \App\Models\ProductDiscount::resolveForPrice($product->activeDiscounts, $basePrice);
+
+        return view('admin_panel.product.shelf_tag', compact('product', 'discInfo'));
     }
 
     // ===== Store product =====
@@ -1913,7 +1873,9 @@ class ProductController extends Controller
 
         $productData = json_decode($response->getContent(), true);
         $variants = $productData['color'] ?? [];
-        $totalStock = $productData['calculated_total_stock_qty'] ?? 0;
+        $shopStock = (float)($productData['calculated_shop_stock_qty'] ?? ($productData['calculated_total_stock_qty'] ?? 0));
+        $warehouseStock = (float)($productData['calculated_warehouse_stock_qty'] ?? $product->warehouseStocks->sum('total_pieces'));
+        $totalStock = $shopStock;
 
         // Group photos and normalize
         $webImgs = $product->webImages ?? [];
@@ -1953,7 +1915,7 @@ class ProductController extends Controller
         }
         unset($v);
 
-        return view('admin_panel.product.show', compact('product', 'variants', 'totalStock', 'productData', 'colorWebImgsMap'));
+        return view('admin_panel.product.show', compact('product', 'variants', 'totalStock', 'shopStock', 'warehouseStock', 'productData', 'colorWebImgsMap'));
     }
     public function edit($id)
     {
@@ -2336,6 +2298,164 @@ class ProductController extends Controller
             return response()->json(['status' => 'success', 'message' => 'Image deleted successfully']);
         }
         return response()->json(['status' => 'error', 'message' => 'Image not found'], 404);
+    }
+
+    /**
+     * Soft-delete an article (product) with stock and transaction safety confirmation.
+     */
+    public function destroy(Request $request, $id)
+    {
+        $product = Product::findOrFail($id);
+
+        $warehouseStock = (float) $product->warehouseStocks()->sum('total_pieces');
+        $shopStock = (float) $this->variantStockService->getShopTotalStock($product);
+        $totalActiveStock = $warehouseStock + $shopStock;
+
+        $hasPurchases = DB::table('purchase_items')->where('product_id', $id)->exists();
+        $hasSales = DB::table('sale_items')->where('product_id', $id)->exists();
+
+        if (($totalActiveStock > 0 || $hasPurchases || $hasSales) && !$request->boolean('force')) {
+            $reasons = [];
+            if ($totalActiveStock > 0) {
+                $reasons[] = "active stock exists (Shop: {$shopStock}, Godown: {$warehouseStock})";
+            }
+            if ($hasPurchases || $hasSales) {
+                $reasons[] = 'past purchase/sale invoices reference this article';
+            }
+
+            return response()->json([
+                'success' => false,
+                'requires_force' => true,
+                'message' => 'Warning: ' . implode(' and ', $reasons) . '. Deleting will archive this article while keeping old invoices intact. Continue?',
+            ], 422);
+        }
+
+        $itemName = $product->item_name;
+
+        DB::transaction(function () use ($product) {
+            $product->discounts()->update(['status' => 0]);
+            $product->is_active = false;
+            $product->save();
+            $product->delete();
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => "Article \"{$itemName}\" deleted successfully.",
+        ]);
+    }
+
+    /**
+     * Delete an individual variant from a product's JSON variants array.
+     */
+    public function destroyVariant(Request $request, $id)
+    {
+        $product = Product::findOrFail($id);
+        $variants = json_decode($product->color, true);
+
+        if (!is_array($variants) || count($variants) === 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No variants found for this article.',
+            ], 422);
+        }
+
+        if (count($variants) <= 1) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot delete the only remaining variant. Use Delete Article to remove the entire product.',
+            ], 422);
+        }
+
+        $rowId = $request->input('row_id');
+        $barcode = $request->input('barcode');
+        $variantIndex = $request->input('variant_index');
+
+        $targetIdx = null;
+        if (!empty($rowId)) {
+            foreach ($variants as $idx => $v) {
+                if (($v['row_id'] ?? null) === $rowId) {
+                    $targetIdx = $idx;
+                    break;
+                }
+            }
+        }
+        if ($targetIdx === null && !empty($barcode) && $barcode !== '-') {
+            foreach ($variants as $idx => $v) {
+                if (($v['barcode'] ?? null) === $barcode) {
+                    $targetIdx = $idx;
+                    break;
+                }
+            }
+        }
+        if ($targetIdx === null && is_numeric($variantIndex) && array_key_exists((int) $variantIndex, $variants)) {
+            $targetIdx = (int) $variantIndex;
+        }
+
+        if ($targetIdx === null || !isset($variants[$targetIdx])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Selected variant could not be found.',
+            ], 404);
+        }
+
+        $target = $variants[$targetIdx];
+        $vName = $target['name'] ?? $product->item_name;
+        $vSize = (string) ($target['size'] ?? '-');
+        $vColor = (string) ($target['color'] ?? '-');
+        $vKey = $vName . '|' . $vSize . '|' . $vColor;
+
+        $shopVariants = $this->variantStockService->getShopVariantsWithStock($product);
+        $variantShopStock = 0;
+        $variantWhStock = 0;
+
+        foreach ($shopVariants as $sv) {
+            if (($sv['variant_key'] ?? '') === $vKey || (!empty($target['barcode']) && ($sv['barcode'] ?? '') === $target['barcode'])) {
+                $variantShopStock = (float) ($sv['shop_stock'] ?? 0);
+                $variantWhStock = (float) ($sv['warehouse_stock'] ?? 0);
+                break;
+            }
+        }
+
+        if (($variantShopStock > 0 || $variantWhStock > 0) && !$request->boolean('force')) {
+            return response()->json([
+                'success' => false,
+                'requires_force' => true,
+                'message' => "Variant \"{$vName}\" (Size: {$vSize}, Color: {$vColor}) still has stock (Shop: {$variantShopStock}, Godown: {$variantWhStock}). Are you sure you want to delete it?",
+            ], 422);
+        }
+
+        $targetRowId = $target['row_id'] ?? null;
+        $targetBarcode = $target['barcode'] ?? null;
+
+        DB::transaction(function () use ($product, &$variants, $targetIdx, $targetRowId, $targetBarcode) {
+            array_splice($variants, $targetIdx, 1);
+            $product->color = json_encode(array_values($variants));
+            $product->save();
+
+            if (!empty($targetRowId) || (!empty($targetBarcode) && $targetBarcode !== '-')) {
+                ProductDiscount::where('product_id', $product->id)
+                    ->where(function ($q) use ($targetRowId, $targetBarcode) {
+                        if (!empty($targetRowId)) {
+                            $q->where('variant_row_id', $targetRowId);
+                        }
+                        if (!empty($targetBarcode) && $targetBarcode !== '-') {
+                            if (!empty($targetRowId)) {
+                                $q->orWhere('variant_barcode', $targetBarcode);
+                            } else {
+                                $q->where('variant_barcode', $targetBarcode);
+                            }
+                        }
+                    })
+                    ->delete();
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => "Variant \"{$vName}\" (Size: {$vSize}, Color: {$vColor}) deleted successfully.",
+            'remaining_count' => count($variants),
+        ]);
     }
 
 }

@@ -191,6 +191,36 @@
         font-weight: 800;
         color: #111827;
     }
+
+    .product-card-promo-badge {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        background: #dc2626;
+        color: #ffffff;
+        font-size: 9.5px;
+        font-weight: 800;
+        padding: 2px 6px;
+        border-radius: 6px;
+        box-shadow: 0 2px 6px rgba(220, 38, 38, 0.35);
+        z-index: 2;
+        letter-spacing: 0.2px;
+    }
+
+    .product-card-orig-price {
+        font-size: 10px;
+        color: #94a3b8;
+        text-decoration: line-through;
+        font-weight: 600;
+        line-height: 1.1;
+    }
+
+    .product-card-save-tag {
+        font-size: 9.5px;
+        color: #dc2626;
+        font-weight: 700;
+        line-height: 1.1;
+    }
     
     .product-card-stock {
         font-size: 9.5px;
@@ -599,6 +629,10 @@
                                  data-name="{{ $product['name'] }}" 
                                  data-sku="{{ $product['sku'] }}" 
                                  data-price="{{ $product['price'] }}"
+                                 data-original-price="{{ $product['original_price'] ?? $product['price'] }}"
+                                 data-discount-amount="{{ $product['discount_amount'] ?? 0 }}"
+                                 data-discount-percentage="{{ $product['discount_percentage'] ?? 0 }}"
+                                 data-has-discount="{{ !empty($product['has_discount']) ? '1' : '0' }}"
                                  data-wholesale-price="{{ $product['wholesale_price'] }}"
                                  data-weight-per-piece="{{ $product['weight_per_piece'] }}"
                                  data-stock-pieces="{{ $product['stock_pieces'] }}"
@@ -609,6 +643,17 @@
                                  data-variants="{{ json_encode($product['variants']) }}">
                                  
                                 <div class="product-card-image">
+                                    @if (!empty($product['has_discount']) && ($product['discount_amount'] ?? 0) > 0)
+                                        @php
+                                            $cardPerc = (float)($product['discount_percentage'] ?? 0);
+                                            $cardBadgeText = $cardPerc > 0
+                                                ? rtrim(rtrim(number_format($cardPerc, 2), '0'), '.') . '% OFF'
+                                                : 'Rs ' . number_format($product['discount_amount'], 0) . ' OFF';
+                                        @endphp
+                                        <span class="product-card-promo-badge">
+                                            <i class="fas fa-tag me-1"></i>{{ $cardBadgeText }}
+                                        </span>
+                                    @endif
                                     @if ($product['image'])
                                         <img src="{{ $product['image'] }}" alt="{{ $product['name'] }}">
                                     @else
@@ -624,12 +669,18 @@
                                     @else
                                         <div style="height: 24px;"></div>
                                     @endif
-                                    <div class="product-card-footer">
-                                        <div class="product-card-price">
-                                            @if ($hasVariants)
-                                                Rs {{ number_format($product['variants'][0]['price'] ?? $product['price'], 0) }}
+                                    <div class="product-card-footer align-items-end">
+                                        <div>
+                                            @if (!empty($product['has_discount']) && ($product['discount_amount'] ?? 0) > 0)
+                                                <div class="product-card-orig-price">Rs {{ number_format($product['original_price'], 0) }}</div>
+                                                <div class="product-card-price text-success" style="line-height: 1.1;">
+                                                    Rs {{ number_format($product['price'], 0) }}
+                                                </div>
+                                                <div class="product-card-save-tag">Save Rs {{ number_format($product['discount_amount'], 0) }}</div>
                                             @else
-                                                Rs {{ number_format($product['price'], 0) }}
+                                                <div class="product-card-price">
+                                                    Rs {{ number_format($product['price'], 0) }}
+                                                </div>
                                             @endif
                                         </div>
                                         <div class="product-card-stock {{ $isOut ? 'out' : '' }}">
@@ -1282,15 +1333,55 @@
                     }
                     
                     let retailPrice = parseFloat(v.price) || 0;
+                    let origPrice = parseFloat(v.original_price) || retailPrice;
+                    let discAmt = parseFloat(v.discount_amount) || 0;
+                    let discPerc = parseFloat(v.discount_percentage) || 0;
+                    let hasDisc = Boolean(v.has_discount) && discAmt > 0;
                     let wholesalePrice = parseFloat(v.wholesale_price) || 0;
                     let weightPerPiece = parseFloat(v.weight_per_piece) || 0;
                     let activePriceMode = $('input[name="pos_price_mode"]:checked').val() || 'retail';
                     let price = (activePriceMode === 'wholesale' && wholesalePrice > 0) ? wholesalePrice : retailPrice;
 
+                    let priceCellHtml = '';
+                    if (activePriceMode === 'retail' && hasDisc) {
+                        let discBadgeText = discPerc > 0
+                            ? `${parseFloat(discPerc.toFixed(2))}% Off`
+                            : `Rs ${discAmt.toLocaleString(undefined, {maximumFractionDigits: 0})} Off`;
+                        priceCellHtml = `
+                            <div class="d-flex flex-column align-items-end">
+                                <div class="d-flex align-items-center gap-1 mb-0">
+                                    <span class="badge bg-danger text-white fw-bold" style="font-size: 10px; padding: 2px 6px;">
+                                        <i class="fas fa-tag me-1"></i>${discBadgeText}
+                                    </span>
+                                    <span class="text-decoration-line-through text-muted" style="font-size: 11px;">
+                                        Rs ${origPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                    </span>
+                                </div>
+                                <div class="fw-bold text-success" style="font-size: 14px; line-height: 1.2;">
+                                    Rs ${price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                </div>
+                                <div class="text-danger fw-semibold" style="font-size: 10.5px;">
+                                    Save Rs ${discAmt.toLocaleString(undefined, {maximumFractionDigits: 0})}
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        priceCellHtml = `
+                            <div class="fw-bold text-dark" style="font-size: 13.5px;">
+                                Rs ${price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                            </div>
+                            <span class="badge bg-light text-muted border" style="font-size: 9.5px; font-weight: 500;">Regular Price</span>
+                        `;
+                    }
+
                     let row = `
                         <tr data-id="${v.id}" 
                             data-name="${v.name}" 
                             data-price="${retailPrice}" 
+                            data-original-price="${origPrice}"
+                            data-discount-amount="${discAmt}"
+                            data-discount-percentage="${discPerc}"
+                            data-has-discount="${hasDisc ? '1' : '0'}"
                             data-wholesale-price="${wholesalePrice}"
                             data-weight-per-piece="${weightPerPiece}"
                             data-stock-pieces="${v.stock_pieces}"
@@ -1303,7 +1394,7 @@
                                     ${v.stock}
                                 </span>
                             </td>
-                            <td class="text-end fw-bold">Rs ${price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                            <td class="text-end">${priceCellHtml}</td>
                             <td class="text-center">
                                 <div class="qty-controls mx-auto" style="width: 100px;">
                                     <button type="button" class="qty-btn modal-qty-minus" ${isOut ? 'disabled' : ''}>-</button>
@@ -1327,6 +1418,10 @@
                 let id = $(this).data('id');
                 let name = $(this).data('name');
                 let retailPrice = parseFloat($(this).data('price'));
+                let origPrice = parseFloat($(this).data('original-price')) || retailPrice;
+                let discAmt = parseFloat($(this).data('discount-amount')) || 0;
+                let discPerc = parseFloat($(this).data('discount-percentage')) || 0;
+                let hasDisc = $(this).data('has-discount') == 1 && discAmt > 0;
                 let wholesalePrice = parseFloat($(this).data('wholesale-price')) || 0;
                 let weightPerPiece = parseFloat($(this).data('weight-per-piece')) || 0;
                 let stockPieces = parseFloat($(this).data('stock-pieces'));
@@ -1336,7 +1431,12 @@
                 let activePriceMode = $('input[name="pos_price_mode"]:checked').val() || 'retail';
                 let price = (activePriceMode === 'wholesale' && wholesalePrice > 0) ? wholesalePrice : retailPrice;
                 
-                addToCart(id, name, price, stockPieces, 1, sizeMode, piecesPerBox, '', retailPrice, wholesalePrice, weightPerPiece);
+                addToCart(id, name, price, stockPieces, 1, sizeMode, piecesPerBox, '', retailPrice, wholesalePrice, weightPerPiece, {
+                    originalPrice: origPrice,
+                    discountAmount: discAmt,
+                    discountPercentage: discPerc,
+                    hasDiscount: hasDisc
+                });
             }
         });
 
@@ -1363,6 +1463,10 @@
             let id = $row.data('id');
             let name = $row.data('name');
             let retailPrice = parseFloat($row.data('price'));
+            let origPrice = parseFloat($row.data('original-price')) || retailPrice;
+            let discAmt = parseFloat($row.data('discount-amount')) || 0;
+            let discPerc = parseFloat($row.data('discount-percentage')) || 0;
+            let hasDisc = $row.data('has-discount') == 1 && discAmt > 0;
             let wholesalePrice = parseFloat($row.data('wholesale-price')) || 0;
             let weightPerPiece = parseFloat($row.data('weight-per-piece')) || 0;
             let stockPieces = parseFloat($row.data('stock-pieces'));
@@ -1379,7 +1483,12 @@
             let activePriceMode = $('input[name="pos_price_mode"]:checked').val() || 'retail';
             let price = (activePriceMode === 'wholesale' && wholesalePrice > 0) ? wholesalePrice : retailPrice;
 
-            addToCart(id, name, price, stockPieces, qty, sizeMode, piecesPerBox, variantData, retailPrice, wholesalePrice, weightPerPiece);
+            addToCart(id, name, price, stockPieces, qty, sizeMode, piecesPerBox, variantData, retailPrice, wholesalePrice, weightPerPiece, {
+                originalPrice: origPrice,
+                discountAmount: discAmt,
+                discountPercentage: discPerc,
+                hasDiscount: hasDisc
+            });
             
             // Show added feedback
             let $btn = $(this);
@@ -1588,7 +1697,7 @@
         });
 
         // Core addToCart Helper
-        function addToCart(id, name, price, stockPieces, qty, sizeMode, piecesPerBox, variantData, retailPrice = 0, wholesalePrice = 0, weightPerPiece = 0) {
+        function addToCart(id, name, price, stockPieces, qty, sizeMode, piecesPerBox, variantData, retailPrice = 0, wholesalePrice = 0, weightPerPiece = 0, discountInfo = null) {
             let cartItem = cart.find(item => item.id === id);
             if (cartItem) {
                 if (cartItem.qty + qty <= stockPieces) {
@@ -1606,6 +1715,10 @@
                     retailPrice: retailPrice || price,
                     wholesalePrice: wholesalePrice,
                     weightPerPiece: weightPerPiece,
+                    originalPrice: discountInfo ? (parseFloat(discountInfo.originalPrice) || retailPrice || price) : (retailPrice || price),
+                    discountAmount: discountInfo ? (parseFloat(discountInfo.discountAmount) || 0) : 0,
+                    discountPercentage: discountInfo ? (parseFloat(discountInfo.discountPercentage) || 0) : 0,
+                    hasDiscount: discountInfo ? Boolean(discountInfo.hasDiscount && discountInfo.discountAmount > 0) : false,
                     qty: qty,
                     stock: stockPieces,
                     sizeMode: sizeMode,
@@ -1657,6 +1770,8 @@
                 let isRet = item.is_return === true;
                 let itemBg = isRet ? 'background: #fff5f5; border: 1px solid #feb2b2;' : '';
                 let badge = isRet ? '<span class="badge bg-danger me-1">RETURN</span>' : '';
+                let itemDisc = !isRet ? (parseFloat(item.discount) || 0) : 0;
+                let lineTotal = Math.max(0, (item.qty * item.price) - itemDisc);
                 
                 let html = `
                     <div class="cart-item" data-index="${index}" style="${itemBg}">
@@ -1682,6 +1797,10 @@
                                     <input type="hidden" name="discount_type[]" value="pkr">
                                 </div>` : ''}
                             </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2 pt-1" style="border-top: 1px dashed #e5e7eb; font-size: 11.5px;">
+                            <span class="text-muted cart-line-math">${item.qty} × Rs ${parseFloat(item.price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                            <span class="fw-bold ${isRet ? 'text-danger' : 'text-dark'} cart-line-total">Total: Rs ${lineTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                         </div>
                         <!-- Hidden inputs for backend form serialization -->
                         ${isRet ? `
@@ -1728,23 +1847,34 @@
             renderCart();
         });
 
+        function updateCartRowLineTotal($row, item) {
+            let itemDisc = item.is_return === true ? 0 : (parseFloat(item.discount) || 0);
+            let lineTotal = Math.max(0, (item.qty * item.price) - itemDisc);
+            $row.find('.cart-line-math').text(`${item.qty} × Rs ${parseFloat(item.price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
+            $row.find('.cart-line-total').text(`Total: Rs ${lineTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
+        }
+
         // Cart Actions: Remove, Quantity Plus, Minus, Manual change
         $(document).on('input', '.cart-price-val', function() {
-            let index = $(this).closest('.cart-item').data('index');
+            let $row = $(this).closest('.cart-item');
+            let index = $row.data('index');
             if (cart[index]) {
                 let val = parseFloat($(this).val()) || 0;
                 if (val < 0) val = 0;
                 cart[index].price = val;
+                updateCartRowLineTotal($row, cart[index]);
                 updateBillSummary();
             }
         });
 
         $(document).on('input', '.cart-item-disc-val', function() {
-            let index = $(this).closest('.cart-item').data('index');
+            let $row = $(this).closest('.cart-item');
+            let index = $row.data('index');
             if (cart[index]) {
                 let val = parseFloat($(this).val()) || 0;
                 if (val < 0) val = 0;
                 cart[index].discount = val;
+                updateCartRowLineTotal($row, cart[index]);
                 updateBillSummary();
             }
         });
@@ -2425,7 +2555,13 @@
                             res.variant_data || '',
                             res.retail_price || price,
                             res.wholesale_price || 0,
-                            res.weight_per_piece || 0
+                            res.weight_per_piece || 0,
+                            {
+                                originalPrice: res.original_price || res.retail_price || price,
+                                discountAmount: res.discount_amount || 0,
+                                discountPercentage: res.discount_percentage || 0,
+                                hasDiscount: Boolean(res.has_discount && (res.discount_amount || 0) > 0)
+                            }
                         );
 
                         playPosScanBeep('success');

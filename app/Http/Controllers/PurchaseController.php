@@ -743,6 +743,12 @@ class PurchaseController extends Controller
                 'unit.*' => 'nullable|required_with:product_id.*|string',
                 'item_discount' => 'nullable|array',
                 'item_discount.*' => 'nullable|numeric|min:0',
+                'mfg_date' => 'nullable|array',
+                'mfg_date.*' => 'nullable|date',
+                'exp_date' => 'nullable|array',
+                'exp_date.*' => 'nullable|date',
+                'description' => 'nullable|array',
+                'description.*' => 'nullable|string',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             if ($request->ajax()) {
@@ -846,6 +852,9 @@ class PurchaseController extends Controller
                     'loose_qty' => $looseQtys[$i] ?? 0,
                     'length' => $lengths[$i] ?? null,
                     'width' => $widths[$i] ?? null,
+                    'mfg_date' => !empty($request->mfg_date[$i]) ? $request->mfg_date[$i] : null,
+                    'exp_date' => !empty($request->exp_date[$i]) ? $request->exp_date[$i] : null,
+                    'description' => $request->description[$i] ?? null,
                 ]);
 
                 $subtotal += $lineTotal;
@@ -1300,6 +1309,12 @@ class PurchaseController extends Controller
             'unit.*' => 'nullable|required_with:product_id.*|string',
             'item_discount' => 'nullable|array',
             'item_discount.*' => 'nullable|numeric|min:0',
+            'mfg_date' => 'nullable|array',
+            'mfg_date.*' => 'nullable|date',
+            'exp_date' => 'nullable|array',
+            'exp_date.*' => 'nullable|date',
+            'description' => 'nullable|array',
+            'description.*' => 'nullable|string',
         ]);
 
         DB::transaction(function () use ($validated, $request, $id) {
@@ -1381,6 +1396,9 @@ class PurchaseController extends Controller
                     'loose_qty' => $looseQtys[$i] ?? 0,
                     'length' => $lengths[$i] ?? null,
                     'width' => $widths[$i] ?? null,
+                    'mfg_date' => !empty($request->mfg_date[$i]) ? $request->mfg_date[$i] : null,
+                    'exp_date' => !empty($request->exp_date[$i]) ? $request->exp_date[$i] : null,
+                    'description' => $request->description[$i] ?? null,
                 ]);
 
                 $subtotal += $lineTotal;

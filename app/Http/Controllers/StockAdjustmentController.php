@@ -8,11 +8,18 @@ use App\Models\Product;
 use App\Models\StockAdjustment;
 use App\Models\Warehouse;
 use App\Models\WarehouseStock;
+use App\Services\ProductVariantStockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class StockAdjustmentController extends Controller
 {
+    protected $variantService;
+
+    public function __construct(ProductVariantStockService $variantService)
+    {
+        $this->variantService = $variantService;
+    }
     /**
      * Check m,dmd if user is authorized for stock adjustments
      */
@@ -119,7 +126,7 @@ class StockAdjustmentController extends Controller
     /**
      * Dedicated POS-Style Stock Adjustment Terminal Screen
      */
-    public function create(Request $request)
+    public function create(Request $request = null)
     {
         $this->checkPermission();
 
@@ -145,7 +152,7 @@ class StockAdjustmentController extends Controller
             $warehouseId = $this->getPermittedWarehouses()->first()->id ?? 1;
         }
 
-        $variants = $this->getCalculatedVariants($product);
+        $variants = $this->variantService->getVariantsWithStock($product, (int)$warehouseId);
 
         $stockPieces = 0;
         if (count($variants) > 0) {
@@ -544,7 +551,7 @@ class StockAdjustmentController extends Controller
         $newStock    = 0;
 
         if ($variantKey && $product->color) {
-            $variants = $this->getCalculatedVariants($product);
+            $variants = $this->variantService->getVariantsWithStock($product, (int)$data['warehouse_id']);
             $targetVariant = null;
             foreach ($variants as $v) {
                 if ($variantKey ? ($v['variant_key'] === $variantKey) : ($variantName && ($v['name'] === $variantName || ($v['display_label'] ?? '') === $variantName))) {

@@ -141,7 +141,7 @@
 
         /* Items Table */
         .items-table {
-            width: 98%;
+            width: 100%;
             border-collapse: collapse;
             font-size: 11px;
             color: #000;
@@ -274,6 +274,7 @@
         .btn-secondary { background: #e2e8f0; color: #334155; }
     </style>
 </head>
+<body>
 
     @php
         $fromPos = request()->query('from') === 'pos' || empty(request()->query('from'));
@@ -298,14 +299,6 @@
 
     <div class="receipt-container">
         <!-- Header -->
-        @php
-            $companyLogo = \App\Models\Setting::get('company_logo') ?: \App\Models\Setting::get('web_site_logo');
-        @endphp
-        @if(!empty($companyLogo))
-            <div class="receipt-logo">
-                <img src="{{ asset(ltrim($companyLogo, '/')) }}" alt="Company Logo">
-            </div>
-        @endif
         <div class="company-name">{{ \App\Models\Setting::get('company_name', 'Young Fashion') }}</div>
         <div class="company-info">
             <div>{{ \App\Models\Setting::get('company_address', 'Shaibazar, Hyderabad') }}</div>

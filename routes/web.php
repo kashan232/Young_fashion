@@ -26,6 +26,7 @@ use App\Http\Controllers\StockTransferController;
 use App\Http\Controllers\StockAdjustmentController;
 use App\Http\Controllers\SubcategoryController;
 use App\Http\Controllers\SizeController;
+use App\Http\Controllers\ColorController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VendorController;
@@ -115,6 +116,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/size/store', [SizeController::class, 'store'])->middleware('permission:sizes.create|sizes.edit')->name('store.Size');
     Route::get('/get-sizes', [SizeController::class, 'getSizesJson'])->name('get-sizes');
 
+    // Variants & Color Module
+    Route::get('/variants-color', [ColorController::class, 'index'])->middleware('permission:products.view')->name('Color.home');
+    Route::post('/variants-color/store', [ColorController::class, 'store'])->middleware('permission:products.create|products.edit')->name('store.Color');
+    Route::get('/variants-color/delete/{id}', [ColorController::class, 'delete'])->middleware('permission:products.delete|products.edit')->name('delete.Color');
+    Route::get('/get-colors', [ColorController::class, 'getColorsJson'])->name('get-colors');
+
     route::get('/Unit', [UnitController::class, 'index'])->middleware('permission:units.view')->name('Unit.home');
     Route::get('/Unit/delete/{id}', [UnitController::class, 'delete'])->middleware('permission:units.delete')->name('delete.Unit');
     route::post('/Unit/store', [UnitController::class, 'store'])->middleware('permission:units.create|units.edit')->name('store.Unit');
@@ -148,7 +155,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/product/validate-form', [ProductController::class, 'validateForm'])->name('product.validate');
     Route::get('/products/{id}/view', [ProductController::class, 'show'])->middleware('permission:products.view')->name('products.show');
     Route::get('/products/{id}/edit', [ProductController::class, 'edit'])->middleware('permission:products.edit')->name('products.edit');
+    Route::delete('/products/{id}', [ProductController::class, 'destroy'])->middleware('permission:products.delete|products.edit')->name('products.destroy');
+    Route::delete('/products/{id}/variant', [ProductController::class, 'destroyVariant'])->middleware('permission:products.delete|products.edit')->name('products.variant.destroy');
     Route::get('/generate-barcode-image/{id?}', [ProductController::class, 'generateBarcode'])->name('generate-barcode-image');
+    Route::get('/generate-shelf-tag/{id}', [ProductController::class, 'generateShelfTag'])->name('generate-shelf-tag');
 
     // ── Product Import / Export ──
     Route::get('/products/export',   [App\Http\Controllers\ProductImportExportController::class, 'export'])
@@ -365,6 +375,7 @@ Route::middleware('auth')->group(function () {
     // web.php
     Route::get('/warehouse-stock-quantity', [StockTransferController::class, 'getStockQuantity'])->middleware('permission:stock.transfer.view')->name('warehouse.stock.quantity');
     Route::get('/get-products-by-warehouse', [StockTransferController::class, 'getProductsByWarehouse'])->middleware('permission:stock.transfer.view')->name('get.products.by.warehouse');
+    Route::get('/stock-transfers/product-variants', [StockTransferController::class, 'getProductVariants'])->middleware('permission:stock.transfer.view')->name('stock_transfers.product-variants');
 
     // narratiions
     Route::get('/get-customers-by-type', [CustomerController::class, 'getByType'])->middleware('permission:customers.view');
@@ -386,6 +397,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/warehouse-stock/{id}/edit-data', [WarehouseStockController::class, 'editData'])
         ->middleware('permission:warehouse.stock.view')
         ->name('warehouse_stock.edit-data');
+
+    Route::get('/warehouse-stock/product-variants/{productId}', [WarehouseStockController::class, 'getProductVariants'])
+        ->middleware('permission:warehouse.stock.view')
+        ->name('warehouse_stock.product-variants');
 
     Route::resource('stock_transfers', StockTransferController::class)->middleware(['permission:stock.transfer.view']);
     

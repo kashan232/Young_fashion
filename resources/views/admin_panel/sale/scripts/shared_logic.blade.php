@@ -94,6 +94,17 @@
         let sku = repo.sku || 'N/A';
         let stockVal = parseFloat(repo.stock_pieces !== undefined ? repo.stock_pieces : repo.stock) || 0;
         let badgeClass = stockVal > 0 ? 'bg-success' : 'bg-danger';
+        let priceHtml = '';
+        if (repo.has_discount && repo.original_price > 0) {
+            let pct = parseFloat(repo.discount_percentage || 0);
+            let pctText = pct > 0 ? `${parseFloat(pct.toFixed(2))}% OFF` : `Save Rs ${parseFloat(repo.discount_amount || 0).toFixed(0)}`;
+            priceHtml = `
+                <span class="badge bg-danger me-1">${pctText}</span>
+                <span class="text-muted text-decoration-line-through me-1" style="font-size:0.75rem;">Rs ${parseFloat(repo.original_price).toFixed(0)}</span>
+                <span class="fw-bold text-success me-2">Rs ${parseFloat(repo.retail_price || 0).toFixed(0)}</span>`;
+        } else if (repo.retail_price !== undefined) {
+            priceHtml = `<span class="fw-bold text-dark me-2">Rs ${parseFloat(repo.retail_price || 0).toFixed(0)}</span>`;
+        }
 
         return $(`
         <div class="clearfix">
@@ -101,7 +112,8 @@
                 <div class="fw-bold">${repo.name || repo.text}</div>
                 <small class="text-muted">SKU: ${sku}</small>
             </div>
-            <div class="float-end">
+            <div class="float-end text-end">
+                ${priceHtml}
                 <span class="badge ${badgeClass} rounded-pill">Stock: ${stock}</span>
             </div>
         </div>
@@ -110,6 +122,29 @@
 
     function formatSelection(repo) {
         return repo.name || repo.text;
+    }
+
+    function applyRowOfferBadge($row, info, rowMode) {
+        if (info && info.has_discount !== undefined) {
+            $row.data('offer_info', {
+                has_discount: !!info.has_discount,
+                original_price: parseFloat(info.original_price || 0),
+                discount_amount: parseFloat(info.discount_amount || 0),
+                discount_percentage: parseFloat(info.discount_percentage || 0)
+            });
+        }
+        const offer = $row.data('offer_info');
+        const $badge = $row.find('.product-offer-badge');
+        if (!$badge.length) return;
+
+        if (rowMode !== 'wholesale' && offer && offer.has_discount && offer.original_price > 0) {
+            const pctStr = offer.discount_percentage > 0
+                ? `${parseFloat(offer.discount_percentage.toFixed(2))}% OFF`
+                : `Save Rs ${offer.discount_amount.toFixed(0)}`;
+            $badge.text(`${pctStr} (Was ${offer.original_price.toFixed(0)})`).removeClass('d-none');
+        } else {
+            $badge.text('').addClass('d-none');
+        }
     }
 
 
@@ -198,6 +233,7 @@
           ${btnText}
         </button>
       </div>
+      <div class="product-offer-badge text-danger fw-bold d-none" style="font-size:0.65rem; line-height:1.15; margin-top:2px;"></div>
       <input type="hidden" class="price-per-piece" name="price_per_piece[]">
       <input type="hidden" class="retail-price">
       <input type="hidden" class="wholesale-price">
@@ -248,26 +284,23 @@
             $row.find('.item-code-display').val(pRes.item_code || '');
 
             // Populate Fields
-            // Store retail price (box price) in hidden field and visible if needed
-             $row.find('.retail-price').val(pRes.retail_price || 0);
-             $row.find('.wholesale-price').val(pRes.wholesale_price || 0);
-             $row.find('.weight-per-piece').val(pRes.weight_per_piece || 0);
-             
-             let rowMode = $row.find('.price-mode-row-toggle').attr('data-mode') || 'retail';
-             let wsPrice = parseFloat(pRes.wholesale_price) || 0;
-             let rate = (rowMode === 'wholesale' && wsPrice > 0) ? wsPrice : (pRes.retail_price || 0);
+            let baseRetailPiece = pRes.sale_price_per_piece || pRes.retail_price || 0;
+            if (pRes.size_mode === 'by_size') {
+                baseRetailPiece = pRes.price_per_m2 || pRes.retail_price || 0;
+            }
+            $row.find('.retail-price').val(baseRetailPiece);
+            $row.find('.wholesale-price').val(pRes.wholesale_price || 0);
+            $row.find('.weight-per-piece').val(pRes.weight_per_piece || 0);
 
-             // Visible price logic: usually per piece, but ensure consistent display
-             if (pRes.size_mode == "by_cartons") {
-                 $row.find('.visible-price').val(pRes.sale_price_per_piece || rate || 0);
-             } else if (pRes.size_mode == "by_pieces" || pRes.size_mode == "by_kg" || pRes.size_mode == "by_gm" || pRes.size_mode == "by_meter") {
-                 $row.find('.visible-price').val(pRes.sale_price_per_piece || rate || 0);
-             } else {
-                 $row.find('.visible-price').val(pRes.price_per_m2 || rate || 0);
-             }
+            let rowMode = $row.find('.price-mode-row-toggle').attr('data-mode') || 'retail';
+            let wsPrice = parseFloat(pRes.wholesale_price) || 0;
+            let rate = (rowMode === 'wholesale' && wsPrice > 0) ? wsPrice : baseRetailPiece;
 
-             $row.find('.pack-qty').val(pRes.pieces_per_box || 1);
-             $row.find('.price-per-piece').val($row.find('.visible-price').val() || 0);
+            $row.find('.visible-price').val(rate);
+            $row.find('.pack-qty').val(pRes.pieces_per_box || 1);
+            $row.find('.price-per-piece').val(rate);
+
+            applyRowOfferBadge($row, pRes, rowMode);
 
             $row.find('.size-h').val(pRes.height || '-');
             $row.find('.size-w').val(pRes.width || '-');
@@ -962,6 +995,8 @@
             $row.find('.visible-price').val(rate);
             $row.find('.pack-qty').val(data.pieces_per_box || 1);
             $row.find('.price-per-piece').val(rate);
+
+            applyRowOfferBadge($row, data, rowMode);
             
             $row.find('.size-h').val(data.height || '-');
             $row.find('.size-w').val(data.width || '-');
@@ -1203,7 +1238,9 @@
             let rate = (newMode === 'wholesale' && wholesalePrice > 0) ? wholesalePrice : retailPrice;
             $row.find('.visible-price').val(rate);
             $row.find('.price-per-piece').val(rate);
-            
+
+            applyRowOfferBadge($row, null, newMode);
+
             computeRow($row);
             updateGrandTotals();
         });
@@ -1381,7 +1418,7 @@
             if (!prodId) return;
 
             let $targetRow = $('#salesTableBody tr:last');
-            const lastProdVal = $targetRow.find('.product').val();
+            const lastProdVal = $targetRow.find('.product-id-hidden').val() || $targetRow.find('.product').val();
 
             if (!$targetRow.length || lastProdVal) {
                 addNewRow();
@@ -1393,9 +1430,20 @@
             if ($select.find(`option[value="${prodId}"]`).length === 0) {
                 $select.append(new Option(prodName, prodId, true, true));
             } else {
-                $select.val(prodId).trigger('change.select2');
+                $select.val(prodId);
             }
-            $select.trigger('change');
+            $select.trigger('change.select2');
+
+            $targetRow.find('.product-id-hidden').val(prodId);
+            $targetRow.find('.variant-data-hidden').val('');
+            $targetRow.find('.size-display').val('-');
+            $targetRow.find('.color-display').val('-');
+            if (!$targetRow.find('.carton-qty').val()) {
+                $targetRow.find('.carton-qty').val(1);
+            }
+
+            loadWarehousesForProduct($targetRow, prodId);
+            fetchProductPrice($targetRow, prodId);
         });
 
         // --- Sidebar Live Search ---
@@ -1408,6 +1456,15 @@
                     res.forEach(p => {
                         const stockText = p.wh_stock ? `${p.wh_stock} Pcs` : '0 Pcs';
                         const priceText = p.retail_price ? parseFloat(p.retail_price).toFixed(2) : '0.00';
+                        let priceBlock = `<div>${priceText}</div>`;
+                        if (p.has_discount && p.original_price > 0) {
+                            const origText = parseFloat(p.original_price).toFixed(2);
+                            const pctVal = parseFloat(parseFloat(p.discount_percentage || 0).toFixed(2));
+                            priceBlock = `
+                                <div class="text-danger fw-bold">${priceText}</div>
+                                <div class="text-muted text-decoration-line-through" style="font-size:0.65rem;">${origText}</div>
+                                <span class="badge bg-danger" style="font-size:0.55rem;">${pctVal}% OFF</span>`;
+                        }
                         html += `
                             <div class="pos-product-card">
                                 <div class="pos-product-img">
@@ -1420,7 +1477,7 @@
                                     </div>
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
-                                    <div class="pos-product-price">${priceText}<br><small class="text-muted fs-7">PCS</small></div>
+                                    <div class="pos-product-price text-end">${priceBlock}<small class="text-muted fs-7">PCS</small></div>
                                     <button type="button" class="pos-product-add-btn add-product-direct-btn" data-id="${p.id}" title="Add to Grid"><i class="fas fa-plus"></i></button>
                                 </div>
                             </div>`;
@@ -1592,6 +1649,8 @@
             $targetRow.find('.visible-price').val(rate);
             $targetRow.find('.pack-qty').val(item.pieces_per_box || 1);
             $targetRow.find('.price-per-piece').val(rate);
+
+            applyRowOfferBadge($targetRow, item, rowMode);
 
             $targetRow.find('.size-h').val(item.height || '-');
             $targetRow.find('.size-w').val(item.width || '-');

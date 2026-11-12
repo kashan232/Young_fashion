@@ -221,9 +221,12 @@
                 <p class="page-title"><i class="fas fa-boxes-stacked me-2" style="color:var(--erp-primary);"></i>Stock Adjustment System</p>
                 <p class="page-sub">Quickly correct stock balances for products &amp; multiple variants in one single transaction</p>
             </div>
-            <div>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" id="openBatchModalBtn" class="btn-hdr" style="background:#10b981; color:#fff; border-color:#10b981;">
+                    <i class="fas fa-layer-group me-1"></i> Quick Adjust Modal
+                </button>
                 <a href="{{ route('stock_adjustments.create') }}" class="btn-hdr btn-hdr-primary">
-                    <i class="fas fa-cash-register me-1"></i> Quick Multi-Variant Stock Adjustment
+                    <i class="fas fa-cash-register me-1"></i> Open Terminal View
                 </a>
             </div>
         </div>

@@ -20,7 +20,7 @@
         .sales-table {
             border-collapse: collapse !important;
             margin-bottom: 0 !important;
-            min-width: 1000px;
+            min-width: 1350px;
         }
 
         .sales-table thead th {
@@ -436,7 +436,10 @@
                                 <table class="table table-bordered sales-table mb-0" id="purchaseTable">
                                     <thead>
                                         <tr>
-                                            <th class="col-product">Product</th>
+                                            <th class="col-product" style="min-width: 220px;">Product</th>
+                                            <th class="col-desc" style="min-width: 170px;">Description / Note</th>
+                                            <th class="col-mfg" style="min-width: 130px;">Mfg Date</th>
+                                            <th class="col-exp" style="min-width: 130px;">Exp Date</th>
                                             <th class="col-qty">Cartons</th>
                                             <th class="col-qty">Loose Pcs</th>
                                             <th class="col-stock">Pack Size</th>
@@ -520,7 +523,16 @@
                                                         value="{{ $item->width }}">
                                                     <input type="hidden" name="color[]" class="hidden-variant-data"
                                                         value="{{ $item->color ?? '' }}">
-                                                    </td>
+                                                </td>
+                                                <td>
+                                                    <input type="text" name="description[]" class="form-control text-start item-desc-input" value="{{ $item->description }}" placeholder="Description / notes" style="text-align: left !important; padding-left: 10px !important;">
+                                                </td>
+                                                <td>
+                                                    <input type="date" name="mfg_date[]" class="form-control text-center mfg-date-input" value="{{ $item->mfg_date ? \Carbon\Carbon::parse($item->mfg_date)->format('Y-m-d') : '' }}" title="Manufacture Date">
+                                                </td>
+                                                <td>
+                                                    <input type="date" name="exp_date[]" class="form-control text-center exp-date-input" value="{{ $item->exp_date ? \Carbon\Carbon::parse($item->exp_date)->format('Y-m-d') : '' }}" title="Expiry Date">
+                                                </td>
                                                 <td>
                                                     <input type="number" class="form-control carton-qty" name="boxes_qty[]"
                                                         value="{{ $boxes }}" placeholder="Cartons" min="0">
@@ -574,7 +586,7 @@
                                     </tbody>
                                     <tfoot>
                                         <tr>
-                                            <td colspan="7" class="text-end fw-bold text-muted">Total Amount:</td>
+                                            <td colspan="10" class="text-end fw-bold text-muted">Total Amount:</td>
                                             <td class="text-end fw-bold fs-6 text-dark"><span id="totalAmount">0.00</span>
                                             </td>
                                             <td></td>
@@ -700,7 +712,11 @@
                         <input type="hidden" name="pieces_per_m2[]" class="hidden-pieces-per-m2" value="0">
                         <input type="hidden" name="length[]" class="hidden-length">
                         <input type="hidden" name="width[]" class="hidden-width">
-                        </td>
+                        <input type="hidden" name="color[]" class="hidden-variant-data" value="">
+                    </td>
+                    <td><input type="text" name="description[]" class="form-control text-start item-desc-input" placeholder="Description / notes" style="text-align: left !important; padding-left: 10px !important;"></td>
+                    <td><input type="date" name="mfg_date[]" class="form-control text-center mfg-date-input" title="Manufacture Date"></td>
+                    <td><input type="date" name="exp_date[]" class="form-control text-center exp-date-input" title="Expiry Date"></td>
                     <td><input type="number" class="form-control carton-qty" name="boxes_qty[]" value="0" placeholder="Cartons" min="0"></td>
                     <td><input type="number" class="form-control loose-qty" name="loose_qty[]" value="0" placeholder="Loose Pcs" min="0"></td>
                     <td><input type="number" class="form-control input-readonly pack-size" name="pieces_per_box_display[]" value="1" readonly></td>

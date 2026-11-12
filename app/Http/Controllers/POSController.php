@@ -209,6 +209,10 @@ class POSController extends Controller
                     $vOriginalPrice = (float) ($v['sale_price'] ?? $p->sale_price_per_piece ?? 0);
                     $vFinalPrice = $vDiscount ? (float) $vDiscount->final_price : $vOriginalPrice;
                     $vDiscountAmt = $vDiscount ? (float) $vDiscount->total_discount : 0;
+                    $vDiscountPerc = $vDiscount ? (float) $vDiscount->discount_percentage : 0;
+                    if ($vDiscount && $vDiscountPerc <= 0 && $vOriginalPrice > 0 && $vDiscountAmt > 0) {
+                        $vDiscountPerc = round(($vDiscountAmt / $vOriginalPrice) * 100, 1);
+                    }
 
                     $variantItems[] = [
                         'id' => $p->id . '|variant|' . base64_encode($variantJson),
@@ -218,6 +222,7 @@ class POSController extends Controller
                         'price' => $vFinalPrice,
                         'original_price' => $vOriginalPrice,
                         'discount_amount' => $vDiscountAmt,
+                        'discount_percentage' => $vDiscountPerc,
                         'has_discount' => $vDiscount ? true : false,
                         'wholesale_price' => $v['wholesale_price'] ?? $p->wholesale_price ?? 0,
                         'weight_per_piece' => $v['weight_per_piece'] ?? $p->weight_per_piece ?? 0,
@@ -235,9 +240,27 @@ class POSController extends Controller
                 }
 
                 $pDiscount = $p->activeDiscounts->firstWhere('variant_row_id', null);
-                $pOriginalPrice = (float) ($p->sale_price_per_piece ?? 0);
-                $pFinalPrice = $pDiscount ? (float) $pDiscount->final_price : $pOriginalPrice;
-                $pDiscountAmt = $pDiscount ? (float) $pDiscount->total_discount : 0;
+                $firstDiscVar = collect($variantItems)->firstWhere('has_discount', true);
+
+                if ($pDiscount) {
+                    $pOriginalPrice = (float) ($pDiscount->actual_price ?: $p->sale_price_per_piece ?: 0);
+                    $pFinalPrice = (float) $pDiscount->final_price;
+                    $pDiscountAmt = (float) $pDiscount->total_discount;
+                    $pDiscountPerc = (float) $pDiscount->discount_percentage;
+                    $pHasDiscount = true;
+                } elseif ($firstDiscVar) {
+                    $pOriginalPrice = (float) $firstDiscVar['original_price'];
+                    $pFinalPrice = (float) $firstDiscVar['price'];
+                    $pDiscountAmt = (float) $firstDiscVar['discount_amount'];
+                    $pDiscountPerc = (float) $firstDiscVar['discount_percentage'];
+                    $pHasDiscount = true;
+                } else {
+                    $pOriginalPrice = (float) ($p->sale_price_per_piece ?? 0);
+                    $pFinalPrice = $pOriginalPrice;
+                    $pDiscountAmt = 0;
+                    $pDiscountPerc = 0;
+                    $pHasDiscount = false;
+                }
 
                 $posProducts[] = [
                     'id' => $p->id,
@@ -250,7 +273,8 @@ class POSController extends Controller
                     'price' => $pFinalPrice,
                     'original_price' => $pOriginalPrice,
                     'discount_amount' => $pDiscountAmt,
-                    'has_discount' => $pDiscount ? true : false,
+                    'discount_percentage' => $pDiscountPerc,
+                    'has_discount' => $pHasDiscount,
                     'wholesale_price' => $p->wholesale_price ?? 0,
                     'weight_per_piece' => $p->weight_per_piece ?? 0,
                     'image' => $p->image ? asset('uploads/products/'.$p->image) : null,
@@ -270,6 +294,10 @@ class POSController extends Controller
                 $pOriginalPrice = (float) ($p->sale_price_per_piece ?? 0);
                 $pFinalPrice = $pDiscount ? (float) $pDiscount->final_price : $pOriginalPrice;
                 $pDiscountAmt = $pDiscount ? (float) $pDiscount->total_discount : 0;
+                $pDiscountPerc = $pDiscount ? (float) $pDiscount->discount_percentage : 0;
+                if ($pDiscount && $pDiscountPerc <= 0 && $pOriginalPrice > 0 && $pDiscountAmt > 0) {
+                    $pDiscountPerc = round(($pDiscountAmt / $pOriginalPrice) * 100, 1);
+                }
 
                 $posProducts[] = [
                     'id' => $p->id,
@@ -282,6 +310,7 @@ class POSController extends Controller
                     'price' => $pFinalPrice,
                     'original_price' => $pOriginalPrice,
                     'discount_amount' => $pDiscountAmt,
+                    'discount_percentage' => $pDiscountPerc,
                     'has_discount' => $pDiscount ? true : false,
                     'wholesale_price' => $p->wholesale_price ?? 0,
                     'weight_per_piece' => $p->weight_per_piece ?? 0,

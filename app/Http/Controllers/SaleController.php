@@ -129,7 +129,23 @@ class SaleController extends Controller
         $activePrefix = $defaultSeries ? $defaultSeries->prefix : 'INV';
         $nextInvoiceNumber = \App\Models\InvoiceSeries::generateNextNo($activePrefix);
 
-        $recentProducts = Product::latest()->take(12)->get();
+        $recentProducts = Product::with(['activeDiscounts'])
+            ->withSum('warehouseStocks', 'total_pieces')
+            ->where('is_active', true)
+            ->latest()
+            ->take(12)
+            ->get()
+            ->map(function ($prod) {
+                $basePrice = (float) ($prod->sale_price_per_piece ?? 0);
+                $disc = \App\Models\ProductDiscount::resolveForPrice($prod->activeDiscounts, $basePrice);
+                $prod->total_pieces = (float) ($prod->warehouse_stocks_sum_total_pieces ?? 0);
+                $prod->original_price = $disc['original_price'];
+                $prod->retail_price = $disc['final_price'];
+                $prod->discount_amount = $disc['discount_amount'];
+                $prod->discount_percentage = $disc['discount_percentage'];
+                $prod->has_discount = $disc['has_discount'];
+                return $prod;
+            });
 
         // Filter accounts (Cash/Bank) for Payment Voucher
         $accounts = \App\Models\Account::whereHas('head', function($q) {
@@ -149,7 +165,7 @@ class SaleController extends Controller
         $q = $request->get('q');
         $warehouseId = $request->get('warehouse_id', 1);
 
-        $products = Product::with(['brand'])
+        $products = Product::with(['brand', 'activeDiscounts'])
             ->leftJoin('warehouse_stocks', function ($join) use ($warehouseId) {
                 $join->on('products.id', '=', 'warehouse_stocks.product_id')
                     ->where('warehouse_stocks.warehouse_id', $warehouseId);
@@ -168,6 +184,13 @@ class SaleController extends Controller
             ->limit(50)
             ->get()
             ->map(function ($product) {
+                $basePrice = (float) ($product->sale_price_per_piece ?? 0);
+                $disc = \App\Models\ProductDiscount::resolveForPrice($product->activeDiscounts, $basePrice);
+                $product->original_price = $disc['original_price'];
+                $product->retail_price = $disc['final_price'];
+                $product->discount_amount = $disc['discount_amount'];
+                $product->discount_percentage = $disc['discount_percentage'];
+                $product->has_discount = $disc['has_discount'];
                 return $product;
             });
 
@@ -334,6 +357,7 @@ class SaleController extends Controller
                 'retail_price' => $finalRetailPrice,
                 'original_price' => $baseRetailPrice,
                 'discount_amount' => $itemDiscountAmt,
+                'discount_percentage' => $activeDiscount ? (float)$activeDiscount->discount_percentage : 0,
                 'has_discount' => $activeDiscount ? true : false,
                 'wholesale_price' => (float)($computedV['wholesale_price'] ?? ($matchedProduct->wholesale_price ?? 0)),
                 'weight_per_piece' => (float)($computedV['weight_per_piece'] ?? ($matchedProduct->weight_per_piece ?? 0)),
@@ -382,6 +406,7 @@ class SaleController extends Controller
             'retail_price' => $finalRetailPrice,
             'original_price' => $baseRetailPrice,
             'discount_amount' => $itemDiscountAmt,
+            'discount_percentage' => $activeDiscount ? (float)$activeDiscount->discount_percentage : 0,
             'has_discount' => $activeDiscount ? true : false,
             'wholesale_price' => (float)($matchedProduct->wholesale_price ?? 0),
             'weight_per_piece' => (float)($matchedProduct->weight_per_piece ?? 0),

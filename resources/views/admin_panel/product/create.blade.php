@@ -638,7 +638,7 @@
                                                 <strong class="text-primary fs-6" id="overall_stock_display">0</strong>
                                             </div>
                                         </div>
-                                        <button type="button" class="btn btn-sm btn-primary" id="enableVariantsBtn"><i class="fas fa-plus me-1"></i>Add Variant Row</button>
+                                        <button type="button" class="btn btn-sm btn-primary fw-bold shadow-sm" id="enableVariantsBtn"><i class="fas fa-plus-circle me-1"></i>Add Variant Section</button>
                                     </div>
                                     <datalist id="sizesList">
         @if(isset($sizes))
@@ -647,43 +647,84 @@
             @endforeach
         @endif
     </datalist>
-    <div class="mb-2 p-2 bg-light rounded border d-flex flex-wrap align-items-center gap-1 shadow-sm">
-                                        <span class="small fw-bold text-dark me-2"><i class="fas fa-shoe-prints text-primary me-1"></i>Quick Shoe Sizes:</span>
-                                        @if(isset($sizes) && count($sizes) > 0)
-                                            @foreach($sizes as $sz)
-                                                <button type="button" class="btn btn-sm btn-white border px-2 py-0 shadow-sm quick-size-chip" data-size="{{ $sz->name }}" style="font-size: 11px; font-weight: 700; border-radius: 6px; background:#fff;">
-                                                    <span class="text-primary">+</span> {{ $sz->name }}
-                                                </button>
-                                            @endforeach
-                                        @endif
-                                    </div>
                                     <div id="variantsContainer">
-                                        <div class="table-responsive">
-                                            <table class="table table-bordered table-sm align-middle mb-1" id="variantsTable">
-                                                <thead class="table-light">
-                                                    <tr>
-                                                        <th class="text-uppercase text-muted p-1" style="min-width: 180px; width: 250px; font-size: 11px;">Variant Name</th>
-                                                        <th class="text-uppercase text-muted p-1" style="width: 100px; font-size: 11px;">Size</th>
-                                                        <th class="text-uppercase text-muted p-1" style="width: 100px; font-size: 11px;">Color</th>
-                                                        <th class="text-uppercase text-muted p-1 text-center" style="width: 140px; font-size: 11px;"><i class="fas fa-camera text-primary me-1"></i>Photos</th>
-                                                        <th class="text-uppercase text-muted p-1" style="width: 90px; font-size: 11px;">Unit</th>
-                                                        <th class="text-uppercase text-muted p-1 text-center" style="width: 110px; font-size: 11px;">Initial Stock</th>
-                                                        <th class="text-uppercase text-muted p-1 text-center conv-col" id="convFactorHeader" style="width: 110px; font-size: 11px;">Pcs / Carton</th>
-                                                        <th class="text-uppercase text-muted p-1 text-center piece-wt-only-col" style="width: 110px; font-size: 11px;">Piece Wt (g)</th>
-                                                        <th class="text-uppercase text-muted p-1" style="width: 110px; font-size: 11px;">Sale Price</th>
-                                                        <th class="text-uppercase text-muted p-1" style="width: 110px; font-size: 11px;">Wholesale</th>
-                                                        <th class="text-uppercase text-muted p-1" style="width: 110px; font-size: 11px;">Purch Price</th>
-                                                        <th class="text-uppercase text-muted p-1" style="width: 70px; font-size: 11px;">Alert</th>
-                                                        <th class="text-uppercase text-muted p-1" style="width: 120px; font-size: 11px;">Barcode</th>
-                                                        <th class="text-uppercase text-muted p-1 text-center" style="width: 60px; font-size: 11px;">Action</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="variantsBody">
-                                                    <!-- rows injected by JS -->
-                                                </tbody>
-                                            </table>
+                                        <div id="variantSectionsWrapper">
+                                            <!-- Variant sections injected by JS -->
+                                        </div>
+                                        <div class="text-center mt-2">
+                                            <button type="button" class="btn btn-outline-primary btn-sm fw-bold px-4 py-2 border-dashed" id="addVariantSectionBottomBtn">
+                                                <i class="fas fa-plus-circle me-1"></i>Add Another Variant Section (e.g. Brown, Red...)
+                                            </button>
                                         </div>
                                     </div>
+
+                                    <template id="variantSectionTemplate">
+                                        <div class="variant-section card border shadow-sm mb-3" style="border-radius: 10px; overflow: hidden;">
+                                            <div class="card-header bg-light py-2 px-3 d-flex justify-content-between align-items-center flex-wrap gap-2 border-bottom">
+                                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                    <span class="badge bg-primary section-index-badge">#1</span>
+                                                    <span class="fw-bold text-dark section-title-text" style="font-size: 0.85rem;">Product Variants & Units</span>
+                                                    <div class="input-group input-group-sm" style="width: 230px;">
+                                                        <span class="input-group-text bg-white fw-bold text-muted" style="font-size: 11px;">Variants &amp; Color</span>
+                                                        <select class="form-select section-color-input fw-bold" style="font-size: 12px;">
+                                                            <option value="">Select Color...</option>
+                                                            @if(isset($colors))
+                                                                @foreach($colors as $colorOpt)
+                                                                    <option value="{{ $colorOpt->name }}">{{ $colorOpt->name }}</option>
+                                                                @endforeach
+                                                            @endif
+                                                        </select>
+                                                    </div>
+                                                    <span class="badge bg-white text-dark border px-2 py-1 section-stock-badge" style="font-size: 11px;">Stock: <strong>0</strong></span>
+                                                </div>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <button type="button" class="btn btn-sm btn-outline-primary fw-bold section-add-row-btn" style="font-size: 11.5px;">
+                                                        <i class="fas fa-plus me-1"></i>Add Size / Row
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger section-remove-btn" title="Remove this Variant Section" style="font-size: 11.5px;">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="card-body p-2">
+                                                <div class="mb-2 p-2 bg-light rounded border d-flex flex-wrap align-items-center gap-1">
+                                                    <span class="small fw-bold text-dark me-2"><i class="fas fa-shoe-prints text-primary me-1"></i>Quick Sizes:</span>
+                                                    @if(isset($sizes) && count($sizes) > 0)
+                                                        @foreach($sizes as $sz)
+                                                            <button type="button" class="btn btn-sm btn-white border px-2 py-0 shadow-sm quick-size-chip" data-size="{{ $sz->name }}" style="font-size: 11px; font-weight: 700; border-radius: 6px; background:#fff;">
+                                                                <span class="text-primary">+</span> {{ $sz->name }}
+                                                            </button>
+                                                        @endforeach
+                                                    @endif
+                                                </div>
+                                                <div class="table-responsive">
+                                                    <table class="table table-bordered table-sm align-middle mb-0">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th class="text-uppercase text-muted p-1" style="min-width: 180px; width: 250px; font-size: 11px;">Variants &amp; Color</th>
+                                                                <th class="text-uppercase text-muted p-1" style="width: 100px; font-size: 11px;">Size</th>
+                                                                <th class="text-uppercase text-muted p-1" style="width: 100px; font-size: 11px;">Color</th>
+                                                                <th class="text-uppercase text-muted p-1 text-center" style="width: 140px; font-size: 11px;"><i class="fas fa-camera text-primary me-1"></i>Photos</th>
+                                                                <th class="text-uppercase text-muted p-1" style="width: 90px; font-size: 11px;">Unit</th>
+                                                                <th class="text-uppercase text-muted p-1 text-center" style="width: 110px; font-size: 11px;">Initial Stock</th>
+                                                                <th class="text-uppercase text-muted p-1 text-center conv-col" style="width: 110px; font-size: 11px;">Pcs / Carton</th>
+                                                                <th class="text-uppercase text-muted p-1 text-center piece-wt-only-col" style="width: 110px; font-size: 11px;">Piece Wt (g)</th>
+                                                                <th class="text-uppercase text-muted p-1" style="width: 110px; font-size: 11px;">Sale Price</th>
+                                                                <th class="text-uppercase text-muted p-1" style="width: 110px; font-size: 11px;">Wholesale</th>
+                                                                <th class="text-uppercase text-muted p-1" style="width: 110px; font-size: 11px;">Purch Price</th>
+                                                                <th class="text-uppercase text-muted p-1" style="width: 70px; font-size: 11px;">Alert</th>
+                                                                <th class="text-uppercase text-muted p-1" style="width: 120px; font-size: 11px;">Barcode</th>
+                                                                <th class="text-uppercase text-muted p-1 text-center" style="width: 60px; font-size: 11px;">Action</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody class="variants-body">
+                                                            <!-- rows injected by JS -->
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
                                     
                                     {{-- MOBILE VARIANTS CONTAINER --}}
                                     <div id="mobileVariantsContainer" style="display: none;">
@@ -861,6 +902,10 @@
     <script>
         let variantMode = 'standard';
         const availableSizes = @json($sizes ?? []);
+        const availableColors = @json($colors ?? []);
+        function buildColorSelectOptions(selectedVal = '') {
+            return availableColors.map(c => `<option value="${c.name}" ${selectedVal === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
+        }
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('productForm');
             const unitDropdown = document.getElementById('unit-dropdown');
@@ -1013,7 +1058,74 @@
 
             const enableVariantsBtn = document.getElementById('enableVariantsBtn');
             const variantsContainer = document.getElementById('variantsContainer');
-            const variantsBody = document.getElementById('variantsBody');
+            const variantSectionsWrapper = document.getElementById('variantSectionsWrapper');
+            const variantSectionTemplate = document.getElementById('variantSectionTemplate');
+
+            function getAllVariantRows() {
+                return variantSectionsWrapper
+                    ? Array.from(variantSectionsWrapper.querySelectorAll('tbody.variants-body tr'))
+                    : [];
+            }
+
+            function getFirstVariantRow() {
+                return variantSectionsWrapper
+                    ? variantSectionsWrapper.querySelector('tbody.variants-body tr')
+                    : null;
+            }
+
+            function getFirstVariantsBody() {
+                return variantSectionsWrapper
+                    ? variantSectionsWrapper.querySelector('tbody.variants-body')
+                    : null;
+            }
+
+            function refreshSectionIndexes() {
+                if (!variantSectionsWrapper) return;
+                const sections = variantSectionsWrapper.querySelectorAll('.variant-section');
+                sections.forEach((sec, idx) => {
+                    const badge = sec.querySelector('.section-index-badge');
+                    const title = sec.querySelector('.section-title-text');
+                    const colorVal = (sec.querySelector('.section-color-input')?.value || '').trim();
+                    const remBtn = sec.querySelector('.section-remove-btn');
+                    if (badge) badge.textContent = '#' + (idx + 1);
+                    if (title) {
+                        title.textContent = colorVal
+                            ? `Product Variants & Units — ${colorVal}`
+                            : 'Product Variants & Units';
+                    }
+                    if (remBtn) {
+                        remBtn.disabled = sections.length <= 1;
+                    }
+                });
+            }
+
+            function addVariantSection(prefillColor = '', focusColor = true) {
+                if (!variantSectionsWrapper || !variantSectionTemplate) return null;
+                const frag = variantSectionTemplate.content.cloneNode(true);
+                const secEl = frag.querySelector('.variant-section');
+                const colorInp = secEl.querySelector('.section-color-input');
+                if (colorInp && prefillColor) {
+                    colorInp.value = prefillColor;
+                }
+                variantSectionsWrapper.appendChild(secEl);
+
+                const tbody = secEl.querySelector('tbody.variants-body');
+                if (getAllVariantRows().length === 0) {
+                    addBaseVariantRow(tbody);
+                } else {
+                    addVariantRow(null, tbody, null);
+                }
+
+                refreshSectionIndexes();
+                applyVariantModeUI();
+                calculateOverallStock();
+
+                if (focusColor && colorInp) {
+                    secEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(() => colorInp.focus(), 200);
+                }
+                return secEl;
+            }
 
             const weightUnits = ['by_kg', 'by_gm', 'by_ton'];
             let manualPrices = {}; // Keep track of manually overridden prices
@@ -1028,7 +1140,7 @@
                 const newMode = isWeightUnit(currentUnit) ? 'weight' : 'standard';
                 
                 if (variantMode !== newMode) {
-                    if (variantsBody.children.length > 0) {
+                    if (getAllVariantRows().length > 0) {
                         Swal.fire({
                             title: 'Change Unit?',
                             text: 'This product contains variants. Changing the unit will remove the current variant settings from this form. Do you want to continue?',
@@ -1039,32 +1151,10 @@
                         }).then((result) => {
                             if (result.isConfirmed) {
                                 variantMode = newMode;
-                                variantsBody.innerHTML = '';
+                                if (variantSectionsWrapper) variantSectionsWrapper.innerHTML = '';
                                 manualPrices = {};
                                 manualNames = {};
-                                applyVariantModeUI();
-                                if (variantMode === 'weight' && !variantsContainer.classList.contains('d-none')) {
-                                    addBaseVariantRow();
-
-            // Quick Shoe Size Chips handler
-            $(document).on('click', '.quick-size-chip', function(e) {
-                e.preventDefault();
-                const sizeVal = $(this).data('size');
-                let filled = false;
-                $('#variantsBody tr').each(function() {
-                    const sel = $(this).find('select[name="variant_size[]"]');
-                    if (sel.length && !sel.val()) {
-                        sel.val(sizeVal).trigger('change');
-                        filled = true;
-                        return false;
-                    }
-                });
-                if (!filled) {
-                    addVariantRow(sizeVal);
-                }
-            });
-
-                                }
+                                addVariantSection('', false);
                             } else {
                                 // Revert dropdown
                                 unitDropdown.value = (variantMode === 'weight') ? 'by_kg' : 'by_pieces';
@@ -1106,19 +1196,25 @@
                 });
             }
 
-            function addBaseVariantRow() {
+            function addBaseVariantRow(targetTbody = null) {
+                const tbody = targetTbody || getFirstVariantsBody();
+                if (!tbody) return;
                 const tr = document.createElement('tr');
                 const productName = productNameInput.value || '';
                 const baseUnitName = unitDropdown ? unitDropdown.options[unitDropdown.selectedIndex].text : 'Kg';
                 const isCartonMode = unitDropdown && unitDropdown.value === 'by_cartons';
+                const sectionColor = (tbody.closest('.variant-section')?.querySelector('.section-color-input')?.value || '').trim();
                 const vid = 'base_' + Date.now();
                 tr.innerHTML = `
                     <td class="p-1">
-                        <input type="text" class="form-control-pro form-control-sm base-name-input fw-bold" name="variant_name[]" value="${productName}" placeholder="Name" data-vid="${vid}">
+                        <select class="form-select form-select-sm fw-bold var-name-select" name="variant_name[]" data-vid="${vid}">
+                            <option value="">Select Color...</option>
+                            ${buildColorSelectOptions(sectionColor)}
+                        </select>
                         <input type="hidden" name="variant_is_base[]" value="1">
                     </td>
                     <td class="p-1"><select class="form-select form-select-sm fw-bold variant-size-select" name="variant_size[]"><option value="">Size...</option>${availableSizes.map(s => `<option value="${s.name}">${s.name}</option>`).join("")}</select></td>
-                    <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" placeholder="Color"></td>
+                    <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" value="${sectionColor}" placeholder="Color"></td>
                     <td class="p-1 text-center" style="width: 110px; min-width: 100px;">
                         <input type="hidden" name="variant_row_id[]" value="${vid}">
                         <input type="file" class="d-none var-photos-file-input" name="variant_photos[${vid}][]" multiple accept="image/*">
@@ -1182,7 +1278,7 @@
                         <button type="button" class="btn btn-sm btn-outline-info duplicate-var-btn p-1 px-2 ms-1" title="Duplicate"><i class="fas fa-copy"></i></button>
                     </td>
                 `;
-                variantsBody.appendChild(tr);
+                tbody.appendChild(tr);
                 wireVariantRowPhotos(tr, vid);
 
                 const baseSaleInp = tr.querySelector('.base-sale-input');
@@ -1204,13 +1300,13 @@
             function updateVariantStocksFromBase() {
                 if (variantMode !== 'weight') return;
 
-                const baseRow = variantsBody.querySelector('tr');
+                const baseRow = getFirstVariantRow();
                 if (!baseRow) return;
 
                 const baseStockInp = baseRow.querySelector('input[name="variant_stock[]"]');
                 const baseStock = parseFloat(baseStockInp?.value || 0);
 
-                const rows = variantsBody.querySelectorAll('tr');
+                const rows = getAllVariantRows();
                 rows.forEach((row, index) => {
                     if (index === 0) return;
 
@@ -1232,14 +1328,14 @@
             function updatePriceSuggestions() {
                 if (variantMode === 'pcs') return;
 
-                const baseRow = variantsBody.querySelector('tr');
+                const baseRow = getFirstVariantRow();
                 if (!baseRow) return;
 
                 const baseSale = parseFloat(baseRow.querySelector('.base-sale-input')?.value || 0);
                 const basePurch = parseFloat(baseRow.querySelector('.base-purch-input')?.value || 0);
                 const baseWholesale = parseFloat(baseRow.querySelector('input[name="variant_wholesale_price[]"]')?.value || 0);
 
-                const rows = variantsBody.querySelectorAll('tr');
+                const rows = getAllVariantRows();
                 rows.forEach((row, index) => {
                     if (index === 0) return;
                     
@@ -1271,9 +1367,12 @@
                 updateVariantStocksFromBase();
             }
 
-            function addVariantRow(weightGrams = null) {
+            function addVariantRow(weightGrams = null, targetTbody = null, presetSize = null) {
+                const tbody = targetTbody || getFirstVariantsBody();
+                if (!tbody) return null;
+
                 const tr = document.createElement('tr');
-                const vid = 'var_' + Date.now();
+                const vid = 'var_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
                 tr.dataset.vid = vid;
                 
                 const isCartonMode = unitDropdown && unitDropdown.value === 'by_cartons';
@@ -1284,11 +1383,12 @@
                     suggestedName += ` - ${weightGrams}g`;
                 }
                 
-                const baseRow = variantsBody.querySelector('tr');
-                const baseSale = parseFloat(baseRow?.querySelector('.base-sale-input')?.value || 0);
-                const basePurch = parseFloat(baseRow?.querySelector('.base-purch-input')?.value || 0);
-                const baseWholesale = parseFloat(baseRow?.querySelector('input[name="variant_wholesale_price[]"]')?.value || 0);
-                const baseConv = baseRow?.querySelector('.conv-factor-input')?.value || (isCartonMode ? '0' : '1');
+                const sectionEl = tbody.closest('.variant-section');
+                const sectionColor = (sectionEl?.querySelector('.section-color-input')?.value || '').trim();
+                const refRow = tbody.querySelector('tr') || getFirstVariantRow();
+                const baseSale = parseFloat(refRow?.querySelector('input[name="variant_sale_price[]"]')?.value || 0);
+                const basePurch = parseFloat(refRow?.querySelector('input[name="variant_purchase_price[]"]')?.value || 0);
+                const baseWholesale = parseFloat(refRow?.querySelector('input[name="variant_wholesale_price[]"]')?.value || 0);
 
                 let suggSale = '';
                 let suggPurch = '';
@@ -1298,10 +1398,10 @@
                     suggSale = (baseSale * factor).toFixed(2);
                     suggPurch = (basePurch * factor).toFixed(2);
                     suggWholesale = (baseWholesale * factor).toFixed(2);
-                } else if (isCartonMode) {
-                    suggSale = baseSale ? baseSale.toFixed(2) : '';
-                    suggPurch = basePurch ? basePurch.toFixed(2) : '';
-                    suggWholesale = baseWholesale ? baseWholesale.toFixed(2) : '';
+                } else {
+                    suggSale = baseSale > 0 ? baseSale.toString() : '';
+                    suggPurch = basePurch > 0 ? basePurch.toString() : '';
+                    suggWholesale = baseWholesale > 0 ? baseWholesale.toString() : '';
                 }
 
                 const initPieceWt = weightGrams || (factor < 10 ? (factor * 1000).toFixed(1).replace(/\.0$/, '') : factor);
@@ -1309,11 +1409,14 @@
 
                 tr.innerHTML = `
                     <td class="p-1">
-                        <input type="text" class="form-control-pro form-control-sm var-name-input" name="variant_name[]" value="${suggestedName}" placeholder="Name">
+                        <select class="form-select form-select-sm fw-bold var-name-select" name="variant_name[]">
+                            <option value="">Select Color...</option>
+                            ${buildColorSelectOptions(sectionColor)}
+                        </select>
                         <input type="hidden" name="variant_is_base[]" value="0">
                     </td>
                     <td class="p-1"><select class="form-select form-select-sm fw-bold variant-size-select" name="variant_size[]"><option value="">Size...</option>${availableSizes.map(s => `<option value="${s.name}" ${presetSize === s.name ? "selected" : ""}>${s.name}</option>`).join("")}</select></td>
-                    <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" placeholder="Color"></td>
+                    <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" value="${sectionColor}" placeholder="Color"></td>
                     <td class="p-1 text-center" style="width: 110px; min-width: 100px;">
                         <input type="hidden" name="variant_row_id[]" value="${vid}">
                         <input type="file" class="d-none var-photos-file-input" name="variant_photos[${vid}][]" multiple accept="image/*">
@@ -1377,8 +1480,9 @@
                         <button type="button" class="btn btn-sm btn-outline-danger remove-var-btn p-1 px-2" title="Remove"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
-                variantsBody.appendChild(tr);
+                tbody.appendChild(tr);
                 wireVariantRowPhotos(tr, vid);
+                toggleFactorColumns();
 
                 const saleInput = tr.querySelector('.sale-price-input');
                 const purchInput = tr.querySelector('.purch-price-input');
@@ -1436,7 +1540,7 @@
                     convCols.forEach(c => c.classList.remove('d-none'));
                     pieceWtOnlyCols.forEach(c => c.classList.add('d-none'));
                     
-                    const baseRow = variantsBody.querySelector('tr');
+                    const baseRow = getFirstVariantRow();
                     if (baseRow) {
                         const baseConv = baseRow.querySelector('.conv-factor-input');
                         if (baseConv) {
@@ -1456,7 +1560,7 @@
                 } else if (isWeight) {
                     convCols.forEach(c => c.classList.remove('d-none'));
                     pieceWtOnlyCols.forEach(c => c.classList.remove('d-none'));
-                    const baseRow = variantsBody.querySelector('tr');
+                    const baseRow = getFirstVariantRow();
                     if (baseRow) {
                         const baseConv = baseRow.querySelector('.conv-factor-input');
                         if (baseConv) {
@@ -1478,53 +1582,42 @@
                     updateVariantMode();
                     toggleFactorColumns();
                 });
-                // Initialize mode on load
+                // Initialize mode and first variant section on load
                 updateVariantMode();
                 toggleFactorColumns();
             }
 
-            enableVariantsBtn.addEventListener('click', function() {
-                if (variantsBody.children.length === 0) {
-                    addBaseVariantRow();
+            if (getAllVariantRows().length === 0) {
+                addVariantSection('', false);
+            }
 
-            // Quick Shoe Size Chips handler
-            $(document).on('click', '.quick-size-chip', function(e) {
-                e.preventDefault();
-                const sizeVal = $(this).data('size');
-                let filled = false;
-                $('#variantsBody tr').each(function() {
-                    const sel = $(this).find('select[name="variant_size[]"]');
-                    if (sel.length && !sel.val()) {
-                        sel.val(sizeVal).trigger('change');
-                        filled = true;
-                        return false;
-                    }
-                });
-                if (!filled) {
-                    addVariantRow(sizeVal);
-                }
-            });
-
-                } else {
-                    addVariantRow();
-                }
+            function handleAddSectionClick() {
+                addVariantSection('', true);
                 if (typeof isMobile === 'function' && isMobile()) {
                     if (typeof rebuildMobileCards === 'function') rebuildMobileCards();
                     const cards = document.querySelectorAll('.mob-variant-card');
                     document.querySelectorAll('.mob-variant-card.is-open').forEach(c => c.classList.remove('is-open'));
                     if (cards.length) cards[cards.length - 1].classList.add('is-open');
                 }
-            });
+            }
 
-            // Always ensure the button reads + Add Variant Row
-            enableVariantsBtn.innerHTML = '<i class="fas fa-plus me-1"></i>Add Variant Row';
-            enableVariantsBtn.className = 'btn btn-sm btn-primary';
+            enableVariantsBtn.addEventListener('click', handleAddSectionClick);
+            const addVariantSectionBottomBtn = document.getElementById('addVariantSectionBottomBtn');
+            if (addVariantSectionBottomBtn) {
+                addVariantSectionBottomBtn.addEventListener('click', handleAddSectionClick);
+            }
+
+            // Always ensure the top button reads + Add Variant Section
+            enableVariantsBtn.innerHTML = '<i class="fas fa-plus-circle me-1"></i>Add Variant Section';
+            enableVariantsBtn.className = 'btn btn-sm btn-primary fw-bold shadow-sm';
 
             function duplicateVariantRow(sourceRow) {
-                addVariantRow();
-                const newRow = variantsBody.lastElementChild;
+                const targetTbody = sourceRow.closest('tbody.variants-body') || getFirstVariantsBody();
+                addVariantRow(null, targetTbody, null);
+                const newRow = targetTbody.lastElementChild;
                 
-                const sourceName = sourceRow.querySelector('input[name="variant_name[]"]')?.value || '';
+                const sourceName = sourceRow.querySelector('[name="variant_name[]"]')?.value || '';
+                const sourceColor = sourceRow.querySelector('input[name="variant_color[]"]')?.value || '';
                 const sourceUnit = sourceRow.querySelector('select[name="variant_unit[]"]')?.value || '';
                 const sourceConv = sourceRow.querySelector('input[name="variant_conv_factor[]"]')?.value || '';
                 const sourcePieceWt = sourceRow.querySelector('input[name="variant_weight_per_piece[]"]')?.value || '';
@@ -1534,7 +1627,8 @@
                 const sourceAlert = sourceRow.querySelector('input[name="variant_alert_qty[]"]')?.value || '0';
                 const sourceStock = sourceRow.querySelector('input[name="variant_stock[]"]')?.value || '0';
                 
-                if(newRow.querySelector('input[name="variant_name[]"]')) newRow.querySelector('input[name="variant_name[]"]').value = sourceName;
+                if(newRow.querySelector('[name="variant_name[]"]')) newRow.querySelector('[name="variant_name[]"]').value = sourceName;
+                if(newRow.querySelector('input[name="variant_color[]"]')) newRow.querySelector('input[name="variant_color[]"]').value = sourceColor;
                 if(newRow.querySelector('select[name="variant_unit[]"]')) newRow.querySelector('select[name="variant_unit[]"]').value = sourceUnit;
                 if(newRow.querySelector('input[name="variant_conv_factor[]"]')) newRow.querySelector('input[name="variant_conv_factor[]"]').value = sourceConv;
                 if(newRow.querySelector('input[name="variant_weight_per_piece[]"]')) newRow.querySelector('input[name="variant_weight_per_piece[]"]').value = sourcePieceWt;
@@ -1552,53 +1646,125 @@
 
             function calculateOverallStock() {
                 let total = 0;
-                document.querySelectorAll('input[name="variant_stock[]"]').forEach(inp => {
-                    total += (parseFloat(inp.value) || 0);
-                });
+                if (variantSectionsWrapper) {
+                    variantSectionsWrapper.querySelectorAll('.variant-section').forEach(sec => {
+                        let secTotal = 0;
+                        sec.querySelectorAll('input[name="variant_stock[]"]').forEach(inp => {
+                            secTotal += (parseFloat(inp.value) || 0);
+                        });
+                        total += secTotal;
+                        const secBadge = sec.querySelector('.section-stock-badge strong');
+                        if (secBadge) secBadge.textContent = secTotal;
+                    });
+                } else {
+                    document.querySelectorAll('input[name="variant_stock[]"]').forEach(inp => {
+                        total += (parseFloat(inp.value) || 0);
+                    });
+                }
                 const display = document.getElementById('overall_stock_display');
                 if (display) display.innerText = total;
             }
 
-            variantsBody.addEventListener('input', function(e) {
-                if (e.target.name === 'variant_stock[]') {
-                    calculateOverallStock();
-                }
-            });
-
-            variantsBody.addEventListener('click', function(e) {
-                const addBtn = e.target.closest('.add-var-btn');
-                const remBtn = e.target.closest('.remove-var-btn');
-                const genBtn = e.target.closest('.gen-var-barcode');
-                const dupBtn = e.target.closest('.duplicate-var-btn');
-
-                if (dupBtn) {
-                    duplicateVariantRow(dupBtn.closest('tr'));
-                    calculateOverallStock();
-                } else if (addBtn) {
-                    addVariantRow();
-                    calculateOverallStock();
-                } else if (remBtn) {
-                    const row = remBtn.closest('tr');
-                    // In weight mode, base variant cannot be deleted
-                    if (row.querySelector('.base-name-input')) {
-                        Swal.fire({icon: 'error', title: 'Cannot Delete', text: 'The base variant cannot be deleted.'});
-                        return;
+            if (variantSectionsWrapper) {
+                variantSectionsWrapper.addEventListener('input', function(e) {
+                    if (e.target.name === 'variant_stock[]') {
+                        calculateOverallStock();
                     }
+                });
 
-                    if (variantsBody.children.length > 1) {
-                        row.remove();
-                    } else {
-                        // If it's the last row, clear inputs instead of removing
-                        row.querySelectorAll('input:not([type="hidden"])').forEach(inp => inp.value = '');
-                        const bc = row.querySelector('input[name="variant_barcode[]"]');
-                        if (bc) bc.value = generateRandomBarcode();
+                variantSectionsWrapper.addEventListener('change', function(e) {
+                    if (e.target.classList.contains('section-color-input')) {
+                        const sec = e.target.closest('.variant-section');
+                        const colorVal = e.target.value;
+                        sec.querySelectorAll('[name="variant_name[]"]').forEach(el => {
+                            el.value = colorVal;
+                        });
+                        sec.querySelectorAll('input[name="variant_color[]"]').forEach(inp => {
+                            inp.value = colorVal;
+                        });
+                        refreshSectionIndexes();
+                    } else if (e.target.classList.contains('var-name-select')) {
+                        const row = e.target.closest('tr');
+                        const colorInp = row?.querySelector('input[name="variant_color[]"]');
+                        if (colorInp) colorInp.value = e.target.value;
                     }
-                    calculateOverallStock();
-                } else if (genBtn) {
-                    const input = genBtn.closest('td').querySelector('input');
-                    input.value = generateRandomBarcode();
-                }
-            });
+                });
+
+                variantSectionsWrapper.addEventListener('click', function(e) {
+                    const secAddRowBtn = e.target.closest('.section-add-row-btn');
+                    const secRemoveBtn = e.target.closest('.section-remove-btn');
+                    const chipBtn = e.target.closest('.quick-size-chip');
+                    const addBtn = e.target.closest('.add-var-btn');
+                    const remBtn = e.target.closest('.remove-var-btn');
+                    const genBtn = e.target.closest('.gen-var-barcode');
+                    const dupBtn = e.target.closest('.duplicate-var-btn');
+
+                    if (secAddRowBtn) {
+                        const sec = secAddRowBtn.closest('.variant-section');
+                        const tbody = sec?.querySelector('tbody.variants-body');
+                        addVariantRow(null, tbody, null);
+                        calculateOverallStock();
+                    } else if (secRemoveBtn) {
+                        const sections = variantSectionsWrapper.querySelectorAll('.variant-section');
+                        if (sections.length <= 1) return;
+                        const sec = secRemoveBtn.closest('.variant-section');
+                        if (variantMode === 'weight' && sec.querySelector('.base-name-input')) {
+                            Swal.fire({icon: 'error', title: 'Cannot Delete', text: 'The base variant section cannot be deleted in weight mode.'});
+                            return;
+                        }
+                        sec.remove();
+                        refreshSectionIndexes();
+                        calculateOverallStock();
+                    } else if (chipBtn) {
+                        e.preventDefault();
+                        const sec = chipBtn.closest('.variant-section');
+                        const tbody = sec?.querySelector('tbody.variants-body');
+                        if (!tbody) return;
+                        const sizeVal = chipBtn.dataset.size;
+                        let filled = false;
+                        tbody.querySelectorAll('select[name="variant_size[]"]').forEach(sel => {
+                            if (!filled && !sel.value) {
+                                sel.value = sizeVal;
+                                sel.dispatchEvent(new Event('change'));
+                                filled = true;
+                            }
+                        });
+                        if (!filled) {
+                            addVariantRow(null, tbody, sizeVal);
+                        }
+                        calculateOverallStock();
+                    } else if (dupBtn) {
+                        duplicateVariantRow(dupBtn.closest('tr'));
+                        calculateOverallStock();
+                    } else if (addBtn) {
+                        const tbody = addBtn.closest('tbody.variants-body');
+                        addVariantRow(null, tbody, null);
+                        calculateOverallStock();
+                    } else if (remBtn) {
+                        const row = remBtn.closest('tr');
+                        const tbody = row.closest('tbody.variants-body');
+                        if (variantMode === 'weight' && row.querySelector('.base-name-input')) {
+                            Swal.fire({icon: 'error', title: 'Cannot Delete', text: 'The base variant cannot be deleted.'});
+                            return;
+                        }
+
+                        if (tbody && tbody.children.length > 1) {
+                            row.remove();
+                        } else if (getAllVariantRows().length > 1) {
+                            row.remove();
+                        } else {
+                            // If it's the very last row overall, clear inputs instead of removing
+                            row.querySelectorAll('input:not([type="hidden"])').forEach(inp => inp.value = '');
+                            const bc = row.querySelector('input[name="variant_barcode[]"]');
+                            if (bc) bc.value = generateRandomBarcode();
+                        }
+                        calculateOverallStock();
+                    } else if (genBtn) {
+                        const input = genBtn.closest('td').querySelector('input');
+                        input.value = generateRandomBarcode();
+                    }
+                });
+            }
 
             // Prevent duplicate Conv Factors on form submit
             form.addEventListener('submit', function(e) {
@@ -1796,7 +1962,7 @@
                         if (pieceWt) pieceWt.value = (f * 1000).toFixed(0);
 
                         // Auto stock from base row
-                        const baseRow = variantsBody.querySelector('tr');
+                        const baseRow = document.querySelector('#variantSectionsWrapper tbody.variants-body tr');
                         const baseStockInp = baseRow?.querySelector('[name="variant_stock[]"]');
                         const baseStock = parseFloat(baseStockInp?.value || 0);
                         if (stockAutoInp && baseStock > 0) stockAutoInp.value = Math.round(baseStock / f);
@@ -1830,7 +1996,8 @@
 
         // ---- Sync mobile card fields → desktop table row ----
         function mobSyncToDesktop(card, idx) {
-            const tr = variantsBody.children[idx];
+            const rows = document.querySelectorAll('#variantSectionsWrapper tbody.variants-body tr');
+            const tr = rows[idx];
             if (!tr) return;
             card.querySelectorAll('.mob-sync').forEach(inp => {
                 const field = inp.dataset.field;
@@ -1838,8 +2005,6 @@
                 const desktopEl = tr.querySelector(`[name="${field}"]`);
                 if (desktopEl) desktopEl.value = inp.value;
             });
-            // trigger desktop recalc
-            updateVariantStocksFromBase();
         }
 
         // ---- Toggle accordion (one open at a time) ----
@@ -1856,9 +2021,10 @@
         function mobDeleteCard(btn) {
             const card = btn.closest('.mob-variant-card');
             const idx = parseInt(card.dataset.mobIdx);
-            const tr = variantsBody.children[idx];
+            const rows = document.querySelectorAll('#variantSectionsWrapper tbody.variants-body tr');
+            const tr = rows[idx];
             if (tr) {
-                if (variantsBody.children.length <= 1) return;
+                if (rows.length <= 1) return;
                 tr.remove();
             }
             card.remove();
@@ -1870,14 +2036,8 @@
 
         // ---- Add a new variant (mobile) ----
         function mobileAddVariant() {
-            // Trigger desktop add (reuse logic)
-            addVariantRow();
-            // Rebuild mobile cards from updated desktop rows
-            rebuildMobileCards();
-            // Open last card
-            const cards = document.querySelectorAll('.mob-variant-card');
-            document.querySelectorAll('.mob-variant-card.is-open').forEach(c => c.classList.remove('is-open'));
-            if (cards.length) cards[cards.length - 1].classList.add('is-open');
+            const btn = document.getElementById('enableVariantsBtn');
+            if (btn) btn.click();
         }
 
         // ---- Rebuild all mobile cards from desktop rows ----
@@ -1885,7 +2045,7 @@
             const body = document.getElementById('mobileVariantsBody');
             if (!body) return;
             body.innerHTML = '';
-            Array.from(variantsBody.children).forEach((tr, idx) => {
+            document.querySelectorAll('#variantSectionsWrapper tbody.variants-body tr').forEach((tr, idx) => {
                 const isBase = !!tr.querySelector('.base-name-input');
                 const card = buildMobCard(tr, idx, isBase);
                 body.appendChild(card);
@@ -1893,11 +2053,14 @@
         }
 
         // ---- Initial render of mobile cards (after desktop rows exist) ----
-        // Observe desktop table for row additions
-        const desktopObserver = new MutationObserver(() => {
-            if (isMobile()) rebuildMobileCards();
-        });
-        desktopObserver.observe(variantsBody, { childList: true });
+        // Observe desktop sections for row additions/removals
+        const desktopWrapperEl = document.getElementById('variantSectionsWrapper');
+        if (desktopWrapperEl) {
+            const desktopObserver = new MutationObserver(() => {
+                if (isMobile()) rebuildMobileCards();
+            });
+            desktopObserver.observe(desktopWrapperEl, { childList: true, subtree: true });
+        }
 
         // Also rebuild when window resizes to mobile
         window.addEventListener('resize', () => {

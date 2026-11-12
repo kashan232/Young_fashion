@@ -835,6 +835,10 @@
                                                         <li><a href="{{ route('Size.home') }}"><i
                                                                     class="fas fa-ruler-combined"></i> Sizes</a></li>
                                                     @endcan
+                                                    @can('products.view')
+                                                        <li><a href="{{ route('Color.home') }}"><i
+                                                                    class="fas fa-palette"></i> Variants &amp; Color</a></li>
+                                                    @endcan
 
                                                 </ul>
                                             </div>
@@ -1153,8 +1157,8 @@
                         </li>
 
 
-                        <!-- Website Management -->
-                        @canany(['website-settings.view', 'web_products.view', 'web_products.read', 'coupons.view', 'coupons.read', 'web_orders.view', 'web_orders.read', 'web_users.view', 'web_users.read'])
+                        <!-- Website Management (Hidden from Menu) -->
+                        @if(false)
                             <li class="nav-item">
                                 <a href="#" class="nav-link">
                                     <i class="menu_icon fas fa-globe"></i>
@@ -1187,7 +1191,7 @@
                                     </ul>
                                 </div>
                             </li>
-                        @endcanany
+                        @endif
 
                         <!-- Mobile User Profile & Direct Logout -->
                         @if (auth()->check())
@@ -1439,6 +1443,7 @@
         });
     </script>
     @stack('scripts')
+    @yield('scripts')
 </body>
 
 </html>

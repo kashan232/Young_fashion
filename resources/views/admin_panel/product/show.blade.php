@@ -190,6 +190,9 @@
 
                 {{-- Action Buttons --}}
                 <div class="d-flex align-items-center gap-2">
+                    <a href="{{ route('stock_transfers.create') }}?product_id={{ $product->id }}&to_shop=1" class="btn btn-success btn-action-hdr text-white fw-bold shadow-sm" style="background: #16a34a; border-color: #16a34a;" title="Transfer stock from warehouse/godown to main shop">
+                        <i class="fas fa-truck-loading me-1"></i> Transfer to Shop
+                    </a>
                     <a href="{{ route('product') }}" class="btn btn-outline-secondary btn-action-hdr">
                         <i class="fas fa-list"></i> Product Catalog
                     </a>
@@ -203,6 +206,11 @@
                         <a href="{{ route('products.edit', $product->id) }}" class="btn btn-primary btn-action-hdr" style="background: var(--primary); border-color: var(--primary);">
                             <i class="fas fa-pencil-alt"></i> Edit Product
                         </a>
+                    @endif
+                    @if (auth()->check() && (auth()->user()->can('products.delete') || auth()->user()->can('products.edit') || auth()->user()->email === 'admin@admin.com'))
+                        <button type="button" class="btn btn-outline-danger btn-action-hdr delete-article-btn" data-id="{{ $product->id }}" data-name="{{ $product->item_name }}" title="Delete entire article">
+                            <i class="fas fa-trash-alt"></i> Delete Article
+                        </button>
                     @endif
                 </div>
             </div>
@@ -264,11 +272,25 @@
                                     </div>
                                 </div>
                                 <div class="col-sm-6 col-md-4">
-                                    <div class="field-box" style="background: #f0fdf4; border-color: #bbf7d0 !important;">
-                                        <div class="field-label" style="color: #166534 !important;">Overall Inventory Stock</div>
-                                        <div class="field-value fs-5" style="color: #15803d !important;">
-                                            {{ $totalStock ?? $stockDisplay ?? 0 }} Pairs Available
+                                    <div class="field-box" style="background: {{ ($shopStock ?? 0) > 0 ? '#f0fdf4' : '#fff7ed' }}; border-color: {{ ($shopStock ?? 0) > 0 ? '#bbf7d0' : '#fed7aa' }} !important;">
+                                        <div class="field-label" style="color: {{ ($shopStock ?? 0) > 0 ? '#166534' : '#c2410c' }} !important;">
+                                            <i class="fas fa-store me-1"></i> Main Shop Stock
                                         </div>
+                                        <div class="field-value fs-5" style="color: {{ ($shopStock ?? 0) > 0 ? '#15803d' : '#ea580c' }} !important;">
+                                            {{ $shopStock ?? 0 }} Pairs Available
+                                        </div>
+                                        <small class="text-muted" style="font-size: 11px;">(Stock transferred to shop)</small>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6 col-md-4">
+                                    <div class="field-box" style="background: #f8fafc; border-color: #cbd5e1 !important;">
+                                        <div class="field-label" style="color: #334155 !important;">
+                                            <i class="fas fa-warehouse text-primary me-1"></i> Godown / Warehouse Stock
+                                        </div>
+                                        <div class="field-value fs-5 text-dark">
+                                            {{ $warehouseStock ?? 0 }} Pairs in Godown
+                                        </div>
+                                        <small class="text-muted" style="font-size: 11px;">(Bulk reserve in warehouse)</small>
                                     </div>
                                 </div>
                             </div>
@@ -328,8 +350,11 @@
                         <span class="fw-bold text-dark fs-5">
                             <i class="fas fa-boxes text-primary me-2"></i>Product Variants &amp; Units
                         </span>
-                        <span class="badge bg-primary text-white px-3 py-1 fs-6 ms-2">
-                            Overall Stock: {{ $totalStock ?? $stockDisplay ?? 0 }}
+                        <span class="badge {{ ($shopStock ?? 0) > 0 ? 'bg-success' : 'bg-warning text-dark' }} px-3 py-1 fs-6 ms-2">
+                            <i class="fas fa-store me-1"></i>Shop Stock: {{ $shopStock ?? 0 }} Pairs
+                        </span>
+                        <span class="badge bg-secondary text-white px-3 py-1 fs-6 ms-1">
+                            <i class="fas fa-warehouse me-1"></i>Godown: {{ $warehouseStock ?? 0 }} Pairs
                         </span>
                     </div>
 
@@ -376,13 +401,17 @@
                                 <th class="py-3 text-center" style="width: 100px;">Size</th>
                                 <th class="py-3 text-center" style="width: 110px;">Color</th>
                                 <th class="py-3 text-center" style="width: 160px; min-width: 140px;"><i class="fas fa-camera text-primary me-1"></i>Photos</th>
-                                <th class="py-3 text-center" style="width: 80px;">Unit</th>
-                                <th class="py-3 text-center" style="width: 140px;">Available Stock</th>
+                                <th class="py-3 text-center" style="width: 70px;">Unit</th>
+                                <th class="py-3 text-center" style="width: 135px;"><i class="fas fa-store text-success me-1"></i>Shop Stock</th>
+                                <th class="py-3 text-center" style="width: 135px;"><i class="fas fa-warehouse text-primary me-1"></i>Godown Stock</th>
                                 <th class="py-3 text-end" style="min-width: 165px; width: 175px;">Sale / Offer Price</th>
                                 <th class="py-3 text-end" style="width: 120px;">Wholesale</th>
                                 <th class="py-3 text-end" style="width: 120px;">Purch Price</th>
                                 <th class="py-3 text-center" style="width: 80px;">Alert</th>
-                                <th class="pe-4 py-3 text-center" style="width: 130px;">Barcode</th>
+                                <th class="py-3 text-center" style="width: 130px;">Barcode</th>
+                                @if (auth()->check() && (auth()->user()->can('products.delete') || auth()->user()->can('products.edit') || auth()->user()->email === 'admin@admin.com'))
+                                    <th class="pe-4 py-3 text-center" style="width: 90px;">Action</th>
+                                @endif
                             </tr>
                         </thead>
                         <tbody id="showVariantsTbody">
@@ -392,7 +421,8 @@
                                     $vSize = $v['size'] ?? '-';
                                     $vColor = (!empty($v['color']) && $v['color'] !== '-') ? trim($v['color']) : 'General';
                                     $vUnit = $v['unit'] ?? ($product->unit->name ?? 'Pcs');
-                                    $vStock = (float)($v['available_stock'] ?? ($v['stock'] ?? 0));
+                                    $vShopStock = (float)($v['shop_stock'] ?? $v['available_stock'] ?? 0);
+                                    $vWhStock = (float)($v['warehouse_stock'] ?? 0);
                                     $vSale = (float)($v['sale_price'] ?? 0);
                                     $vWholesale = (float)($v['wholesale_price'] ?? 0);
                                     $vPurch = (float)($v['purch_price'] ?? 0);
@@ -428,12 +458,22 @@
                                     </td>
                                     <td class="py-3 text-center text-muted">{{ $vUnit }}</td>
                                     <td class="py-3 text-center">
-                                        @if($vStock > 5)
-                                            <span class="badge bg-success text-white px-2 py-1"><i class="fas fa-check-circle me-1"></i>{{ $vStock }} In Stock</span>
-                                        @elseif($vStock > 0)
-                                            <span class="badge bg-warning text-dark px-2 py-1"><i class="fas fa-exclamation-triangle me-1"></i>{{ $vStock }} Low Stock</span>
+                                        @php
+                                            $effectiveAlert = (float)($vAlert > 0 ? $vAlert : ($product->alert_carton_quantity ?? ($product->alert_quantity ?? 0)));
+                                        @endphp
+                                        @if($vShopStock <= 0)
+                                            <span class="badge bg-danger text-white px-2 py-1"><i class="fas fa-times-circle me-1"></i>0 in Shop</span>
+                                        @elseif($effectiveAlert > 0 && $vShopStock <= $effectiveAlert)
+                                            <span class="badge bg-warning text-dark px-2 py-1"><i class="fas fa-exclamation-triangle me-1"></i>{{ $vShopStock }} Low Stock</span>
                                         @else
-                                            <span class="badge bg-danger text-white px-2 py-1"><i class="fas fa-times-circle me-1"></i>Out of Stock</span>
+                                            <span class="badge bg-success text-white px-2 py-1"><i class="fas fa-check-circle me-1"></i>{{ $vShopStock }} in Shop</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 text-center">
+                                        @if($vWhStock > 0)
+                                            <span class="badge bg-light text-dark border px-2 py-1 fw-bold"><i class="fas fa-warehouse text-primary me-1"></i>{{ $vWhStock }} Godown</span>
+                                        @else
+                                            <span class="badge bg-light text-muted border px-2 py-1">0 Godown</span>
                                         @endif
                                     </td>
                                     <td class="py-3 text-end" style="min-width: 155px;">
@@ -471,11 +511,25 @@
                                     <td class="py-3 text-end text-dark">Rs. {{ number_format($vWholesale) }}</td>
                                     <td class="py-3 text-end text-muted">Rs. {{ number_format($vPurch) }}</td>
                                     <td class="py-3 text-center text-muted">{{ $vAlert }}</td>
-                                    <td class="pe-4 py-3 text-center"><code class="bg-light px-2 py-1 rounded border text-dark">{{ $vBarcode }}</code></td>
+                                    <td class="py-3 text-center"><code class="bg-light px-2 py-1 rounded border text-dark">{{ $vBarcode }}</code></td>
+                                    @if (auth()->check() && (auth()->user()->can('products.delete') || auth()->user()->can('products.edit') || auth()->user()->email === 'admin@admin.com'))
+                                        <td class="pe-4 py-3 text-center">
+                                            <button type="button"
+                                                class="btn btn-sm btn-outline-danger delete-variant-btn"
+                                                data-product-id="{{ $product->id }}"
+                                                data-variant-index="{{ $idx }}"
+                                                data-row-id="{{ $v['row_id'] ?? '' }}"
+                                                data-barcode="{{ $vBarcode }}"
+                                                data-label="{{ $vName }} (Size: {{ $vSize }}, Color: {{ $vColor }})"
+                                                title="{{ count($variants) <= 1 ? 'Only 1 variant left — use Delete Article instead' : 'Delete this variant' }}">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </td>
+                                    @endif
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="12" class="text-center py-4 text-muted">No variants registered for this product.</td>
+                                    <td colspan="14" class="text-center py-4 text-muted">No variants registered for this product.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -677,6 +731,146 @@ $(document).ready(function() {
 
     $('#variantSearchInput').on('input', function() {
         filterTable();
+    });
+
+    // ── Delete Article from View Page ──
+    function executeDeleteArticle(id, name, forceDelete) {
+        $.ajax({
+            url: '/products/' + id,
+            type: 'DELETE',
+            data: {
+                _token: '{{ csrf_token() }}',
+                force: forceDelete ? 1 : 0
+            },
+            success: function(res) {
+                if (res.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Deleted!',
+                        text: res.message,
+                        timer: 1600,
+                        showConfirmButton: false
+                    }).then(function() {
+                        window.location.href = "{{ route('product') }}";
+                    });
+                }
+            },
+            error: function(xhr) {
+                var json = xhr.responseJSON || {};
+                if (xhr.status === 422 && json.requires_force) {
+                    Swal.fire({
+                        title: 'Confirm Force Delete',
+                        text: json.message,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc2626',
+                        cancelButtonColor: '#64748b',
+                        confirmButtonText: 'Yes, Delete Anyway',
+                        cancelButtonText: 'Cancel'
+                    }).then(function(confirmRes) {
+                        if (confirmRes.isConfirmed) {
+                            executeDeleteArticle(id, name, true);
+                        }
+                    });
+                } else {
+                    Swal.fire('Error', json.message || 'Could not delete article.', 'error');
+                }
+            }
+        });
+    }
+
+    $(document).on('click', '.delete-article-btn', function() {
+        var id = $(this).data('id');
+        var name = $(this).data('name');
+        Swal.fire({
+            title: 'Delete Article?',
+            html: 'Are you sure you want to delete <strong>' + $('<div>').text(name).html() + '</strong> and all its variants?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Yes, Delete Article',
+            cancelButtonText: 'Cancel'
+        }).then(function(result) {
+            if (result.isConfirmed) {
+                executeDeleteArticle(id, name, false);
+            }
+        });
+    });
+
+    // ── Delete Individual Variant ──
+    function executeDeleteVariant(payload, forceDelete) {
+        $.ajax({
+            url: '/products/' + payload.productId + '/variant',
+            type: 'DELETE',
+            data: {
+                _token: '{{ csrf_token() }}',
+                variant_index: payload.variantIndex,
+                row_id: payload.rowId,
+                barcode: payload.barcode,
+                force: forceDelete ? 1 : 0
+            },
+            success: function(res) {
+                if (res.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Variant Deleted',
+                        text: res.message,
+                        timer: 1400,
+                        showConfirmButton: false
+                    }).then(function() {
+                        window.location.reload();
+                    });
+                }
+            },
+            error: function(xhr) {
+                var json = xhr.responseJSON || {};
+                if (xhr.status === 422 && json.requires_force) {
+                    Swal.fire({
+                        title: 'Variant Has Stock!',
+                        text: json.message,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc2626',
+                        cancelButtonColor: '#64748b',
+                        confirmButtonText: 'Yes, Delete Variant',
+                        cancelButtonText: 'Cancel'
+                    }).then(function(confirmRes) {
+                        if (confirmRes.isConfirmed) {
+                            executeDeleteVariant(payload, true);
+                        }
+                    });
+                } else {
+                    Swal.fire('Cannot Delete Variant', json.message || 'Could not delete variant.', 'warning');
+                }
+            }
+        });
+    }
+
+    $(document).on('click', '.delete-variant-btn', function() {
+        var btn = $(this);
+        var payload = {
+            productId: btn.data('product-id'),
+            variantIndex: btn.data('variant-index'),
+            rowId: btn.data('row-id'),
+            barcode: btn.data('barcode'),
+            label: btn.data('label')
+        };
+
+        Swal.fire({
+            title: 'Delete Variant?',
+            html: 'Are you sure you want to remove variant:<br><strong>' + $('<div>').text(payload.label).html() + '</strong>?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Yes, Delete Variant',
+            cancelButtonText: 'Cancel'
+        }).then(function(result) {
+            if (result.isConfirmed) {
+                executeDeleteVariant(payload, false);
+            }
+        });
     });
 });
 </script>
