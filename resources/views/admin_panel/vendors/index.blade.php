@@ -240,42 +240,201 @@
             display: flex;
         }
     }
+
+    /* Status Toggle Pill */
+    .status-toggle-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        border: 1px solid transparent;
+        transition: all 0.15s ease;
+        line-height: 1.2;
+    }
+    button.status-toggle-btn {
+        cursor: pointer;
+    }
+    button.status-toggle-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+    }
+    .status-toggle-btn.is-active {
+        background-color: #ecfdf5;
+        color: #059669;
+        border-color: #a7f3d0;
+    }
+    .status-toggle-btn.is-deactive {
+        background-color: #fef2f2;
+        color: #dc2626;
+        border-color: #fecaca;
+    }
+    .status-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+    .is-active .status-dot {
+        background-color: #10b981;
+    }
+    .is-deactive .status-dot {
+        background-color: #ef4444;
+    }
+
+    /* iOS Switch for Action Column */
+    .vendor-switch-wrapper {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        user-select: none;
+        vertical-align: middle;
+    }
+    .vendor-switch {
+        position: relative;
+        display: inline-block;
+        width: 42px;
+        height: 22px;
+        margin-bottom: 0;
+        cursor: pointer;
+    }
+    .vendor-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    .vendor-switch-slider {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: #ef4444;
+        transition: .25s ease-in-out;
+        border-radius: 22px;
+    }
+    .vendor-switch-slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 3px;
+        bottom: 3px;
+        background-color: #ffffff;
+        transition: .25s ease-in-out;
+        border-radius: 50%;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    }
+    .vendor-switch input:checked + .vendor-switch-slider {
+        background-color: #10b981;
+    }
+    .vendor-switch input:checked + .vendor-switch-slider:before {
+        transform: translateX(20px);
+    }
+    .vendor-switch input:disabled + .vendor-switch-slider {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    .vendor-switch-text {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        min-width: 46px;
+        text-align: left;
+    }
+    .vendor-switch-text.text-active {
+        color: #059669;
+    }
+    .vendor-switch-text.text-deactive {
+        color: #dc2626;
+    }
+
+    /* Modal Form Alignment (Bootstrap 4) */
+    .vendor-modal-form .form-group {
+        margin-bottom: 16px;
+    }
+    .vendor-modal-form .form-group label {
+        display: block;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 6px;
+    }
+    .vendor-modal-form .form-control {
+        display: block;
+        width: 100%;
+        height: 42px;
+        padding: 8px 12px;
+        font-size: 0.9rem;
+        color: #0f172a;
+        background-color: #ffffff;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 10px;
+        box-shadow: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .vendor-modal-form .form-control:focus {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+        outline: none;
+    }
+    .vendor-modal-form textarea.form-control {
+        height: 90px;
+        resize: vertical;
+    }
 </style>
 
 <div class="vendor-page container-fluid px-3 px-md-4 pt-3">
     
     {{-- Header Row --}}
-    <div class="vendor-header d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+    <div class="vendor-header d-flex flex-column flex-md-row align-items-md-center justify-content-between">
         <div>
-            <h3 class="vendor-title"><i class="fas fa-truck-loading text-primary me-2"></i>Vendor Management</h3>
+            <h3 class="vendor-title"><i class="fas fa-truck-loading text-primary mr-2"></i>Vendor Management</h3>
             <div class="vendor-sub">Manage suppliers, opening balances, ledgers and payments</div>
         </div>
-        <div class="vendor-action-hub">
+        <div class="vendor-action-hub mt-3 mt-md-0">
             @can('vendors.create')
                 <button type="button" class="btn-vendor-primary" id="btnAddVendor">
                     <i class="fas fa-plus"></i> Add Vendor
                 </button>
             @endcan
             <a href="{{ url('vendors-ledger') }}" class="btn-vendor-sub">
-                <i class="fas fa-book me-1"></i> Ledger
+                <i class="fas fa-book mr-1"></i> Ledger
             </a>
             <a href="{{ route('vendor.payments') }}" class="btn-vendor-sub">
-                <i class="fas fa-money-check-alt me-1"></i> Payments
+                <i class="fas fa-money-check-alt mr-1"></i> Payments
             </a>
             <a href="{{ url('vendor/bilties') }}" class="btn-vendor-sub">
-                <i class="fas fa-shipping-fast me-1"></i> Bilty
+                <i class="fas fa-shipping-fast mr-1"></i> Bilty
             </a>
         </div>
     </div>
 
     {{-- Stats Row --}}
-    <div class="row g-3 mb-4">
-        <div class="col-12 col-sm-6 col-md-4">
+    <div class="row mb-4">
+        <div class="col-12 col-sm-6 col-md-4 mb-3 mb-md-0">
             <div class="vendor-stat-card">
                 <div class="vendor-stat-icon"><i class="fas fa-store"></i></div>
                 <div>
                     <div class="vendor-stat-val">{{ count($vendors) }}</div>
                     <div class="vendor-stat-lbl">Total Vendors</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4 mb-3 mb-md-0">
+            <div class="vendor-stat-card">
+                <div class="vendor-stat-icon" style="background: #ecfdf5; color: #059669;"><i class="fas fa-user-check"></i></div>
+                <div>
+                    <div class="vendor-stat-val" id="activeVendorsCount">{{ $activeVendorsCount ?? 0 }}</div>
+                    <div class="vendor-stat-lbl">Active Vendors</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4">
+            <div class="vendor-stat-card">
+                <div class="vendor-stat-icon" style="background: #fff7ed; color: #ea580c;"><i class="fas fa-file-invoice-dollar"></i></div>
+                <div>
+                    <div class="vendor-stat-val">Rs. {{ number_format((float) ($totalPayables ?? 0), 2) }}</div>
+                    <div class="vendor-stat-lbl">Total Payables</div>
                 </div>
             </div>
         </div>
@@ -302,14 +461,21 @@
                     <tr>
                         <th class="text-center" style="width: 60px;">#</th>
                         <th class="text-start">Vendor Name</th>
+                        <th class="text-start">Category</th>
                         <th class="text-start">Contact Phone</th>
-                        <th class="text-start">Opening Balance</th>
+                        <th class="text-start">Status</th>
+                        <th class="text-start">Balance</th>
                         <th class="text-start">Address</th>
-                        <th class="text-end pe-4" style="width: 140px;">Action</th>
+                        <th class="text-start">Date</th>
+                        <th class="text-end pe-4" style="width: 220px;">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($vendors as $key => $v)
+                        @php
+                            $isActive = (int) ($v->status ?? 1) === 1;
+                            $liveBalance = (float) ($v->live_balance ?? 0);
+                        @endphp
                         <tr>
                             <td class="text-center fw-bold text-muted">{{ $key + 1 }}</td>
                             <td>
@@ -321,30 +487,76 @@
                                 </div>
                             </td>
                             <td>
+                                @if ($v->category)
+                                    <span class="badge bg-light text-primary border border-primary-subtle px-2 py-1">{{ $v->category }}</span>
+                                @else
+                                    <span class="text-muted small">—</span>
+                                @endif
+                            </td>
+                            <td>
                                 @if ($v->phone)
                                     <span class="badge bg-light text-dark border px-2 py-1"><i class="fas fa-phone-alt me-1 text-muted"></i>{{ $v->phone }}</span>
                                 @else
                                     <span class="text-muted small">—</span>
                                 @endif
                             </td>
-                            <td class="fw-bold text-success">
-                                Rs. {{ number_format((float) $v->opening_balance, 2) }}
+                            <td>
+                                @can('vendors.edit')
+                                    <button type="button"
+                                        class="status-toggle-btn {{ $isActive ? 'is-active' : 'is-deactive' }}"
+                                        data-id="{{ $v->id }}"
+                                        title="Click to toggle Active / Deactive">
+                                        <span class="status-dot"></span>
+                                        <span class="status-text">{{ $isActive ? 'Active' : 'Deactive' }}</span>
+                                    </button>
+                                @else
+                                    <span class="status-toggle-btn {{ $isActive ? 'is-active' : 'is-deactive' }}">
+                                        <span class="status-dot"></span>
+                                        <span class="status-text">{{ $isActive ? 'Active' : 'Deactive' }}</span>
+                                    </span>
+                                @endcan
+                            </td>
+                            <td class="fw-bold {{ $liveBalance > 0 ? 'text-danger' : 'text-success' }}">
+                                Rs. {{ number_format($liveBalance, 2) }}
                             </td>
                             <td class="text-secondary small">{{ Str::limit($v->address, 35) ?: '—' }}</td>
-                            <td class="text-end pe-4">
-                                @include('admin_panel.partials.action_buttons', [
-                                    'editRoute' => 'javascript:void(0)',
-                                    'deleteRoute' => url('vendor/delete/' . $v->id),
-                                    'editIsLink' => false,
-                                    'permissions' => [
-                                        'edit' => 'vendors.edit',
-                                        'delete' => 'vendors.delete',
-                                    ],
-                                    'dataId' => $v->id,
-                                ])
+                            <td class="text-secondary small text-nowrap">
+                                {{ $v->created_at ? $v->created_at->format('d M, Y') : '—' }}
+                            </td>
+                            <td class="text-end pe-4 text-nowrap">
+                                <div class="d-inline-flex align-items-center" style="gap: 8px;">
+                                    {{-- Active / Deactive Switch in Action --}}
+                                    @can('vendors.edit')
+                                        <div class="vendor-switch-wrapper mr-1" title="Toggle Active / Deactive">
+                                            <label class="vendor-switch">
+                                                <input type="checkbox"
+                                                    class="vendor-status-toggle"
+                                                    data-id="{{ $v->id }}"
+                                                    {{ $isActive ? 'checked' : '' }}>
+                                                <span class="vendor-switch-slider"></span>
+                                            </label>
+                                            <span class="vendor-switch-text {{ $isActive ? 'text-active' : 'text-deactive' }}">
+                                                {{ $isActive ? 'Active' : 'Deactive' }}
+                                            </span>
+                                        </div>
+                                    @endcan
+
+                                    @include('admin_panel.partials.action_buttons', [
+                                        'editRoute' => 'javascript:void(0)',
+                                        'deleteRoute' => url('vendor/delete/' . $v->id),
+                                        'editIsLink' => false,
+                                        'permissions' => [
+                                            'edit' => 'vendors.edit',
+                                            'delete' => 'vendors.delete',
+                                        ],
+                                        'dataId' => $v->id,
+                                    ])
+                                </div>
                             </td>
                             <!-- Hidden inputs for reliable JS edit -->
                             <input type="hidden" class="v-name" value="{{ $v->name }}">
+                            <input type="hidden" class="v-category" value="{{ $v->category }}">
+                            <input type="hidden" class="v-status" value="{{ $isActive ? 1 : 0 }}">
                             <input type="hidden" class="v-phone" value="{{ $v->phone }}">
                             <input type="hidden" class="v-balance" value="{{ $v->opening_balance }}">
                             <input type="hidden" class="v-address" value="{{ $v->address }}">
@@ -357,28 +569,71 @@
         {{-- Mobile Cards View (< 768px) --}}
         <div class="mobile-vendor-cards">
             @foreach ($vendors as $key => $v)
+                @php
+                    $isActive = (int) ($v->status ?? 1) === 1;
+                    $liveBalance = (float) ($v->live_balance ?? 0);
+                @endphp
                 <div class="vendor-mcard">
                     <div class="vendor-mcard-hdr">
                         <div class="d-flex align-items-center gap-2">
                             <div class="vendor-avatar">
                                 {{ strtoupper(substr($v->name, 0, 1)) }}
                             </div>
-                            <div class="vendor-mcard-title">{{ $v->name }}</div>
+                            <div>
+                                <div class="vendor-mcard-title">{{ $v->name }}</div>
+                                @if ($v->category)
+                                    <span class="badge bg-light text-primary border border-primary-subtle">{{ $v->category }}</span>
+                                @endif
+                            </div>
                         </div>
-                        <span class="badge bg-light text-dark border">#{{ $key + 1 }}</span>
+                        <div class="d-flex align-items-center">
+                            @can('vendors.edit')
+                                <button type="button"
+                                    class="status-toggle-btn mr-1 {{ $isActive ? 'is-active' : 'is-deactive' }}"
+                                    data-id="{{ $v->id }}"
+                                    title="Click to toggle Active / Deactive">
+                                    <span class="status-dot"></span>
+                                    <span class="status-text">{{ $isActive ? 'Active' : 'Deactive' }}</span>
+                                </button>
+                            @else
+                                <span class="status-toggle-btn mr-1 {{ $isActive ? 'is-active' : 'is-deactive' }}">
+                                    <span class="status-dot"></span>
+                                    <span class="status-text">{{ $isActive ? 'Active' : 'Deactive' }}</span>
+                                </span>
+                            @endcan
+                            <span class="badge bg-light text-dark border">#{{ $key + 1 }}</span>
+                        </div>
                     </div>
 
                     <div class="vendor-mcard-details">
                         @if ($v->phone)
                             <div><i class="fas fa-phone me-2 text-primary"></i> <strong>Phone:</strong> {{ $v->phone }}</div>
                         @endif
-                        <div><i class="fas fa-wallet me-2 text-success"></i> <strong>Opening Balance:</strong> <span class="text-success fw-bold">Rs. {{ number_format((float) $v->opening_balance, 2) }}</span></div>
+                        <div><i class="fas fa-wallet me-2 {{ $liveBalance > 0 ? 'text-danger' : 'text-success' }}"></i> <strong>Balance:</strong> <span class="{{ $liveBalance > 0 ? 'text-danger' : 'text-success' }} fw-bold">Rs. {{ number_format($liveBalance, 2) }}</span></div>
                         @if ($v->address)
                             <div><i class="fas fa-map-marker-alt me-2 text-muted"></i> <strong>Address:</strong> {{ Str::limit($v->address, 50) }}</div>
                         @endif
+                        <div><i class="fas fa-calendar-alt me-2 text-muted"></i> <strong>Date:</strong> {{ $v->created_at ? $v->created_at->format('d M, Y') : '—' }}</div>
                     </div>
 
                     <div class="vendor-mcard-actions">
+                        @can('vendors.edit')
+                            <div class="d-flex align-items-center justify-content-center p-2 mb-2 bg-light rounded" style="grid-column: 1 / -1;">
+                                <div class="vendor-switch-wrapper">
+                                    <label class="vendor-switch mb-0">
+                                        <input type="checkbox"
+                                            class="vendor-status-toggle"
+                                            data-id="{{ $v->id }}"
+                                            {{ $isActive ? 'checked' : '' }}>
+                                        <span class="vendor-switch-slider"></span>
+                                    </label>
+                                    <span class="vendor-switch-text {{ $isActive ? 'text-active' : 'text-deactive' }}">
+                                        {{ $isActive ? 'Active' : 'Deactive' }}
+                                    </span>
+                                </div>
+                            </div>
+                        @endcan
+
                         @include('admin_panel.partials.action_buttons', [
                             'editRoute' => 'javascript:void(0)',
                             'deleteRoute' => url('vendor/delete/' . $v->id),
@@ -393,6 +648,8 @@
 
                     <!-- Hidden inputs for mobile JS edit -->
                     <input type="hidden" class="v-name" value="{{ $v->name }}">
+                    <input type="hidden" class="v-category" value="{{ $v->category }}">
+                    <input type="hidden" class="v-status" value="{{ $isActive ? 1 : 0 }}">
                     <input type="hidden" class="v-phone" value="{{ $v->phone }}">
                     <input type="hidden" class="v-balance" value="{{ $v->opening_balance }}">
                     <input type="hidden" class="v-address" value="{{ $v->address }}">
@@ -404,48 +661,78 @@
 </div>
 
 {{-- Add/Edit Vendor Modal --}}
-<div class="modal fade" id="vendorModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+<div class="modal fade" id="vendorModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
-            <form action="{{ url('vendor/store') }}" method="POST" id="vendorForm">
+            <form action="{{ url('vendor/store') }}" method="POST" id="vendorForm" class="vendor-modal-form">
                 @csrf
                 <input type="hidden" id="vendor_id" name="id">
 
-                <div class="modal-header bg-white px-4 py-3 border-bottom">
-                    <h5 class="modal-title fw-bold text-dark" id="modalTitle"><i class="fas fa-truck text-primary me-2"></i>New Vendor</h5>
-                    <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header bg-white px-4 py-3 border-bottom d-flex align-items-center justify-content-between">
+                    <h5 class="modal-title font-weight-bold text-dark mb-0" id="modalTitle"><i class="fas fa-truck text-primary mr-2"></i>New Vendor</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="font-size: 1.4rem; line-height: 1;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
 
                 <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label for="vname" class="form-label fw-semibold text-dark small">Vendor Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control px-3 py-2" name="name" id="vname" placeholder="Enter vendor name..." required style="border-radius: 10px; border: 1.5px solid #cbd5e1;" />
+                    <div class="form-group">
+                        <label for="vname">Vendor Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="name" id="vname" placeholder="Enter vendor name..." required />
                     </div>
 
-                    <div class="row g-3 mb-3">
+                    <div class="row">
                         <div class="col-md-6">
-                            <label for="vphone" class="form-label fw-semibold text-dark small">Phone Number</label>
-                            <input type="text" class="form-control px-3 py-2" name="phone" id="vphone" placeholder="Phone number..." style="border-radius: 10px; border: 1.5px solid #cbd5e1;" />
+                            <div class="form-group">
+                                <label for="vcategory">Vendor Category</label>
+                                <select class="form-control" name="category" id="vcategory">
+                                    <option value="">Select category...</option>
+                                    <option value="Manufacturer">Manufacturer</option>
+                                    <option value="Distributor">Distributor</option>
+                                    <option value="Wholesaler">Wholesaler</option>
+                                    <option value="Supplier">Supplier</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            <label for="opening_balance" class="form-label fw-semibold text-dark small">Opening Balance <span class="text-danger">*</span></label>
-                            <input type="number" step="any" class="form-control px-3 py-2" name="opening_balance" id="opening_balance" placeholder="0.00" required style="border-radius: 10px; border: 1.5px solid #cbd5e1;" />
+                            <div class="form-group">
+                                <label for="vstatus">Vendor Status <span class="text-danger">*</span></label>
+                                <select class="form-control" name="status" id="vstatus" required>
+                                    <option value="1">Active</option>
+                                    <option value="0">Deactive</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="mb-2">
-                        <label for="vaddress" class="form-label fw-semibold text-dark small">Full Address</label>
-                        <textarea class="form-control px-3 py-2" name="address" id="vaddress" placeholder="Enter address details..." style="border-radius: 10px; border: 1.5px solid #cbd5e1; height: 90px;"></textarea>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="vphone">Phone Number</label>
+                                <input type="text" class="form-control" name="phone" id="vphone" placeholder="Phone number..." />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="opening_balance">Opening Balance <span class="text-danger">*</span></label>
+                                <input type="number" step="any" class="form-control" name="opening_balance" id="opening_balance" placeholder="0.00" required />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-0">
+                        <label for="vaddress">Full Address</label>
+                        <textarea class="form-control" name="address" id="vaddress" placeholder="Enter address details..."></textarea>
                     </div>
                 </div>
 
                 <div class="modal-footer bg-light px-4 py-3 border-top">
-                    <button type="button" class="btn btn-outline-secondary px-4 fw-semibold" data-dismiss="modal" style="border-radius: 8px;">Cancel</button>
-                    @can('vendors.create')
-                        <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm" style="border-radius: 8px; background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); border: none;">
-                            <i class="fas fa-check me-1"></i> Save Vendor
+                    <button type="button" class="btn btn-outline-secondary px-4 font-weight-bold" data-dismiss="modal" style="border-radius: 8px;">Cancel</button>
+                    @canany(['vendors.create', 'vendors.edit'])
+                        <button type="submit" class="btn btn-primary px-4 font-weight-bold shadow-sm" style="border-radius: 8px; background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); border: none;">
+                            <i class="fas fa-check mr-1"></i> Save Vendor
                         </button>
-                    @endcan
+                    @endcanany
                 </div>
             </form>
         </div>
@@ -476,7 +763,9 @@
         $('#btnAddVendor').click(function() {
             $('#vendorForm')[0].reset();
             $('#vendor_id').val('');
-            $('#modalTitle').html('<i class="fas fa-truck text-primary me-2"></i>New Vendor');
+            $('#vcategory').val('');
+            $('#vstatus').val('1');
+            $('#modalTitle').html('<i class="fas fa-truck text-primary mr-2"></i>New Vendor');
             $('#opening_balance').prop('readonly', false);
             $('#vendorModal').modal('show');
         });
@@ -487,18 +776,113 @@
             const id = $(this).data('id');
 
             const name = $container.find('.v-name').val();
+            const category = $container.find('.v-category').val();
+            const status = $container.find('.v-status').val();
             const phone = $container.find('.v-phone').val();
             const balance = $container.find('.v-balance').val();
             const address = $container.find('.v-address').val();
 
             $('#vendor_id').val(id);
             $('#vname').val(name);
+            $('#vcategory').val(category || '');
+            $('#vstatus').val(status !== undefined && status !== '' ? status : '1');
             $('#vphone').val(phone);
             $('#opening_balance').val(balance).prop('readonly', true);
             $('#vaddress').val(address);
 
-            $('#modalTitle').html('<i class="fas fa-edit text-primary me-2"></i>Edit Vendor');
+            $('#modalTitle').html('<i class="fas fa-edit text-primary mr-2"></i>Edit Vendor');
             $('#vendorModal').modal('show');
+        });
+
+        // Helper to update vendor status across all UI components
+        function syncVendorStatusUI(id, isActive, activeCount) {
+            // 1. Status column pill
+            const $statusBtns = $('button.status-toggle-btn[data-id="' + id + '"], span.status-toggle-btn[data-id="' + id + '"]');
+            $statusBtns.each(function() {
+                const $b = $(this);
+                $b.toggleClass('is-active', isActive)
+                  .toggleClass('is-deactive', !isActive);
+                $b.find('.status-text').text(isActive ? 'Active' : 'Deactive');
+            });
+
+            // 2. Action column switch toggles
+            const $switches = $('input.vendor-status-toggle[data-id="' + id + '"]');
+            $switches.each(function() {
+                const $sw = $(this);
+                $sw.prop('checked', isActive);
+                const $wrapper = $sw.closest('.vendor-switch-wrapper');
+                const $txt = $wrapper.find('.vendor-switch-text');
+                $txt.text(isActive ? 'Active' : 'Deactive')
+                    .toggleClass('text-active', isActive)
+                    .toggleClass('text-deactive', !isActive);
+            });
+
+            // 3. Hidden input for edit modal
+            $('tr, .vendor-mcard').each(function() {
+                const $row = $(this);
+                if ($row.find('.edit-btn[data-id="' + id + '"]').length || $row.find('input[data-id="' + id + '"]').length) {
+                    $row.find('.v-status').val(isActive ? '1' : '0');
+                }
+            });
+
+            // 4. Update top counter
+            if (activeCount !== undefined) {
+                $('#activeVendorsCount').text(activeCount);
+            }
+        }
+
+        // Shared AJAX toggle function
+        function toggleVendorStatusAjax(id, onDone) {
+            $.ajax({
+                url: "{{ url('vendor/toggle-status') }}/" + id,
+                type: 'POST',
+                data: {
+                    _token: "{{ csrf_token() }}"
+                },
+                success: function(res) {
+                    if (res && res.success) {
+                        const isActive = parseInt(res.status, 10) === 1;
+                        syncVendorStatusUI(id, isActive, res.active_count);
+                    } else {
+                        alert('Could not update status.');
+                    }
+                },
+                error: function() {
+                    alert('Failed to update vendor status.');
+                    if (typeof onDone === 'function') onDone(false);
+                },
+                complete: function() {
+                    if (typeof onDone === 'function') onDone(true);
+                }
+            });
+        }
+
+        // Action Column: Toggle Switch Change
+        $(document).on('change', 'input.vendor-status-toggle', function() {
+            const $checkbox = $(this);
+            const id = $checkbox.data('id');
+            const targetState = $checkbox.is(':checked');
+
+            $checkbox.prop('disabled', true);
+            toggleVendorStatusAjax(id, function(success) {
+                $checkbox.prop('disabled', false);
+                if (success === false) {
+                    // Revert checkbox if ajax failed
+                    $checkbox.prop('checked', !targetState);
+                }
+            });
+        });
+
+        // Status Column: Quick Status Pill Toggle
+        $(document).on('click', 'button.status-toggle-btn', function() {
+            const $btn = $(this);
+            const id = $btn.data('id');
+            if ($btn.prop('disabled')) return;
+
+            $btn.prop('disabled', true);
+            toggleVendorStatusAjax(id, function() {
+                $btn.prop('disabled', false);
+            });
         });
     });
 </script>

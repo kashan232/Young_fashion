@@ -19,18 +19,45 @@ class VendorController extends Controller
     // Show all vendors
     public function index() {
         $vendors = Vendor::all();
-        return view('admin_panel.vendors.index', compact('vendors'));
+        $balanceService = app(BalanceService::class);
+        $activeVendorsCount = 0;
+        $totalPayables = 0;
+
+        foreach ($vendors as $v) {
+            $v->live_balance = $balanceService->getVendorBalance($v->id);
+            if ((int) ($v->status ?? 1) === 1) {
+                $activeVendorsCount++;
+            }
+            if ($v->live_balance > 0) {
+                $totalPayables += $v->live_balance;
+            }
+        }
+
+        return view('admin_panel.vendors.index', compact('vendors', 'activeVendorsCount', 'totalPayables'));
     }
 
     // Store or update vendor information
     public function store(Request $request)
     {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'category' => 'nullable|string|in:Manufacturer,Distributor,Wholesaler,Supplier',
+            'status' => 'nullable|in:0,1',
+            'phone' => 'nullable|string|max:50',
+            'address' => 'nullable|string',
+            'opening_balance' => $request->id ? 'nullable|numeric' : 'required|numeric',
+        ]);
+
+        $data = $request->only(['name', 'category', 'phone', 'address']);
+        $data['status'] = $request->has('status') ? (int) $request->status : 1;
+
         if ($request->id) {
             // Update existing vendor (prevent balance update)
-            Vendor::findOrFail($request->id)->update($request->except('opening_balance'));
+            Vendor::findOrFail($request->id)->update($data);
         } else {
+            $data['opening_balance'] = $request->opening_balance ?? 0;
             // Create a new vendor and ledger entry
-            $vendor = Vendor::create($request->all());
+            $vendor = Vendor::create($data);
 
             // Create ledger entry
             VendorLedger::create([
@@ -72,6 +99,23 @@ class VendorController extends Controller
         }
 
         return back()->with('success', 'Saved Successfully');
+    }
+
+    // Toggle vendor status (Active / Deactive)
+    public function toggleStatus($id)
+    {
+        $vendor = Vendor::findOrFail($id);
+        $vendor->status = ((int) ($vendor->status ?? 1) === 1) ? 0 : 1;
+        $vendor->save();
+
+        $activeVendorsCount = Vendor::where('status', 1)->orWhereNull('status')->count();
+
+        return response()->json([
+            'success' => true,
+            'status' => (int) $vendor->status,
+            'active_count' => $activeVendorsCount,
+            'message' => $vendor->status === 1 ? 'Vendor Activated' : 'Vendor Deactivated',
+        ]);
     }
 
     // Soft delete vendor and related ledger entry
