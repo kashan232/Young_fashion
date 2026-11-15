@@ -249,7 +249,11 @@ class BalanceService
             ->values();
 
         $runningBalance = $openingBalance;
-        $transactions = $all->map(function ($row) use (&$runningBalance) {
+        $totalDebit = 0;
+        $totalCredit = 0;
+        $transactions = $all->map(function ($row) use (&$runningBalance, &$totalDebit, &$totalCredit) {
+            $totalDebit += (float) ($row['debit'] ?? 0);
+            $totalCredit += (float) ($row['credit'] ?? 0);
             // Credit = payable increases | Debit = payable decreases
             $runningBalance += $row['credit'] - $row['debit'];
             return array_merge($row, ['balance' => $runningBalance]);
@@ -259,6 +263,8 @@ class BalanceService
             'vendor'          => $vendor,
             'opening_balance' => $openingBalance,
             'closing_balance' => $runningBalance,
+            'total_debit'     => $totalDebit,
+            'total_credit'    => $totalCredit,
             'transactions'    => $transactions,
         ];
     }

@@ -248,6 +248,46 @@
     .modal-header .close:hover {
         color: #0f172a;
     }
+
+    /* Filter Box Styling */
+    .vpay-filter-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .vpay-filter-label {
+        font-size: 11.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #64748b;
+        margin-bottom: 5px;
+    }
+    .vpay-filter-input {
+        border-radius: 8px;
+        border: 1.5px solid #cbd5e1;
+        font-size: 13px;
+        height: 38px;
+        color: #0f172a;
+    }
+    .vpay-filter-input:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        outline: none;
+    }
+    .btn-vpay-filter {
+        height: 38px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
 </style>
 
 <div class="main-content">
@@ -308,6 +348,45 @@
                     <div>{{ session('success') }}</div>
                 </div>
             @endif
+
+            {{-- ── Filter Card ── --}}
+            <div class="vpay-filter-card">
+                <form method="GET" action="{{ route('vendor.payments') }}">
+                    <div class="row align-items-end g-3">
+                        <div class="col-12 col-md-4">
+                            <label class="vpay-filter-label"><i class="fas fa-store mr-1 text-primary"></i> Filter by Vendor</label>
+                            <select name="vendor_id" id="filter_vendor_id" class="form-control form-select vpay-filter-input select2">
+                                <option value="">All Vendors</option>
+                                @foreach($vendors as $v)
+                                    <option value="{{ $v->id }}" {{ request('vendor_id') == $v->id ? 'selected' : '' }}>
+                                        {{ $v->name }} {{ !empty($v->phone) ? '('.$v->phone.')' : '' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-12 col-sm-6 col-md-3">
+                            <label class="vpay-filter-label"><i class="far fa-calendar-alt mr-1 text-primary"></i> Start Date</label>
+                            <input type="date" name="start_date" class="form-control vpay-filter-input" value="{{ request('start_date') }}">
+                        </div>
+                        <div class="col-12 col-sm-6 col-md-3">
+                            <label class="vpay-filter-label"><i class="far fa-calendar-alt mr-1 text-primary"></i> End Date</label>
+                            <input type="date" name="end_date" class="form-control vpay-filter-input" value="{{ request('end_date') }}">
+                        </div>
+                        <div class="col-12 col-md-2">
+                            <div class="d-flex align-items-center" style="gap: 8px;">
+                                <button type="submit" class="btn btn-primary btn-vpay-filter flex-fill shadow-sm">
+                                    <i class="fas fa-filter"></i> Filter
+                                </button>
+                                @if(request()->hasAny(['vendor_id', 'start_date', 'end_date']))
+                                    <a href="{{ route('vendor.payments') }}" class="btn btn-outline-secondary btn-vpay-filter" title="Reset Filters">
+                                        <i class="fas fa-undo"></i>
+                                    </a>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
 
             {{-- ── 4. Main Payment Records Card ── --}}
             <div class="vpay-card">
@@ -628,6 +707,15 @@
                     var amtInput = document.getElementById('payment_amount');
                     if (amtInput) amtInput.value = currentVendorBalance.toFixed(2);
                 }
+            });
+        }
+
+        // Initialize Select2 on filter vendor dropdown if select2 exists
+        if (window.jQuery && $.fn.select2) {
+            $('#filter_vendor_id').select2({
+                placeholder: 'All Vendors',
+                allowClear: true,
+                width: '100%'
             });
         }
     });

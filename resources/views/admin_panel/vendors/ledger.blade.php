@@ -167,6 +167,25 @@
         color: #ffffff;
         border: none;
     }
+    .kpi-credit-card {
+        border-left: 4px solid #4f46e5 !important;
+        background: #f8fafc;
+    }
+    .kpi-debit-card {
+        border-left: 4px solid #ea580c !important;
+        background: #f8fafc;
+    }
+    .vendor-name-highlight {
+        display: inline-block;
+        font-weight: 800;
+        font-size: 1.05rem;
+        color: #1e1b4b;
+        background: #e0e7ff;
+        border: 1px solid #c7d2fe;
+        padding: 2px 10px;
+        border-radius: 6px;
+        letter-spacing: 0.02em;
+    }
 
     /* Table & Container */
     .vdetail-card {
@@ -284,7 +303,7 @@
             </div>
             <div>
                 <h3 class="vdetail-title">Vendor Ledger Details</h3>
-                <div class="vdetail-sub">Transaction history for <span class="fw-bold text-primary">{{ $vendor->name }}</span></div>
+                <div class="vdetail-sub">Transaction history for <span class="vendor-name-highlight">{{ strtoupper($vendor->name) }}</span></div>
             </div>
         </div>
         <div>
@@ -320,15 +339,26 @@
     </div>
 
     {{-- Summary KPI Cards --}}
+    @php
+        $calcDebit = isset($total_debit) ? (float)$total_debit : (float)$transactions->sum('debit');
+        $calcCredit = isset($total_credit) ? (float)$total_credit : (float)$transactions->sum('credit');
+    @endphp
     <div class="row g-3 mb-4">
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-sm-6 col-lg">
             <div class="kpi-card">
                 <div class="kpi-lbl">Opening Balance</div>
                 <div class="kpi-val text-dark">Rs. {{ number_format((float)$opening_balance, 2) }}</div>
                 <div class="small text-muted mt-1">As of {{ \Carbon\Carbon::parse(request('start_date', now()->startOfMonth()))->format('d/m/Y') }}</div>
             </div>
         </div>
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-sm-6 col-lg">
+            <div class="kpi-card kpi-credit-card">
+                <div class="kpi-lbl text-primary"><i class="fas fa-arrow-down mr-1"></i> Total Credit</div>
+                <div class="kpi-val text-primary">Rs. {{ number_format($calcCredit, 2) }}</div>
+                <div class="small text-muted mt-1">Purchases / Bill additions</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg">
             <div class="kpi-card {{ $closing_balance > 0 ? 'kpi-closing-payable' : ($closing_balance < 0 ? 'kpi-closing-advance' : '') }}">
                 <div class="kpi-lbl {{ $closing_balance != 0 ? 'text-white-50' : '' }}">Closing Balance</div>
                 <div class="kpi-val {{ $closing_balance != 0 ? 'text-white' : 'text-dark' }}">
@@ -339,7 +369,14 @@
                 </div>
             </div>
         </div>
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-sm-6 col-lg">
+            <div class="kpi-card kpi-debit-card">
+                <div class="kpi-lbl text-warning"><i class="fas fa-arrow-up mr-1"></i> Total Debit</div>
+                <div class="kpi-val text-dark">Rs. {{ number_format($calcDebit, 2) }}</div>
+                <div class="small text-muted mt-1">Payments / Returns</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg">
             <div class="kpi-card">
                 <div class="kpi-lbl">Total Transactions</div>
                 <div class="kpi-val text-dark">{{ $transactions->count() }}</div>

@@ -6,10 +6,22 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Vendor extends Model
-{protected $fillable = ['name', 'category', 'status', 'email', 'phone', 'address','opening_balance']; 
+{
     use HasFactory;
 
-      public function ledger()
+    protected $fillable = [
+        'name',
+        'category',
+        'status',
+        'email',
+        'phone',
+        'address',
+        'opening_balance',
+        'payment_due_date',
+        'payment_day',
+    ];
+
+    public function ledger()
     {
         return $this->hasOne(VendorLedger::class);
     }

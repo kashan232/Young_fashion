@@ -381,6 +381,84 @@
         height: 90px;
         resize: vertical;
     }
+
+    /* Quick Action Button Group */
+    .vendor-action-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .qa-btn {
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        font-size: 0.82rem;
+        border: none;
+        color: #ffffff !important;
+        text-decoration: none !important;
+        transition: all 0.15s ease;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+        cursor: pointer;
+        padding: 0;
+    }
+    .qa-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 8px rgba(0,0,0,0.18);
+        filter: brightness(1.08);
+    }
+    .qa-btn-profile {
+        background: #6366f1; /* Indigo / Purple */
+    }
+    .qa-btn-edit {
+        background: #3b82f6; /* Blue */
+    }
+    .qa-btn-delete {
+        background: #ef4444; /* Red */
+    }
+    .qa-btn-ledger {
+        background: #f59e0b; /* Amber / Yellow */
+    }
+    .qa-btn-payments {
+        background: #10b981; /* Green */
+    }
+
+    /* Profile Modal Details Styling */
+    .vprofile-avatar {
+        width: 58px;
+        height: 58px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
+        color: #ffffff;
+        font-size: 1.5rem;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+    }
+    .vprofile-info-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px dashed #e2e8f0;
+        font-size: 0.88rem;
+    }
+    .vprofile-info-row:last-child {
+        border-bottom: none;
+    }
+    .vprofile-info-label {
+        font-weight: 600;
+        color: #64748b;
+    }
+    .vprofile-info-value {
+        font-weight: 700;
+        color: #0f172a;
+        text-align: right;
+    }
 </style>
 
 <div class="vendor-page container-fluid px-3 px-md-4 pt-3">
@@ -411,7 +489,7 @@
 
     {{-- Stats Row --}}
     <div class="row mb-4">
-        <div class="col-12 col-sm-6 col-md-4 mb-3 mb-md-0">
+        <div class="col-12 col-sm-6 col-lg-3 mb-3 mb-lg-0">
             <div class="vendor-stat-card">
                 <div class="vendor-stat-icon"><i class="fas fa-store"></i></div>
                 <div>
@@ -420,7 +498,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-12 col-sm-6 col-md-4 mb-3 mb-md-0">
+        <div class="col-12 col-sm-6 col-lg-3 mb-3 mb-lg-0">
             <div class="vendor-stat-card">
                 <div class="vendor-stat-icon" style="background: #ecfdf5; color: #059669;"><i class="fas fa-user-check"></i></div>
                 <div>
@@ -429,7 +507,18 @@
                 </div>
             </div>
         </div>
-        <div class="col-12 col-sm-6 col-md-4">
+        <div class="col-12 col-sm-6 col-lg-3 mb-3 mb-lg-0">
+            <div class="vendor-stat-card" style="border-left: 4px solid #ef4444;">
+                <div class="vendor-stat-icon" style="background: #fef2f2; color: #dc2626;"><i class="fas fa-calendar-times"></i></div>
+                <div>
+                    <div class="vendor-stat-val text-danger">Rs. {{ number_format((float) ($dueThisWeekAmount ?? 0), 2) }}</div>
+                    <div class="vendor-stat-lbl font-weight-bold text-danger">
+                        DUE PAYMENTS <span class="badge badge-danger ml-1" style="font-size: 0.68rem;">{{ $dueThisWeekCount ?? 0 }} this week</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3">
             <div class="vendor-stat-card">
                 <div class="vendor-stat-icon" style="background: #fff7ed; color: #ea580c;"><i class="fas fa-file-invoice-dollar"></i></div>
                 <div>
@@ -465,9 +554,10 @@
                         <th class="text-start">Contact Phone</th>
                         <th class="text-start">Status</th>
                         <th class="text-start">Balance</th>
+                        <th class="text-start">Payment Due</th>
                         <th class="text-start">Address</th>
                         <th class="text-start">Date</th>
-                        <th class="text-end pe-4" style="width: 220px;">Action</th>
+                        <th class="text-end pe-4" style="width: 250px;">Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -519,6 +609,27 @@
                             <td class="fw-bold {{ $liveBalance > 0 ? 'text-danger' : 'text-success' }}">
                                 Rs. {{ number_format($liveBalance, 2) }}
                             </td>
+                            <td>
+                                @if (!empty($v->payment_due_date) || !empty($v->payment_day))
+                                    @php
+                                        $isDueThisWeek = !empty($v->is_due_this_week) && $liveBalance > 0;
+                                    @endphp
+                                    <div class="d-flex flex-column" style="gap: 2px;">
+                                        @if (!empty($v->payment_due_date))
+                                            <span class="badge {{ $isDueThisWeek ? 'badge-danger' : 'badge-light border' }} text-nowrap px-2 py-1" style="font-size: 0.76rem;">
+                                                <i class="far fa-calendar-alt mr-1"></i>{{ \Carbon\Carbon::parse($v->payment_due_date)->format('d M, Y') }}
+                                            </span>
+                                        @endif
+                                        @if (!empty($v->payment_day))
+                                            <span class="badge badge-info text-nowrap px-2 py-1" style="font-size: 0.72rem;">
+                                                <i class="fas fa-redo-alt mr-1"></i>Every {{ $v->payment_day }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                @else
+                                    <span class="text-muted small">—</span>
+                                @endif
+                            </td>
                             <td class="text-secondary small">{{ Str::limit($v->address, 35) ?: '—' }}</td>
                             <td class="text-secondary small text-nowrap">
                                 {{ $v->created_at ? $v->created_at->format('d M, Y') : '—' }}
@@ -541,16 +652,55 @@
                                         </div>
                                     @endcan
 
-                                    @include('admin_panel.partials.action_buttons', [
-                                        'editRoute' => 'javascript:void(0)',
-                                        'deleteRoute' => url('vendor/delete/' . $v->id),
-                                        'editIsLink' => false,
-                                        'permissions' => [
-                                            'edit' => 'vendors.edit',
-                                            'delete' => 'vendors.delete',
-                                        ],
-                                        'dataId' => $v->id,
-                                    ])
+                                    {{-- Quick Action Short Keys (1: View Profile, 2: Edit, 3: Delete, 4: Ledger, 5: Payments) --}}
+                                    <div class="vendor-action-group">
+                                        {{-- 1. View Profile --}}
+                                        <button type="button" class="qa-btn qa-btn-profile btn-view-profile"
+                                            data-id="{{ $v->id }}"
+                                            data-name="{{ $v->name }}"
+                                            data-category="{{ $v->category ?? '—' }}"
+                                            data-phone="{{ $v->phone ?? '—' }}"
+                                            data-status="{{ $isActive ? 'Active' : 'Deactive' }}"
+                                            data-balance="Rs. {{ number_format($liveBalance, 2) }}"
+                                            data-due="{{ !empty($v->payment_due_date) ? \Carbon\Carbon::parse($v->payment_due_date)->format('d M, Y') : (!empty($v->payment_day) ? 'Every '.$v->payment_day : '—') }}"
+                                            data-address="{{ $v->address ?? '—' }}"
+                                            data-date="{{ $v->created_at ? $v->created_at->format('d M, Y') : '—' }}"
+                                            data-ledger-url="{{ route('vendor.ledger', $v->id) }}"
+                                            data-payments-url="{{ route('vendor.payments') }}?vendor_id={{ $v->id }}"
+                                            title="View Profile">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+
+                                        {{-- 2. Edit --}}
+                                        @can('vendors.edit')
+                                            <button type="button" class="qa-btn qa-btn-edit edit-btn" data-id="{{ $v->id }}" title="Edit Vendor">
+                                                <i class="fas fa-pencil-alt"></i>
+                                            </button>
+                                        @endcan
+
+                                        {{-- 3. Delete --}}
+                                        @can('vendors.delete')
+                                            <button type="button" class="qa-btn qa-btn-delete delete-btn"
+                                                data-id="{{ $v->id }}"
+                                                data-url="{{ url('vendor/delete/' . $v->id) }}"
+                                                data-msg="Are you sure you want to delete this vendor?"
+                                                data-method="get"
+                                                onclick="logoutAndDeleteFunction(this)"
+                                                title="Delete Vendor">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        @endcan
+
+                                        {{-- 4. View Vendor Ledger Details --}}
+                                        <a href="{{ route('vendor.ledger', $v->id) }}" class="qa-btn qa-btn-ledger" title="View Vendor Ledger Details">
+                                            <i class="fas fa-book-open"></i>
+                                        </a>
+
+                                        {{-- 5. View Payments History --}}
+                                        <a href="{{ route('vendor.payments') }}?vendor_id={{ $v->id }}" class="qa-btn qa-btn-payments" title="View Payments History">
+                                            <i class="fas fa-money-bill-wave"></i>
+                                        </a>
+                                    </div>
                                 </div>
                             </td>
                             <!-- Hidden inputs for reliable JS edit -->
@@ -559,6 +709,8 @@
                             <input type="hidden" class="v-status" value="{{ $isActive ? 1 : 0 }}">
                             <input type="hidden" class="v-phone" value="{{ $v->phone }}">
                             <input type="hidden" class="v-balance" value="{{ $v->opening_balance }}">
+                            <input type="hidden" class="v-due-date" value="{{ $v->payment_due_date }}">
+                            <input type="hidden" class="v-due-day" value="{{ $v->payment_day }}">
                             <input type="hidden" class="v-address" value="{{ $v->address }}">
                         </tr>
                     @endforeach
@@ -610,6 +762,16 @@
                             <div><i class="fas fa-phone me-2 text-primary"></i> <strong>Phone:</strong> {{ $v->phone }}</div>
                         @endif
                         <div><i class="fas fa-wallet me-2 {{ $liveBalance > 0 ? 'text-danger' : 'text-success' }}"></i> <strong>Balance:</strong> <span class="{{ $liveBalance > 0 ? 'text-danger' : 'text-success' }} fw-bold">Rs. {{ number_format($liveBalance, 2) }}</span></div>
+                        @if (!empty($v->payment_due_date) || !empty($v->payment_day))
+                            <div><i class="far fa-clock me-2 text-danger"></i> <strong>Due Payment:</strong> 
+                                @if (!empty($v->payment_due_date))
+                                    <span class="badge {{ (!empty($v->is_due_this_week) && $liveBalance > 0) ? 'badge-danger' : 'badge-light border' }}">{{ \Carbon\Carbon::parse($v->payment_due_date)->format('d M, Y') }}</span>
+                                @endif
+                                @if (!empty($v->payment_day))
+                                    <span class="badge badge-info">Every {{ $v->payment_day }}</span>
+                                @endif
+                            </div>
+                        @endif
                         @if ($v->address)
                             <div><i class="fas fa-map-marker-alt me-2 text-muted"></i> <strong>Address:</strong> {{ Str::limit($v->address, 50) }}</div>
                         @endif
@@ -634,16 +796,56 @@
                             </div>
                         @endcan
 
-                        @include('admin_panel.partials.action_buttons', [
-                            'editRoute' => 'javascript:void(0)',
-                            'deleteRoute' => url('vendor/delete/' . $v->id),
-                            'editIsLink' => false,
-                            'permissions' => [
-                                'edit' => 'vendors.edit',
-                                'delete' => 'vendors.delete',
-                            ],
-                            'dataId' => $v->id,
-                        ])
+                        <div class="d-flex align-items-center justify-content-center" style="grid-column: 1 / -1;">
+                            <div class="vendor-action-group">
+                                {{-- 1. View Profile --}}
+                                <button type="button" class="qa-btn qa-btn-profile btn-view-profile"
+                                    data-id="{{ $v->id }}"
+                                    data-name="{{ $v->name }}"
+                                    data-category="{{ $v->category ?? '—' }}"
+                                    data-phone="{{ $v->phone ?? '—' }}"
+                                    data-status="{{ $isActive ? 'Active' : 'Deactive' }}"
+                                    data-balance="Rs. {{ number_format($liveBalance, 2) }}"
+                                    data-due="{{ !empty($v->payment_due_date) ? \Carbon\Carbon::parse($v->payment_due_date)->format('d M, Y') : (!empty($v->payment_day) ? 'Every '.$v->payment_day : '—') }}"
+                                    data-address="{{ $v->address ?? '—' }}"
+                                    data-date="{{ $v->created_at ? $v->created_at->format('d M, Y') : '—' }}"
+                                    data-ledger-url="{{ route('vendor.ledger', $v->id) }}"
+                                    data-payments-url="{{ route('vendor.payments') }}?vendor_id={{ $v->id }}"
+                                    title="View Profile">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+
+                                {{-- 2. Edit --}}
+                                @can('vendors.edit')
+                                    <button type="button" class="qa-btn qa-btn-edit edit-btn" data-id="{{ $v->id }}" title="Edit Vendor">
+                                        <i class="fas fa-pencil-alt"></i>
+                                    </button>
+                                @endcan
+
+                                {{-- 3. Delete --}}
+                                @can('vendors.delete')
+                                    <button type="button" class="qa-btn qa-btn-delete delete-btn"
+                                        data-id="{{ $v->id }}"
+                                        data-url="{{ url('vendor/delete/' . $v->id) }}"
+                                        data-msg="Are you sure you want to delete this vendor?"
+                                        data-method="get"
+                                        onclick="logoutAndDeleteFunction(this)"
+                                        title="Delete Vendor">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                @endcan
+
+                                {{-- 4. View Vendor Ledger Details --}}
+                                <a href="{{ route('vendor.ledger', $v->id) }}" class="qa-btn qa-btn-ledger" title="View Vendor Ledger Details">
+                                    <i class="fas fa-book-open"></i>
+                                </a>
+
+                                {{-- 5. View Payments History --}}
+                                <a href="{{ route('vendor.payments') }}?vendor_id={{ $v->id }}" class="qa-btn qa-btn-payments" title="View Payments History">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </a>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Hidden inputs for mobile JS edit -->
@@ -652,6 +854,8 @@
                     <input type="hidden" class="v-status" value="{{ $isActive ? 1 : 0 }}">
                     <input type="hidden" class="v-phone" value="{{ $v->phone }}">
                     <input type="hidden" class="v-balance" value="{{ $v->opening_balance }}">
+                    <input type="hidden" class="v-due-date" value="{{ $v->payment_due_date }}">
+                    <input type="hidden" class="v-due-day" value="{{ $v->payment_day }}">
                     <input type="hidden" class="v-address" value="{{ $v->address }}">
                 </div>
             @endforeach
@@ -720,6 +924,30 @@
                         </div>
                     </div>
 
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="vpayment_due_date">Payment Due Date <small class="text-muted">(Specific Date)</small></label>
+                                <input type="date" class="form-control" name="payment_due_date" id="vpayment_due_date" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="vpayment_day">Payment Day <small class="text-muted">(Weekly Day)</small></label>
+                                <select class="form-control" name="payment_day" id="vpayment_day">
+                                    <option value="">No fixed day...</option>
+                                    <option value="Monday">Every Monday</option>
+                                    <option value="Tuesday">Every Tuesday</option>
+                                    <option value="Wednesday">Every Wednesday</option>
+                                    <option value="Thursday">Every Thursday</option>
+                                    <option value="Friday">Every Friday</option>
+                                    <option value="Saturday">Every Saturday</option>
+                                    <option value="Sunday">Every Sunday</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="form-group mb-0">
                         <label for="vaddress">Full Address</label>
                         <textarea class="form-control" name="address" id="vaddress" placeholder="Enter address details..."></textarea>
@@ -735,6 +963,66 @@
                     @endcanany
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+{{-- Vendor Profile View Modal --}}
+<div class="modal fade" id="vendorProfileModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+            <div class="modal-header bg-white px-4 py-3 border-bottom d-flex align-items-center justify-content-between">
+                <h5 class="modal-title font-weight-bold text-dark mb-0">
+                    <i class="fas fa-id-card text-primary mr-2"></i>Vendor Profile
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="font-size: 1.4rem; line-height: 1;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
+                    <div class="vprofile-avatar" id="vpAvatar">V</div>
+                    <div>
+                        <h5 class="font-weight-bold text-dark mb-1" id="vpName">Vendor Name</h5>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge badge-light border" id="vpCategory">Supplier</span>
+                            <span class="badge" id="vpStatus">Active</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="vprofile-info-row">
+                    <span class="vprofile-info-label"><i class="fas fa-phone mr-2 text-primary"></i> Contact Phone:</span>
+                    <span class="vprofile-info-value" id="vpPhone">—</span>
+                </div>
+                <div class="vprofile-info-row">
+                    <span class="vprofile-info-label"><i class="fas fa-wallet mr-2 text-danger"></i> Outstanding Balance:</span>
+                    <span class="vprofile-info-value text-danger" id="vpBalance">Rs. 0.00</span>
+                </div>
+                <div class="vprofile-info-row">
+                    <span class="vprofile-info-label"><i class="far fa-calendar-alt mr-2 text-warning"></i> Payment Schedule:</span>
+                    <span class="vprofile-info-value" id="vpDue">—</span>
+                </div>
+                <div class="vprofile-info-row">
+                    <span class="vprofile-info-label"><i class="fas fa-map-marker-alt mr-2 text-muted"></i> Address:</span>
+                    <span class="vprofile-info-value" id="vpAddress" style="max-width: 60%;">—</span>
+                </div>
+                <div class="vprofile-info-row">
+                    <span class="vprofile-info-label"><i class="fas fa-calendar-check mr-2 text-muted"></i> Joined Date:</span>
+                    <span class="vprofile-info-value" id="vpDate">—</span>
+                </div>
+            </div>
+            <div class="modal-footer bg-light px-4 py-3 border-top d-flex align-items-center justify-content-between">
+                <div>
+                    <a href="#" id="vpLedgerBtn" class="btn btn-warning btn-sm font-weight-bold mr-1" style="border-radius: 8px;">
+                        <i class="fas fa-book-open mr-1"></i> Ledger
+                    </a>
+                    <a href="#" id="vpPaymentsBtn" class="btn btn-success btn-sm font-weight-bold" style="border-radius: 8px;">
+                        <i class="fas fa-money-bill-wave mr-1"></i> Payments
+                    </a>
+                </div>
+                <button type="button" class="btn btn-secondary px-4 font-weight-bold btn-sm" data-dismiss="modal" style="border-radius: 8px;">Close</button>
+            </div>
         </div>
     </div>
 </div>
@@ -765,6 +1053,8 @@
             $('#vendor_id').val('');
             $('#vcategory').val('');
             $('#vstatus').val('1');
+            $('#vpayment_due_date').val('');
+            $('#vpayment_day').val('');
             $('#modalTitle').html('<i class="fas fa-truck text-primary mr-2"></i>New Vendor');
             $('#opening_balance').prop('readonly', false);
             $('#vendorModal').modal('show');
@@ -780,6 +1070,8 @@
             const status = $container.find('.v-status').val();
             const phone = $container.find('.v-phone').val();
             const balance = $container.find('.v-balance').val();
+            const dueDate = $container.find('.v-due-date').val();
+            const dueDay = $container.find('.v-due-day').val();
             const address = $container.find('.v-address').val();
 
             $('#vendor_id').val(id);
@@ -788,10 +1080,42 @@
             $('#vstatus').val(status !== undefined && status !== '' ? status : '1');
             $('#vphone').val(phone);
             $('#opening_balance').val(balance).prop('readonly', true);
+            $('#vpayment_due_date').val(dueDate || '');
+            $('#vpayment_day').val(dueDay || '');
             $('#vaddress').val(address);
 
             $('#modalTitle').html('<i class="fas fa-edit text-primary mr-2"></i>Edit Vendor');
             $('#vendorModal').modal('show');
+        });
+
+        // View Vendor Profile Modal
+        $(document).on('click', '.btn-view-profile', function() {
+            const name = $(this).data('name');
+            const category = $(this).data('category');
+            const phone = $(this).data('phone');
+            const status = $(this).data('status');
+            const balance = $(this).data('balance');
+            const due = $(this).data('due');
+            const address = $(this).data('address');
+            const date = $(this).data('date');
+            const ledgerUrl = $(this).data('ledger-url');
+            const paymentsUrl = $(this).data('payments-url');
+
+            $('#vpAvatar').text((name || 'V').substring(0, 1).toUpperCase());
+            $('#vpName').text(name || '—');
+            $('#vpCategory').text(category || '—');
+            $('#vpPhone').text(phone || '—');
+            $('#vpStatus').text(status)
+                .removeClass('badge-success badge-secondary')
+                .addClass(status === 'Active' ? 'badge-success' : 'badge-secondary');
+            $('#vpBalance').text(balance || 'Rs. 0.00');
+            $('#vpDue').text(due || '—');
+            $('#vpAddress').text(address || '—');
+            $('#vpDate').text(date || '—');
+            $('#vpLedgerBtn').attr('href', ledgerUrl || '#');
+            $('#vpPaymentsBtn').attr('href', paymentsUrl || '#');
+
+            $('#vendorProfileModal').modal('show');
         });
 
         // Helper to update vendor status across all UI components

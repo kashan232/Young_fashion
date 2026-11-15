@@ -22,6 +22,12 @@ class VendorController extends Controller
         $balanceService = app(BalanceService::class);
         $activeVendorsCount = 0;
         $totalPayables = 0;
+        $dueThisWeekAmount = 0;
+        $dueThisWeekCount = 0;
+
+        $startOfWeek = now()->startOfWeek()->format('Y-m-d');
+        $endOfWeek = now()->endOfWeek()->format('Y-m-d');
+        $today = now()->format('Y-m-d');
 
         foreach ($vendors as $v) {
             $v->live_balance = $balanceService->getVendorBalance($v->id);
@@ -30,10 +36,36 @@ class VendorController extends Controller
             }
             if ($v->live_balance > 0) {
                 $totalPayables += $v->live_balance;
+
+                // Check if payment is due this week or overdue
+                $isDue = false;
+                if (!empty($v->payment_due_date)) {
+                    // Due date is this week or earlier (overdue)
+                    if ($v->payment_due_date <= $endOfWeek) {
+                        $isDue = true;
+                    }
+                } elseif (!empty($v->payment_day)) {
+                    // Recurring weekly day
+                    $isDue = true;
+                }
+
+                $v->is_due_this_week = $isDue;
+                if ($isDue) {
+                    $dueThisWeekAmount += $v->live_balance;
+                    $dueThisWeekCount++;
+                }
+            } else {
+                $v->is_due_this_week = false;
             }
         }
 
-        return view('admin_panel.vendors.index', compact('vendors', 'activeVendorsCount', 'totalPayables'));
+        return view('admin_panel.vendors.index', compact(
+            'vendors',
+            'activeVendorsCount',
+            'totalPayables',
+            'dueThisWeekAmount',
+            'dueThisWeekCount'
+        ));
     }
 
     // Store or update vendor information
@@ -45,10 +77,12 @@ class VendorController extends Controller
             'status' => 'nullable|in:0,1',
             'phone' => 'nullable|string|max:50',
             'address' => 'nullable|string',
+            'payment_due_date' => 'nullable|date',
+            'payment_day' => 'nullable|string|max:20',
             'opening_balance' => $request->id ? 'nullable|numeric' : 'required|numeric',
         ]);
 
-        $data = $request->only(['name', 'category', 'phone', 'address']);
+        $data = $request->only(['name', 'category', 'phone', 'address', 'payment_due_date', 'payment_day']);
         $data['status'] = $request->has('status') ? (int) $request->status : 1;
 
         if ($request->id) {
@@ -153,10 +187,23 @@ class VendorController extends Controller
     }
 
     // Show all vendor payments
-    public function vendor_payments()
+    public function vendor_payments(Request $request)
     {
-        $payments = VendorPayment::with('vendor')
-            ->orderByDesc('payment_date')
+        $query = VendorPayment::with('vendor');
+
+        if ($request->filled('vendor_id')) {
+            $query->where('vendor_id', $request->vendor_id);
+        }
+
+        if ($request->filled('start_date')) {
+            $query->whereDate('payment_date', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $query->whereDate('payment_date', '<=', $request->end_date);
+        }
+
+        $payments = $query->orderByDesc('payment_date')
             ->orderByDesc('id')
             ->get();
 
