@@ -62,6 +62,20 @@ Route::prefix('v1/flutter')->group(function () {
     Route::get('/search/filters', [\App\Http\Controllers\Api\Flutter\FlutterProductController::class, 'filterMetadata']); // Filter Bottom Sheet options (Brands, Sizes, Colors, Price slider)
     Route::get('/products', [\App\Http\Controllers\Api\Flutter\FlutterProductController::class, 'searchAndExplore']); // Search, Multi-Filter & Sort
 
+    // ── Catalog & Master Data APIs (Products & Categories Section) ──
+    Route::prefix('catalog')->group(function () {
+        Route::get('/products', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'products']); // All Products catalog with filters
+        Route::get('/products/{id}', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'productDetails']); // Product with variants & gallery
+        Route::get('/discounts', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'discounts']); // Discounted Products
+        Route::get('/categories', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'categories']); // Categories list
+        Route::get('/subcategories', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'subcategories']); // Sub Categories list (optional ?category_id=X)
+        Route::get('/brands', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'brands']); // Brands list
+        Route::get('/units', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'units']); // Units list
+        Route::get('/sizes', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'sizes']); // Sizes list
+        Route::get('/variants-color', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'colors']); // Colors & hex codes
+        Route::get('/metadata', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'allMetadata']); // Combined metadata for Flutter app init
+    });
+
     // ── Module E: Product Details (Sab Se Important Screen) ──
     Route::get('/products/{id}', [\App\Http\Controllers\Api\Flutter\FlutterProductController::class, 'showProductDetails']); // Color image gallery, Sizes with live in_stock, Reviews, Recommendations
 
