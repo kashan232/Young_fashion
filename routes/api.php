@@ -67,13 +67,44 @@ Route::prefix('v1/flutter')->group(function () {
         Route::get('/products', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'products']); // All Products catalog with filters
         Route::get('/products/{id}', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'productDetails']); // Product with variants & gallery
         Route::get('/discounts', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'discounts']); // Discounted Products
-        Route::get('/categories', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'categories']); // Categories list
-        Route::get('/subcategories', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'subcategories']); // Sub Categories list (optional ?category_id=X)
-        Route::get('/brands', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'brands']); // Brands list
-        Route::get('/units', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'units']); // Units list
-        Route::get('/sizes', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'sizes']); // Sizes list
-        Route::get('/variants-color', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'colors']); // Colors & hex codes
-        Route::get('/metadata', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'allMetadata']); // Combined metadata for Flutter app init
+
+        // Categories
+        Route::get('/categories', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'categories']);
+        Route::post('/categories', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'storeCategory']);
+        Route::delete('/categories/{id}', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'deleteCategory']);
+        Route::post('/categories/delete/{id}', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'deleteCategory']);
+
+        // Subcategories
+        Route::get('/subcategories', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'subcategories']);
+        Route::post('/subcategories', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'storeSubcategory']);
+        Route::delete('/subcategories/{id}', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'deleteSubcategory']);
+        Route::post('/subcategories/delete/{id}', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'deleteSubcategory']);
+
+        // Brands
+        Route::get('/brands', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'brands']);
+        Route::post('/brands', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'storeBrand']);
+        Route::delete('/brands/{id}', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'deleteBrand']);
+        Route::post('/brands/delete/{id}', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'deleteBrand']);
+
+        // Units
+        Route::get('/units', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'units']);
+        Route::post('/units', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'storeUnit']);
+        Route::delete('/units/{id}', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'deleteUnit']);
+        Route::post('/units/delete/{id}', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'deleteUnit']);
+
+        // Sizes
+        Route::get('/sizes', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'sizes']);
+        Route::post('/sizes', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'storeSize']);
+        Route::delete('/sizes/{id}', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'deleteSize']);
+        Route::post('/sizes/delete/{id}', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'deleteSize']);
+
+        // Variants & Colors
+        Route::get('/variants-color', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'colors']);
+        Route::post('/variants-color', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'storeColor']);
+        Route::delete('/variants-color/{id}', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'deleteColor']);
+        Route::post('/variants-color/delete/{id}', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'deleteColor']);
+
+        Route::get('/metadata', [\App\Http\Controllers\Api\Flutter\FlutterCatalogController::class, 'allMetadata']);
     });
 
     // ── Module E: Product Details (Sab Se Important Screen) ──

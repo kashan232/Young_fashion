@@ -453,4 +453,351 @@ class FlutterCatalogController extends Controller
             ]
         ]);
     }
+
+    // =========================================================================
+    // STORE & DELETE ACTIONS (SYNC LIVE WITH FLUTTER APP & WEB ADMIN)
+    // =========================================================================
+
+    /**
+     * Store / Update Category
+     * POST /api/v1/flutter/catalog/categories
+     */
+    public function storeCategory(Request $request)
+    {
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'name' => 'required|string|max:191',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => false,
+                'message' => $validator->errors()->first(),
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+
+        $id = $request->edit_id ?: $request->id;
+        $category = $id ? Category::find($id) : new Category();
+        if ($id && !$category) {
+            return response()->json(['status' => false, 'message' => 'Category not found'], 404);
+        }
+
+        $category->name = $request->name;
+        if ($request->has('show_on_website')) {
+            $category->show_on_website = $request->boolean('show_on_website') ? 1 : 0;
+        }
+        $category->save();
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Category saved successfully',
+            'data'    => [
+                'id'                  => $category->id,
+                'name'                => $category->name,
+                'image_url'           => null,
+                'subcategories_count' => $category->subcategories()->count(),
+                'show_on_website'     => (bool) ($category->show_on_website ?? true),
+            ]
+        ]);
+    }
+
+    /**
+     * Delete Category
+     * DELETE /api/v1/flutter/catalog/categories/{id}
+     */
+    public function deleteCategory($id)
+    {
+        $category = Category::find($id);
+        if (!$category) {
+            return response()->json(['status' => false, 'message' => 'Category not found'], 404);
+        }
+        $category->delete();
+        return response()->json([
+            'status'  => true,
+            'message' => 'Category deleted successfully'
+        ]);
+    }
+
+    /**
+     * Store / Update Subcategory
+     * POST /api/v1/flutter/catalog/subcategories
+     */
+    public function storeSubcategory(Request $request)
+    {
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'name'        => 'required|string|max:191',
+            'category_id' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => false,
+                'message' => $validator->errors()->first(),
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+
+        $id = $request->edit_id ?: $request->id;
+        $sub = $id ? Subcategory::find($id) : new Subcategory();
+        if ($id && !$sub) {
+            return response()->json(['status' => false, 'message' => 'Subcategory not found'], 404);
+        }
+
+        $sub->name = $request->name;
+        $sub->category_id = $request->category_id;
+        $sub->save();
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Subcategory saved successfully',
+            'data'    => [
+                'id'            => $sub->id,
+                'category_id'   => $sub->category_id,
+                'category_name' => $sub->category->name ?? null,
+                'name'          => $sub->name,
+            ]
+        ]);
+    }
+
+    /**
+     * Delete Subcategory
+     * DELETE /api/v1/flutter/catalog/subcategories/{id}
+     */
+    public function deleteSubcategory($id)
+    {
+        $sub = Subcategory::find($id);
+        if (!$sub) {
+            return response()->json(['status' => false, 'message' => 'Subcategory not found'], 404);
+        }
+        $sub->delete();
+        return response()->json([
+            'status'  => true,
+            'message' => 'Subcategory deleted successfully'
+        ]);
+    }
+
+    /**
+     * Store / Update Brand
+     * POST /api/v1/flutter/catalog/brands
+     */
+    public function storeBrand(Request $request)
+    {
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'name' => 'required|string|max:191',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => false,
+                'message' => $validator->errors()->first(),
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+
+        $id = $request->edit_id ?: $request->id;
+        $brand = $id ? Brand::find($id) : new Brand();
+        if ($id && !$brand) {
+            return response()->json(['status' => false, 'message' => 'Brand not found'], 404);
+        }
+
+        $brand->name = $request->name;
+        $brand->save();
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Brand saved successfully',
+            'data'    => [
+                'id'             => $brand->id,
+                'name'           => $brand->name,
+                'products_count' => $brand->products()->count(),
+            ]
+        ]);
+    }
+
+    /**
+     * Delete Brand
+     * DELETE /api/v1/flutter/catalog/brands/{id}
+     */
+    public function deleteBrand($id)
+    {
+        $brand = Brand::find($id);
+        if (!$brand) {
+            return response()->json(['status' => false, 'message' => 'Brand not found'], 404);
+        }
+        $brand->delete();
+        return response()->json([
+            'status'  => true,
+            'message' => 'Brand deleted successfully'
+        ]);
+    }
+
+    /**
+     * Store / Update Unit
+     * POST /api/v1/flutter/catalog/units
+     */
+    public function storeUnit(Request $request)
+    {
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'name' => 'required|string|max:191',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => false,
+                'message' => $validator->errors()->first(),
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+
+        $id = $request->edit_id ?: $request->id;
+        $unit = $id ? Unit::find($id) : new Unit();
+        if ($id && !$unit) {
+            return response()->json(['status' => false, 'message' => 'Unit not found'], 404);
+        }
+
+        $unit->name = $request->name;
+        $unit->save();
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Unit saved successfully',
+            'data'    => [
+                'id'   => $unit->id,
+                'name' => $unit->name,
+            ]
+        ]);
+    }
+
+    /**
+     * Delete Unit
+     * DELETE /api/v1/flutter/catalog/units/{id}
+     */
+    public function deleteUnit($id)
+    {
+        $unit = Unit::find($id);
+        if (!$unit) {
+            return response()->json(['status' => false, 'message' => 'Unit not found'], 404);
+        }
+        $unit->delete();
+        return response()->json([
+            'status'  => true,
+            'message' => 'Unit deleted successfully'
+        ]);
+    }
+
+    /**
+     * Store / Update Size
+     * POST /api/v1/flutter/catalog/sizes
+     */
+    public function storeSize(Request $request)
+    {
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'name' => 'required|string|max:191',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => false,
+                'message' => $validator->errors()->first(),
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+
+        $id = $request->edit_id ?: $request->id;
+        $size = $id ? Size::find($id) : new Size();
+        if ($id && !$size) {
+            return response()->json(['status' => false, 'message' => 'Size not found'], 404);
+        }
+
+        $size->name = $request->name;
+        if ($request->filled('size_code')) {
+            $size->size_code = $request->size_code;
+        }
+        $size->save();
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Size saved successfully',
+            'data'    => [
+                'id'        => $size->id,
+                'name'      => $size->name,
+                'size_code' => $size->size_code,
+            ]
+        ]);
+    }
+
+    /**
+     * Delete Size
+     * DELETE /api/v1/flutter/catalog/sizes/{id}
+     */
+    public function deleteSize($id)
+    {
+        $size = Size::find($id);
+        if (!$size) {
+            return response()->json(['status' => false, 'message' => 'Size not found'], 404);
+        }
+        $size->delete();
+        return response()->json([
+            'status'  => true,
+            'message' => 'Size deleted successfully'
+        ]);
+    }
+
+    /**
+     * Store / Update Color
+     * POST /api/v1/flutter/catalog/variants-color
+     */
+    public function storeColor(Request $request)
+    {
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'name' => 'required|string|max:120',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => false,
+                'message' => $validator->errors()->first(),
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+
+        $id = $request->edit_id ?: $request->id;
+        $color = $id ? Color::find($id) : new Color();
+        if ($id && !$color) {
+            return response()->json(['status' => false, 'message' => 'Color not found'], 404);
+        }
+
+        $color->name = $request->name;
+        if ($request->filled('color_code')) {
+            $color->color_code = $request->color_code;
+        }
+        $color->save();
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Color saved successfully',
+            'data'    => [
+                'id'         => $color->id,
+                'name'       => $color->name,
+                'color_code' => $color->color_code,
+            ]
+        ]);
+    }
+
+    /**
+     * Delete Color
+     * DELETE /api/v1/flutter/catalog/variants-color/{id}
+     */
+    public function deleteColor($id)
+    {
+        $color = Color::find($id);
+        if (!$color) {
+            return response()->json(['status' => false, 'message' => 'Color not found'], 404);
+        }
+        $color->delete();
+        return response()->json([
+            'status'  => true,
+            'message' => 'Color deleted successfully'
+        ]);
+    }
 }
