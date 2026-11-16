@@ -115,59 +115,42 @@ class FlutterAuthController extends Controller
 
     /**
      * POST /api/v1/flutter/auth/login (also /api/login)
-     * Login using email or phone + password
+     * Login using email + password only
      *
      * Expected Payload (JSON / Form-data):
-     * - email OR phone OR login: string (required)
+     * - email: string/email (required)
      * - password: string (required)
      */
     public function login(Request $request)
     {
-        // 1. Validation
+        // 1. Validation (Email and Password only)
         $validator = Validator::make($request->all(), [
-            'email'    => 'nullable|string',
-            'phone'    => 'nullable|string',
-            'login'    => 'nullable|string',
+            'email'    => 'required|email',
             'password' => 'required|string',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'status'  => false,
-                'message' => 'Please provide credentials',
+                'message' => 'Please provide valid email and password',
                 'errors'  => $validator->errors()
             ], 422);
         }
 
-        // Accept email, phone, or login parameter
-        $loginInput = $request->email ?: ($request->phone ?: $request->login);
+        $email = trim($request->email);
 
-        if (empty($loginInput)) {
-            return response()->json([
-                'status'  => false,
-                'message' => 'Please provide an email or phone number',
-                'errors'  => [
-                    'email' => ['The email or phone field is required.']
-                ]
-            ], 422);
-        }
-
-        // 2. Search user in `users` table by email or phone
-        $user = User::where(function ($q) use ($loginInput) {
-            $q->where('email', $loginInput)
-              ->orWhere('phone', $loginInput);
-        })->first();
+        // 2. Search user in `users` table strictly by email
+        $user = User::where('email', $email)->first();
 
         // 3. Fallback check in web_customers if not yet in users table
         if (!$user) {
-            $webCust = WebCustomer::where('email', $loginInput)->orWhere('phone', $loginInput)->first();
+            $webCust = WebCustomer::where('email', $email)->first();
             if ($webCust && Hash::check($request->password, $webCust->password)) {
                 // Auto migrate to users table with App_user type
                 $user = User::updateOrCreate(
                     ['email' => $webCust->email],
                     [
                         'name'     => $webCust->name,
-                        'phone'    => $webCust->phone,
                         'password' => $webCust->password,
                         'usertype' => 'App_user',
                     ]
@@ -179,7 +162,7 @@ class FlutterAuthController extends Controller
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
                 'status'  => false,
-                'message' => 'Invalid email/phone or password',
+                'message' => 'Invalid email or password',
             ], 401);
         }
 
@@ -195,7 +178,6 @@ class FlutterAuthController extends Controller
                 'id'         => $user->id,
                 'name'       => $user->name,
                 'email'      => $user->email,
-                'phone'      => $user->phone,
                 'usertype'   => $user->usertype ?? 'App_user',
                 'avatar'     => asset('assets/images/user-avatar.png'),
             ]
