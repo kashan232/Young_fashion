@@ -398,6 +398,14 @@
         color: #0f172a;
         text-align: right;
     }
+
+    /* Modal stacking & z-index failsafe */
+    .modal {
+        z-index: 1060 !important;
+    }
+    .modal-backdrop {
+        z-index: 1050 !important;
+    }
 </style>
 
 <div class="customer-page container-fluid px-3 px-md-4 pt-3">
@@ -410,7 +418,7 @@
         </div>
         <div class="customer-action-hub mt-3 mt-md-0">
             @can('customers.create')
-                <button type="button" class="btn-cust-primary" id="btnQuickAddCustomer">
+                <button type="button" class="btn-cust-primary" id="btnQuickAddCustomer" onclick="openQuickAddCustomer()" data-toggle="modal" data-target="#customerQuickModal" data-bs-toggle="modal" data-bs-target="#customerQuickModal">
                     <i class="fas fa-user-plus"></i> Add Customer
                 </button>
                 <a href="{{ route('customers.create') }}" class="btn-cust-sub" title="Open Full Detailed Form">
@@ -628,7 +636,7 @@
                             <td class="text-center">
                                 <div class="d-flex align-items-center justify-content-center">
                                     {{-- View Profile --}}
-                                    <button type="button" class="cust-action-btn btn-view btn-view-profile" data-id="{{ $c->id }}" title="View Customer Profile &amp; Summary">
+                                    <button type="button" class="cust-action-btn btn-view btn-view-profile" onclick="openCustomerProfile({{ $c->id }})" data-id="{{ $c->id }}" data-toggle="modal" data-target="#customerProfileModal" data-bs-toggle="modal" data-bs-target="#customerProfileModal" title="View Customer Profile &amp; Summary">
                                         <i class="fas fa-eye"></i>
                                     </button>
 
@@ -662,7 +670,7 @@
                                 <h6 class="font-weight-bold text-dark">No Customers Found</h6>
                                 <p class="text-muted small mb-3">You haven't added any customers yet. Add your first customer to get started.</p>
                                 @can('customers.create')
-                                    <button type="button" class="btn btn-primary btn-sm px-3 font-weight-bold" id="btnEmptyAdd">
+                                    <button type="button" class="btn btn-primary btn-sm px-3 font-weight-bold" id="btnEmptyAdd" onclick="openQuickAddCustomer()" data-toggle="modal" data-target="#customerQuickModal" data-bs-toggle="modal" data-bs-target="#customerQuickModal">
                                         <i class="fas fa-plus mr-1"></i> + Add First Customer
                                     </button>
                                 @endcan
@@ -848,38 +856,116 @@
 
 @section('js')
 <script>
+    // Global Open Functions (can never be blocked by DataTable/document.ready errors)
+    function openQuickAddCustomer() {
+        if ($('#quickCustomerForm').length) {
+            $('#quickCustomerForm')[0].reset();
+        }
+        $('#qc_customer_id').val('{{ $latestId }}');
+        $('#customerQuickModal').modal('show');
+    }
+
+    function openCustomerProfile(id) {
+        if (!id) return;
+        $('#customerProfileModal').modal('show');
+
+        // Fetch detail from JSON endpoint
+        $.get('/customers/' + id + '/json', function(res) {
+            $('#cp_name').text(res.customer_name || '—');
+            $('#cp_name_ur').text(res.customer_name_ur || '');
+            $('#cp_id_badge').text(res.customer_id || 'CUST-' + res.id);
+            $('#cp_type_badge').text(res.customer_type || 'Main Customer');
+            $('#cp_status_badge').text((res.status || 'active').toUpperCase())
+                .removeClass('badge-success badge-secondary')
+                .addClass(res.status === 'active' ? 'badge-success' : 'badge-secondary');
+
+            // Contact
+            if (res.mobile) {
+                let waPhone = res.mobile.replace(/[^0-9]/g, '');
+                if (waPhone.length === 11 && waPhone.startsWith('03')) {
+                    waPhone = '92' + waPhone.substring(1);
+                }
+                $('#cp_mobile').html(`
+                    <span class="mr-2">${res.mobile}</span>
+                    <a href="https://wa.me/${waPhone}" target="_blank" class="btn-whatsapp">
+                        <i class="fab fa-whatsapp"></i> Chat
+                    </a>
+                `);
+            } else {
+                $('#cp_mobile').text('—');
+            }
+
+            $('#cp_contact_person').text(res.contact_person || '—');
+            $('#cp_zone').text(res.zone || '—');
+            
+            let cnicFiler = (res.cnic || 'No CNIC') + ' (' + (res.filer_type || 'Non-Filer') + ')';
+            $('#cp_cnic_filer').text(cnicFiler);
+
+            let limit = parseFloat(res.balance_range) || 0;
+            $('#cp_credit_limit').text(limit > 0 ? 'Rs. ' + limit.toLocaleString() : 'Unlimited');
+
+            let bal = parseFloat(res.previous_balance) || 0;
+            if (bal > 0) {
+                $('#cp_balance').html(`<span class="text-danger font-weight-bold">Rs. ${bal.toLocaleString(undefined, {minimumFractionDigits: 2})} (Receivable)</span>`);
+            } else if (bal < 0) {
+                $('#cp_balance').html(`<span class="text-success font-weight-bold">Rs. ${Math.abs(bal).toLocaleString(undefined, {minimumFractionDigits: 2})} (Advance / Credit)</span>`);
+            } else {
+                $('#cp_balance').html(`<span class="text-muted">Rs. 0.00</span>`);
+            }
+
+            $('#cp_address').text(res.address || '—');
+
+            // Update Action Buttons
+            $('#cp_ledger_btn').attr('href', `/customers/ledger?customer_id=${res.id}`);
+            $('#cp_payment_btn').attr('href', `{{ route('customer.payments') }}`);
+        }).fail(function() {
+            console.warn('Profile JSON endpoint not reachable, modal shown with default state.');
+        });
+    }
+
     $(document).ready(function() {
+        // Ensure modals are appended directly to body so no container overflows/z-index traps them
+        $('#customerQuickModal').appendTo('body');
+        $('#customerProfileModal').appendTo('body');
+
         // Universal modal close handler (Bootstrap 4 & 5 failsafe)
         $(document).on('click', '[data-dismiss="modal"], [data-bs-dismiss="modal"], .close', function(e) {
             e.preventDefault();
             $(this).closest('.modal').modal('hide');
         });
 
-        // Initialize DataTable
-        let customerTable;
-        if ($.fn.DataTable.isDataTable('#customerTable')) {
-            $('#customerTable').DataTable().destroy();
-        }
+        // Initialize DataTable safely
+        let customerTable = null;
+        try {
+            if ($.fn.DataTable) {
+                if ($.fn.DataTable.isDataTable('#customerTable')) {
+                    $('#customerTable').DataTable().destroy();
+                }
 
-        customerTable = $('#customerTable').DataTable({
-            "pageLength": 15,
-            "order": [],
-            "language": {
-                "search": "",
-                "searchPlaceholder": "Filter records..."
-            },
-            "dom": "<'row mb-2'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'>>" +
-                   "<'row'<'col-sm-12'tr>>" +
-                   "<'row mt-3'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>"
-        });
+                customerTable = $('#customerTable').DataTable({
+                    "pageLength": 15,
+                    "order": [],
+                    "language": {
+                        "search": "",
+                        "searchPlaceholder": "Filter records..."
+                    },
+                    "dom": "<'row mb-2'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'>>" +
+                           "<'row'<'col-sm-12'tr>>" +
+                           "<'row mt-3'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>"
+                });
+            }
+        } catch (dtError) {
+            console.error('DataTable init warning:', dtError);
+        }
 
         // Custom Live Search
         $('#customerSearchInput').on('keyup', function() {
-            customerTable.search(this.value).draw();
+            if (customerTable) customerTable.search(this.value).draw();
         });
 
         // Custom Status Filter
         $('#statusFilter').on('change', function() {
+            if (!customerTable) return;
             const val = $(this).val();
             if (!val) {
                 customerTable.column(7).search('').draw();
@@ -890,6 +976,7 @@
 
         // Custom Type Filter
         $('#typeFilter').on('change', function() {
+            if (!customerTable) return;
             const val = $(this).val();
             if (!val) {
                 customerTable.column(4).search('').draw();
@@ -903,14 +990,13 @@
             $('#customerSearchInput').val('');
             $('#statusFilter').val('');
             $('#typeFilter').val('');
-            customerTable.search('').columns().search('').draw();
+            if (customerTable) customerTable.search('').columns().search('').draw();
         });
 
-        // Open Quick Add Modal
-        $('#btnQuickAddCustomer, #btnEmptyAdd').click(function() {
-            $('#quickCustomerForm')[0].reset();
-            $('#qc_customer_id').val('{{ $latestId }}');
-            $('#customerQuickModal').modal('show');
+        // Open Quick Add Modal Click Fallback
+        $('#btnQuickAddCustomer, #btnEmptyAdd').click(function(e) {
+            e.preventDefault();
+            openQuickAddCustomer();
         });
 
         // Submit Quick Customer Form via AJAX
@@ -930,15 +1016,19 @@
                 success: function(res) {
                     $btn.prop('disabled', false).html(origHtml);
                     $('#customerQuickModal').modal('hide');
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Customer Added!',
-                        text: 'Customer account has been successfully created.',
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Customer Added!',
+                            text: 'Customer account has been successfully created.',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            window.location.reload();
+                        });
+                    } else {
                         window.location.reload();
-                    });
+                    }
                 },
                 error: function(xhr) {
                     $btn.prop('disabled', false).html(origHtml);
@@ -948,74 +1038,24 @@
                     } else if (xhr.responseJSON && xhr.responseJSON.message) {
                         msg = xhr.responseJSON.message;
                     }
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        html: msg
-                    });
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            html: msg
+                        });
+                    } else {
+                        alert(msg);
+                    }
                 }
             });
         });
 
-        // View Customer Profile Modal
-        $(document).on('click', '.btn-view-profile', function() {
+        // View Customer Profile Modal Click Fallback
+        $(document).on('click', '.btn-view-profile', function(e) {
+            e.preventDefault();
             const id = $(this).data('id');
-            if (!id) return;
-
-            // Fetch detail from JSON endpoint
-            $.get(`/customers/${id}/json`, function(res) {
-                $('#cp_name').text(res.customer_name || '—');
-                $('#cp_name_ur').text(res.customer_name_ur || '');
-                $('#cp_id_badge').text(res.customer_id || 'CUST-' + res.id);
-                $('#cp_type_badge').text(res.customer_type || 'Main Customer');
-                $('#cp_status_badge').text((res.status || 'active').toUpperCase())
-                    .removeClass('badge-success badge-secondary')
-                    .addClass(res.status === 'active' ? 'badge-success' : 'badge-secondary');
-
-                // Contact
-                if (res.mobile) {
-                    let waPhone = res.mobile.replace(/[^0-9]/g, '');
-                    if (waPhone.length === 11 && waPhone.startsWith('03')) {
-                        waPhone = '92' + waPhone.substring(1);
-                    }
-                    $('#cp_mobile').html(`
-                        <span class="mr-2">${res.mobile}</span>
-                        <a href="https://wa.me/${waPhone}" target="_blank" class="btn-whatsapp">
-                            <i class="fab fa-whatsapp"></i> Chat
-                        </a>
-                    `);
-                } else {
-                    $('#cp_mobile').text('—');
-                }
-
-                $('#cp_contact_person').text(res.contact_person || '—');
-                $('#cp_zone').text(res.zone || '—');
-                
-                let cnicFiler = (res.cnic || 'No CNIC') + ' (' + (res.filer_type || 'Non-Filer') + ')';
-                $('#cp_cnic_filer').text(cnicFiler);
-
-                let limit = parseFloat(res.balance_range) || 0;
-                $('#cp_credit_limit').text(limit > 0 ? 'Rs. ' + limit.toLocaleString() : 'Unlimited');
-
-                let bal = parseFloat(res.previous_balance) || 0;
-                if (bal > 0) {
-                    $('#cp_balance').html(`<span class="text-danger font-weight-bold">Rs. ${bal.toLocaleString(undefined, {minimumFractionDigits: 2})} (Receivable)</span>`);
-                } else if (bal < 0) {
-                    $('#cp_balance').html(`<span class="text-success font-weight-bold">Rs. ${Math.abs(bal).toLocaleString(undefined, {minimumFractionDigits: 2})} (Advance / Credit)</span>`);
-                } else {
-                    $('#cp_balance').html(`<span class="text-muted">Rs. 0.00</span>`);
-                }
-
-                $('#cp_address').text(res.address || '—');
-
-                // Update Action Buttons
-                $('#cp_ledger_btn').attr('href', `/customers/ledger?customer_id=${res.id}`);
-                $('#cp_payment_btn').attr('href', `{{ route('customer.payments') }}`);
-
-                $('#customerProfileModal').modal('show');
-            }).fail(function() {
-                Swal.fire('Error', 'Unable to load customer profile details.', 'error');
-            });
+            openCustomerProfile(id);
         });
 
         // Toggle Status via AJAX
