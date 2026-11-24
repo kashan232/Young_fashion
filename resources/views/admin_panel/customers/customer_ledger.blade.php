@@ -27,14 +27,21 @@
             <div class="container-fluid mt-4">
 
                 <!-- Page Header -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
                     <div>
                         <h4 class="mb-1 text-primary"><i class="bi bi-people"></i> Customer Ledger (Statement)</h4>
-                        <p class="text-muted mb-0">Track all customer transactions, invoices, and receipts.</p>
+                        <p class="text-muted mb-0">Track all customer transactions, invoices, receipts, and balances.</p>
                     </div>
-                    <div>
-                        <a href="{{ route('view_all') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i>
-                            Back to Accounts</a>
+                    <div class="d-flex gap-2">
+                        <a href="{{ route('customers.index') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-people"></i> Customer List
+                        </a>
+                        <a href="{{ route('customer.payments') }}" class="btn btn-outline-success">
+                            <i class="bi bi-cash-coin"></i> Payments
+                        </a>
+                        <button type="button" class="btn btn-secondary" onclick="window.print()">
+                            <i class="bi bi-printer"></i> Print Statement
+                        </button>
                     </div>
                 </div>
 
@@ -76,6 +83,30 @@
                         </form>
 
                         @if(request('customer_id'))
+                        @php
+                            $currCust = $customers->find(request('customer_id'));
+                        @endphp
+                        @if($currCust)
+                        <div class="p-3 mb-3 bg-white rounded border d-flex flex-wrap justify-content-between align-items-center shadow-sm">
+                            <div>
+                                <h5 class="fw-bold text-dark mb-1">
+                                    <i class="bi bi-person-badge text-primary me-2"></i>{{ $currCust->customer_name }}
+                                    @if($currCust->customer_name_ur)
+                                        <span class="text-muted ms-2 fs-6" style="font-family: 'Noto Nastaliq Urdu', serif;">({{ $currCust->customer_name_ur }})</span>
+                                    @endif
+                                </h5>
+                                <div class="text-muted small">
+                                    <span class="badge bg-light text-dark border me-2 font-monospace">{{ $currCust->customer_id ?? ('CUST-' . $currCust->id) }}</span>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary me-2">{{ $currCust->customer_type ?? 'Main Customer' }}</span>
+                                    <i class="bi bi-geo-alt text-danger me-1"></i>{{ $currCust->zone ?? 'No Zone' }} &bull; {{ $currCust->address ?? 'No Address' }}
+                                </div>
+                            </div>
+                            <div class="text-md-end mt-2 mt-md-0">
+                                <div class="small text-muted">Mobile: <strong class="text-dark">{{ $currCust->mobile ?? '—' }}</strong></div>
+                                <div class="small text-muted">Credit Limit: <strong class="text-primary">{{ (float)$currCust->balance_range > 0 ? 'Rs. ' . number_format($currCust->balance_range, 0) : 'Unlimited' }}</strong></div>
+                            </div>
+                        </div>
+                        @endif
                         <!-- Summary Cards -->
                         <div class="row mb-4 g-3">
                             <div class="col-md-4">

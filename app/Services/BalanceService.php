@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Account;
 use App\Models\Customer;
+use App\Models\CustomerLedger;
 use App\Models\JournalEntry;
 use App\Models\VoucherDetail;
 use App\Models\VoucherMaster;
@@ -12,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 class BalanceService
 {
     /**
-     * Get customer balance from journal entries
+     * Get customer balance from journal entries, customer ledgers, or operational data
      * Positive = Customer owes money (Dr)
      * Negative = Customer has advance/credit (Cr)
      */
@@ -26,13 +27,27 @@ class BalanceService
             return 0;
         }
 
-        // Sum of all journal entries for this customer (includes Opening Balance journal entry)
-        $journalBalance = JournalEntry::where('party_type', Customer::class)
-            ->where('party_id', $customer->id)
-            ->selectRaw('COALESCE(SUM(debit) - SUM(credit), 0) as balance')
-            ->value('balance') ?? 0;
+        // 1. Primary: Check CustomerLedger closing_balance if available (used by POS, sales & payments)
+        $latestLedger = CustomerLedger::where('customer_id', $customer->id)->latest('id')->first();
+        if ($latestLedger) {
+            return (float) $latestLedger->closing_balance;
+        }
 
-        return (float) $journalBalance;
+        // 2. Check Journal Entries if available
+        $hasJournal = JournalEntry::where('party_type', Customer::class)
+            ->where('party_id', $customer->id)
+            ->exists();
+
+        if ($hasJournal) {
+            $journalBalance = JournalEntry::where('party_type', Customer::class)
+                ->where('party_id', $customer->id)
+                ->selectRaw('COALESCE(SUM(debit) - SUM(credit), 0) as balance')
+                ->value('balance');
+            return (float) ($journalBalance ?? 0);
+        }
+
+        // 3. Fallback to customer table previous_balance / opening_balance
+        return (float) ($customer->attributes['previous_balance'] ?? $customer->opening_balance ?? 0);
     }
 
     /**
@@ -40,13 +55,32 @@ class BalanceService
      */
     public function getCustomerBalanceBeforeDate(int $customerId, string $date): float
     {
-        $journalBalance = JournalEntry::where('party_type', Customer::class)
-            ->where('party_id', $customerId)
-            ->where('entry_date', '<', $date)
-            ->selectRaw('COALESCE(SUM(debit) - SUM(credit), 0) as balance')
-            ->value('balance') ?? 0;
+        // 1. Check CustomerLedger records before date
+        $prevRecord = CustomerLedger::where('customer_id', $customerId)
+            ->where('created_at', '<', $date . ' 00:00:00')
+            ->latest('id')
+            ->first();
 
-        return (float) $journalBalance;
+        if ($prevRecord) {
+            return (float) $prevRecord->closing_balance;
+        }
+
+        // 2. Check Journal Entries before date
+        $hasJournal = JournalEntry::where('party_type', Customer::class)
+            ->where('party_id', $customerId)
+            ->exists();
+
+        if ($hasJournal) {
+            $journalBalance = JournalEntry::where('party_type', Customer::class)
+                ->where('party_id', $customerId)
+                ->where('entry_date', '<', $date)
+                ->selectRaw('COALESCE(SUM(debit) - SUM(credit), 0) as balance')
+                ->value('balance') ?? 0;
+            return (float) $journalBalance;
+        }
+
+        $cust = Customer::find($customerId);
+        return (float) ($cust->opening_balance ?? 0);
     }
 
     /**
@@ -59,34 +93,192 @@ class BalanceService
             return [
                 'customer' => null,
                 'opening_balance' => 0,
+                'closing_balance' => 0,
                 'transactions' => [],
             ];
         }
 
-        // Get opening balance (balance before start date)
-        $openingBalance = $this->getCustomerBalanceBeforeDate($customerId, $startDate);
+        // 1. Primary: Use CustomerLedger table records if available (primary source for POS & khata)
+        $hasCustomerLedger = CustomerLedger::where('customer_id', $customerId)->exists();
+        if ($hasCustomerLedger) {
+            $openingBalance = $this->getCustomerBalanceBeforeDate($customerId, $startDate);
 
-        // Get journal entries in range
-        $entries = JournalEntry::where('party_type', Customer::class)
+            $ledgerRecords = CustomerLedger::where('customer_id', $customerId)
+                ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+                ->orderBy('id', 'asc')
+                ->get();
+
+            if ($ledgerRecords->isNotEmpty()) {
+                $runningBalance = $openingBalance;
+                $transactions = $ledgerRecords->map(function ($record) use (&$runningBalance) {
+                    $diff = (float) $record->closing_balance - (float) $record->previous_balance;
+                    $debit = $diff > 0 ? $diff : 0;
+                    $credit = $diff < 0 ? abs($diff) : 0;
+
+                    // Handle initial opening balance record if closing equals opening
+                    if ($diff == 0 && (float) $record->opening_balance > 0) {
+                        $debit = (float) $record->opening_balance;
+                    }
+
+                    $runningBalance = (float) $record->closing_balance;
+
+                    return [
+                        'id' => $record->id,
+                        'date' => $record->created_at->format('Y-m-d'),
+                        'description' => $record->description ?? 'Transaction',
+                        'debit' => $debit,
+                        'credit' => $credit,
+                        'balance' => $runningBalance,
+                        'source_type' => 'CustomerLedger',
+                        'source_id' => $record->id,
+                    ];
+                });
+
+                $closingBalance = (float) $ledgerRecords->last()->closing_balance;
+
+                return [
+                    'customer' => $customer,
+                    'opening_balance' => $openingBalance,
+                    'closing_balance' => $closingBalance,
+                    'transactions' => $transactions,
+                ];
+            }
+        }
+
+        // 2. Check if journal entries exist for this customer
+        $hasJournal = JournalEntry::where('party_type', Customer::class)
             ->where('party_id', $customerId)
-            ->whereBetween('entry_date', [$startDate, $endDate])
-            ->orderBy('id', 'asc')
-            ->get();
+            ->exists();
 
-        // Calculate running balance
-        $runningBalance = $openingBalance;
-        $transactions = $entries->map(function ($entry) use (&$runningBalance) {
-            $runningBalance += ($entry->debit - $entry->credit);
+        if ($hasJournal) {
+            $openingBalance = $this->getCustomerBalanceBeforeDate($customerId, $startDate);
+            $entries = JournalEntry::where('party_type', Customer::class)
+                ->where('party_id', $customerId)
+                ->whereBetween('entry_date', [$startDate, $endDate])
+                ->orderBy('entry_date', 'asc')
+                ->orderBy('id', 'asc')
+                ->get();
+
+            $runningBalance = $openingBalance;
+            $transactions = $entries->map(function ($entry) use (&$runningBalance) {
+                $runningBalance += ($entry->debit - $entry->credit);
+
+                return [
+                    'id' => $entry->id,
+                    'date' => $entry->entry_date,
+                    'description' => $entry->description,
+                    'debit' => (float) $entry->debit,
+                    'credit' => (float) $entry->credit,
+                    'balance' => $runningBalance,
+                    'source_type' => $entry->source_type,
+                    'source_id' => $entry->source_id,
+                ];
+            });
 
             return [
-                'id' => $entry->id,
-                'date' => $entry->entry_date,
-                'description' => $entry->description,
-                'debit' => $entry->debit,
-                'credit' => $entry->credit,
+                'customer' => $customer,
+                'opening_balance' => $openingBalance,
+                'closing_balance' => $runningBalance,
+                'transactions' => $transactions,
+            ];
+        }
+
+        if ($ledgerRecords->isNotEmpty()) {
+            $runningBalance = $openingBalance;
+            $transactions = $ledgerRecords->map(function ($record) use (&$runningBalance) {
+                $diff = (float) $record->closing_balance - (float) $record->previous_balance;
+                $debit = $diff > 0 ? $diff : 0;
+                $credit = $diff < 0 ? abs($diff) : 0;
+
+                // Handle initial opening balance record if closing equals opening
+                if ($diff == 0 && (float) $record->opening_balance > 0) {
+                    $debit = (float) $record->opening_balance;
+                }
+
+                $runningBalance = (float) $record->closing_balance;
+
+                return [
+                    'id' => $record->id,
+                    'date' => $record->created_at->format('Y-m-d'),
+                    'description' => $record->description ?? 'Transaction',
+                    'debit' => $debit,
+                    'credit' => $credit,
+                    'balance' => $runningBalance,
+                    'source_type' => 'CustomerLedger',
+                    'source_id' => $record->id,
+                ];
+            });
+
+            $closingBalance = (float) $ledgerRecords->last()->closing_balance;
+
+            return [
+                'customer' => $customer,
+                'opening_balance' => $openingBalance,
+                'closing_balance' => $closingBalance,
+                'transactions' => $transactions,
+            ];
+        }
+
+        // 3. Fallback: Direct Sales + Customer Payments
+        $runningBalance = $openingBalance;
+        $items = collect([]);
+
+        // Sales in range
+        $sales = DB::table('sales')
+            ->where('customer_id', $customerId)
+            ->where('sale_status', 'posted')
+            ->whereBetween('sale_date', [$startDate, $endDate])
+            ->select('id', 'invoice_no', 'net_amount', 'paid_amount', 'sale_date')
+            ->get();
+
+        foreach ($sales as $s) {
+            $items->push((object)[
+                'date' => $s->sale_date,
+                'description' => "Sale Invoice #{$s->invoice_no}",
+                'debit' => (float) $s->net_amount,
+                'credit' => 0,
+                'sort_date' => $s->sale_date,
+            ]);
+            if ((float)$s->paid_amount > 0) {
+                $items->push((object)[
+                    'date' => $s->sale_date,
+                    'description' => "Payment received on Invoice #{$s->invoice_no}",
+                    'debit' => 0,
+                    'credit' => (float) $s->paid_amount,
+                    'sort_date' => $s->sale_date,
+                ]);
+            }
+        }
+
+        // Payments in range
+        $payments = DB::table('customer_payments')
+            ->where('customer_id', $customerId)
+            ->whereBetween('payment_date', [$startDate, $endDate])
+            ->select('id', 'amount', 'payment_date', 'payment_method', 'note')
+            ->get();
+
+        foreach ($payments as $p) {
+            $items->push((object)[
+                'date' => $p->payment_date,
+                'description' => "Payment: " . ($p->note ?: $p->payment_method),
+                'debit' => 0,
+                'credit' => (float) $p->amount,
+                'sort_date' => $p->payment_date,
+            ]);
+        }
+
+        $sorted = $items->sortBy('sort_date');
+        $transactions = $sorted->map(function($t) use (&$runningBalance) {
+            $runningBalance += ($t->debit - $t->credit);
+            return [
+                'id' => rand(100, 999),
+                'date' => $t->date,
+                'description' => $t->description,
+                'debit' => $t->debit,
+                'credit' => $t->credit,
                 'balance' => $runningBalance,
-                'source_type' => $entry->source_type,
-                'source_id' => $entry->source_id,
+                'source_type' => 'Direct',
+                'source_id' => 0,
             ];
         });
 

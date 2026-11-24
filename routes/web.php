@@ -199,6 +199,7 @@ Route::middleware('auth')->group(function () {
 
     // Single customer detail
     Route::get('sale/customers/{id}', [CustomerController::class, 'show'])->middleware('permission:customers.view')->name('salecustomers.show');
+    Route::get('/customers/{id}/json', [CustomerController::class, 'show'])->middleware('permission:customers.view')->name('customers.json');
     // Cutomer create
     Route::get('/customers', [CustomerController::class, 'index'])->middleware('permission:customers.view')->name('customers.index');
     Route::get('/customers/create', [CustomerController::class, 'create'])->middleware('permission:customers.create')->name('customers.create');

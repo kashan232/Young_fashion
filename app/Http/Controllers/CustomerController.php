@@ -7,6 +7,10 @@ use App\Models\CustomerLedger;
 use App\Models\CustomerPayment;
 use App\Models\SalesOfficer;
 use App\Models\Zone;
+use App\Models\Account;
+use App\Models\VoucherMaster;
+use App\Services\BalanceService;
+use App\Services\VoucherService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -36,11 +40,12 @@ class CustomerController extends Controller
     // 🔹 Single customer detail
     public function show($id)
     {
-        $customer = Customer::findOrFail($id);
+        $customer = Customer::with(['salesOfficer'])->findOrFail($id);
 
         $data = $customer->toArray();
         $data['previous_balance'] = $customer->previous_balance;
         $data['balance_range'] = $customer->balance_range ?? 0;
+        $data['sales_officer_name'] = $customer->salesOfficer ? $customer->salesOfficer->name : '—';
 
         // Map status to remarks if needed by frontend
         $data['remarks'] = $customer->status ?? '';
@@ -52,20 +57,43 @@ class CustomerController extends Controller
 
     public function index()
     {
-        $customers = Customer::latest()->get(); // no status filter
+        $customers = Customer::latest()->get();
+        $totalCustomers = $customers->count();
+        $activeCustomers = $customers->where('status', 'active')->count();
+        $inactiveCustomers = $customers->where('status', 'inactive')->count();
+        $totalReceivable = $customers->sum(function($c) {
+            return max(0, (float) ($c->previous_balance ?? 0));
+        });
 
-        // echo "<pre>";
-        // print_r($customers);
-        // echo "</pre>";
-        // dd();
-        return view('admin_panel.customers.index', compact('customers'));
+        $zones = Zone::orderBy('zone')->get();
+        $salesOfficers = SalesOfficer::orderBy('name')->get();
+        $latestId = 'CUST-'.str_pad((Customer::max('id') ?? 0) + 1, 4, '0', STR_PAD_LEFT);
+
+        return view('admin_panel.customers.index', compact(
+            'customers',
+            'totalCustomers',
+            'activeCustomers',
+            'inactiveCustomers',
+            'totalReceivable',
+            'zones',
+            'salesOfficers',
+            'latestId'
+        ));
     }
 
-    public function toggleStatus($id)
+    public function toggleStatus(Request $request, $id)
     {
         $customer = Customer::findOrFail($id);
         $customer->status = $customer->status === 'active' ? 'inactive' : 'active';
         $customer->save();
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'status' => $customer->status,
+                'message' => 'Customer status updated to ' . $customer->status
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Customer status updated.');
     }
@@ -73,10 +101,20 @@ class CustomerController extends Controller
     // Add this in CustomerController
     public function getCustomerLedger($id)
     {
-        $ledger = CustomerLedger::where('customer_id', $id)->latest()->first();
+        $customer = Customer::find($id);
+        if (!$customer) {
+            return response()->json(['error' => 'Customer not found', 'closing_balance' => 0], 404);
+        }
+
+        $balanceService = app(\App\Services\BalanceService::class);
+        $closingBalance = $balanceService->getCustomerBalance((int) $id);
 
         return response()->json([
-            'closing_balance' => $ledger->closing_balance,
+            'closing_balance' => $closingBalance,
+            'customer_name'   => $customer->customer_name,
+            'customer_code'   => $customer->customer_id ?? ('CUST-' . str_pad($customer->id, 4, '0', STR_PAD_LEFT)),
+            'phone'           => $customer->phone ?? '',
+            'credit_limit'    => (float) ($customer->balance_range ?? 0),
         ]);
     }
 
@@ -195,13 +233,28 @@ class CustomerController extends Controller
 
         $customer->update($data);
 
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Customer updated successfully.',
+                'customer' => $customer
+            ]);
+        }
+
         return redirect()->route('customers.index')->with('success', 'Customer updated successfully.');
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $customer = Customer::findOrFail($id);
         $customer->delete();
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Customer deleted successfully.'
+            ]);
+        }
 
         return redirect()->route('customers.index')->with('success', 'Customer deleted successfully.');
     }
@@ -260,88 +313,163 @@ class CustomerController extends Controller
     // customer payment start
 
     // View all customer payments
-    public function customer_payments()
+    public function customer_payments(Request $request)
     {
-        $payments = CustomerPayment::with('customer')->orderByDesc('id')->get();
-        $customers = Customer::all();
+        $query = CustomerPayment::with(['customer', 'user'])->orderByDesc('id');
 
-        return view('admin_panel.customers.customer_payments', compact('payments', 'customers'));
+        if ($request->filled('customer_id')) {
+            $query->where('customer_id', $request->customer_id);
+        }
+        if ($request->filled('payment_method')) {
+            $query->where('payment_method', $request->payment_method);
+        }
+        if ($request->filled('start_date')) {
+            $query->whereDate('payment_date', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            $query->whereDate('payment_date', '<=', $request->end_date);
+        }
+
+        $payments = $query->get();
+        $customers = Customer::orderBy('customer_name')->get();
+        $accounts = Account::all();
+        $balanceService = app(BalanceService::class);
+
+        // Attach live balance to each customer for snappy UI response
+        $totalReceivables = 0;
+        foreach ($customers as $c) {
+            $bal = $balanceService->getCustomerBalance((int) $c->id);
+            $c->live_balance = $bal;
+            if ($bal > 0) {
+                $totalReceivables += $bal;
+            }
+        }
+
+        $totalReceivedAmount = CustomerPayment::sum('amount');
+        $totalPaymentsCount = CustomerPayment::count();
+        $todayRecoveries = CustomerPayment::whereDate('payment_date', date('Y-m-d'))->sum('amount');
+
+        return view('admin_panel.customers.customer_payments', compact(
+            'payments',
+            'customers',
+            'accounts',
+            'totalReceivedAmount',
+            'totalPaymentsCount',
+            'todayRecoveries',
+            'totalReceivables'
+        ));
     }
 
     // Store a customer payment
     public function store_customer_payment(Request $request)
     {
         $request->validate([
-            'customer_id' => 'required|exists:customers,id',
-            'amount' => 'required|numeric|min:0',
+            'customer_id'     => 'required|exists:customers,id',
+            'amount'          => 'required|numeric|min:0.01',
             'adjustment_type' => 'required|in:plus,minus',
-            'payment_method' => 'nullable|string',
-            'payment_date' => 'required|date',
-            'note' => 'nullable|string',
+            'payment_method'  => 'nullable|string',
+            'account_id'      => 'nullable|exists:accounts,id',
+            'payment_date'    => 'required|date',
+            'note'            => 'nullable|string',
         ]);
 
         $userId = Auth::id();
+        $customer = Customer::findOrFail($request->customer_id);
+        $amount = (float) $request->amount;
+        $isMinus = ($request->adjustment_type === 'minus'); // minus = customer paid / reduces receivable
 
-        // Save the payment
-        CustomerPayment::create([
-            'customer_id' => $request->customer_id,
+        // 1. Save payment record
+        $payment = CustomerPayment::create([
+            'customer_id'      => $customer->id,
             'admin_or_user_id' => $userId,
-            'amount' => $request->amount,
-            'payment_method' => $request->payment_method,
-            'payment_date' => $request->payment_date,
-            'note' => $request->note,
+            'amount'           => $amount,
+            'payment_method'   => $request->payment_method ?? 'Cash in Hand',
+            'payment_date'     => $request->payment_date,
+            'note'             => $request->note,
         ]);
 
-        // Get latest ledger record to calculate new balance
-        $latestLedger = CustomerLedger::where('customer_id', $request->customer_id)->latest()->first();
+        // 2. Compute accurate previous and new balance
+        $balanceService = app(BalanceService::class);
+        $previousBalance = $balanceService->getCustomerBalance((int) $customer->id);
+        $newBalance = $isMinus
+            ? $previousBalance - $amount
+            : $previousBalance + $amount;
 
-        // Default to opening balance if no ledger exists, or 0
-        // If no ledger exists, we assume previous balance is opening balance of customer?
-        // But checking 'customers' table again is safer.
-        $previousBalance = 0;
-        if ($latestLedger) {
-            $previousBalance = $latestLedger->closing_balance;
-        } else {
-            $cust = Customer::find($request->customer_id);
-            $previousBalance = $cust->opening_balance ?? 0;
-        }
-
-        // Calculate new balance
-        $newBalance = $request->adjustment_type === 'plus'
-            ? $previousBalance + $request->amount
-            : $previousBalance - $request->amount;
-
-        // Create NEW ledger record (Preserve History)
+        // 3. Create NEW CustomerLedger entry (preserves full chronological history)
         CustomerLedger::create([
-            'customer_id' => $request->customer_id,
+            'customer_id'      => $customer->id,
             'admin_or_user_id' => $userId,
             'previous_balance' => $previousBalance,
-            'opening_balance' => 0, // This is not an "opening" entry, so 0 or null
-            'closing_balance' => $newBalance,
-            'description' => 'Payment: '.($request->note ?? $request->payment_method),
+            'opening_balance'  => 0,
+            'closing_balance'  => $newBalance,
+            'description'      => ($isMinus ? 'Recovery/Payment Received: ' : 'Debit Adjustment: ') . ($request->note ?: ($request->payment_method ?? 'Cash in Hand')),
         ]);
 
-        // Update customer reminder: If they made a payment, set next reminder to +7 days
-        $cust = Customer::find($request->customer_id);
-        if ($cust) {
-            $updateData = [
-                'reminder_snoozed_at' => null // clear snooze
-            ];
+        // 4. Post to Double-Entry General Ledger via VoucherService if available
+        try {
+            $balanceService = app(BalanceService::class);
+            $arId = $balanceService->getAccountsReceivableId();
+            $cashAccountId = $request->account_id ?: $balanceService->getCashAccountId();
 
-            if ($newBalance > 0) {
-                // Only auto-reschedule if they DON'T use a fixed weekly day
-                if (!$cust->reminder_day) {
-                    $updateData['payment_reminder_date'] = date('Y-m-d', strtotime('+7 days'));
-                }
+            if ($isMinus) {
+                // Cash Dr, AR Cr
+                $lines = [
+                    [
+                        'account_id' => $cashAccountId,
+                        'debit'      => $amount,
+                        'credit'     => 0,
+                        'narration'  => "Cash/Bank received from {$customer->customer_name} (" . ($request->payment_method ?? 'Cash') . ")",
+                    ],
+                    [
+                        'account_id' => $arId,
+                        'debit'      => 0,
+                        'credit'     => $amount,
+                        'narration'  => $request->note ?: "Payment received from customer: {$customer->customer_name}",
+                    ]
+                ];
             } else {
-                // Clear dynamic date if balance settled
-                $updateData['payment_reminder_date'] = null;
+                // Debit adjustment -> AR Dr, Cash Cr
+                $lines = [
+                    [
+                        'account_id' => $arId,
+                        'debit'      => $amount,
+                        'credit'     => 0,
+                        'narration'  => $request->note ?: "Debit charge to customer: {$customer->customer_name}",
+                    ],
+                    [
+                        'account_id' => $cashAccountId,
+                        'debit'      => 0,
+                        'credit'     => $amount,
+                        'narration'  => "Adjustment against {$customer->customer_name}",
+                    ]
+                ];
             }
 
-            $cust->update($updateData);
+            app(VoucherService::class)->createVoucher([
+                'voucher_type' => 'receipt',
+                'date'         => $request->payment_date,
+                'status'       => VoucherMaster::STATUS_POSTED,
+                'party_type'   => Customer::class,
+                'party_id'     => $customer->id,
+                'remarks'      => $request->note ?: ("Customer Payment: {$customer->customer_name} [Receipt #{$payment->id}]"),
+            ], $lines, $userId);
+
+        } catch (\Exception $e) {
+            \Log::warning('Customer Payment Voucher sync notice: ' . $e->getMessage());
         }
 
-        return back()->with('success', 'Payment adjusted and ledger updated.');
+        // 5. Update customer reminder
+        $updateData = ['reminder_snoozed_at' => null];
+        if ($newBalance > 0) {
+            if (!$customer->reminder_day) {
+                $updateData['payment_reminder_date'] = date('Y-m-d', strtotime('+7 days'));
+            }
+        } else {
+            $updateData['payment_reminder_date'] = null;
+        }
+        $customer->update($updateData);
+
+        return redirect()->route('customer.payments')->with('success', 'Customer payment of Rs. ' . number_format($amount, 2) . ' recorded successfully.');
     }
 
     public function snoozeReminder($id)
@@ -402,16 +530,20 @@ class CustomerController extends Controller
         $payment = CustomerPayment::findOrFail($id);
 
         $customerId = $payment->customer_id;
-        $amount = $payment->amount;
+        $amount = (float) $payment->amount;
 
-        // Latest ledger record for that customer
-        $ledger = CustomerLedger::where('customer_id', $customerId)
-            ->orderBy('id', 'desc')
-            ->first();
-        if ($ledger) {
-            $ledger->closing_balance += $amount;
-            $ledger->save();
-        }
+        $balanceService = app(BalanceService::class);
+        $previousBalance = $balanceService->getCustomerBalance((int) $customerId);
+        $newBalance = $previousBalance + $amount; // Reversing payment increases customer receivable
+
+        CustomerLedger::create([
+            'customer_id'      => $customerId,
+            'admin_or_user_id' => Auth::id(),
+            'previous_balance' => $previousBalance,
+            'opening_balance'  => 0,
+            'closing_balance'  => $newBalance,
+            'description'      => 'Reversal: Payment #' . $payment->id . ' deleted (Rs. ' . number_format($amount, 2) . ')',
+        ]);
 
         // Delete the payment entry
         $payment->delete();
