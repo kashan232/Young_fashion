@@ -843,13 +843,15 @@
                                                 </ul>
                                             </div>
                                         @endcanany
-                                        <!-- Purchase & Inventory -->
+                                        <!-- Vendor & purchase -->
                                         @canany(['vendors.view', 'purchases.view', 'purchase_pos.create'])
                                             <div class="col-group col-md-3">
-                                                <p class="category-heading">Purchase & Inventory</p>
+                                                <p class="category-heading">Vendor & purchase</p>
                                                 <ul class="submenu-item">
                                                     @can('vendors.view')
                                                         <li><a href="{{ url('vendor') }}"><i class="fas fa-truck"></i> Vendor</a>
+                                                        </li>
+                                                        <li><a href="{{ route('vendor_categories.index') }}"><i class="fas fa-tags"></i> Vendor Category</a>
                                                         </li>
                                                     @endcan
                                                     @can('purchases.view')

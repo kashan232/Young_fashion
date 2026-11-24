@@ -8,18 +8,20 @@
 
     <style id="dynamicPrintStyle">
         @page {
-            size: 50mm 30mm;
+            size: 100mm 25mm;
             margin: 0mm;
         }
     </style>
 
     <style>
         :root {
-            --label-width-mm: 50;
-            --label-height-mm: 30;
-            --name-font-size: 13;
-            --price-font-size: 11;
-            --offer-font-size: 15;
+            --label-width-mm: 32;
+            --label-height-mm: 25;
+            --row-width-mm: 100;
+            --col-gap-mm: 2;
+            --name-font-size: 12;
+            --price-font-size: 10;
+            --offer-font-size: 13;
             --preview-zoom: 1.35;
         }
 
@@ -99,10 +101,6 @@
             align-items: center;
             gap: 10px;
             flex-wrap: wrap;
-            background: #1e293b;
-            padding: 5px 12px;
-            border-radius: 8px;
-            border: 1px solid #334155;
         }
         .control-item {
             display: flex;
@@ -114,37 +112,24 @@
             align-items: center;
             justify-content: space-between;
             font-size: 11px;
+            color: #94a3b8;
             font-weight: 600;
-            color: #cbd5e1;
             gap: 6px;
         }
         .control-val {
             color: #38bdf8;
-            font-weight: 700;
             font-family: monospace;
             font-size: 11px;
-            background: #0f172a;
-            padding: 1px 5px;
-            border-radius: 4px;
-            border: 1px solid #334155;
+            font-weight: bold;
         }
-        .preset-select, .copies-input {
-            background: #0f172a;
-            color: #f8fafc;
-            border: 1px solid #334155;
-            border-radius: 5px;
-            padding: 4px 8px;
-            font-size: 12px;
-            font-weight: 600;
-            outline: none;
-        }
-        .copies-input {
-            width: 62px;
-            text-align: center;
+        .control-input-wrap {
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
         .control-input-wrap input[type="range"] {
             -webkit-appearance: none;
-            width: 78px;
+            width: 72px;
             height: 4px;
             background: #475569;
             border-radius: 4px;
@@ -158,67 +143,110 @@
             border-radius: 50%;
             background: #38bdf8;
             cursor: pointer;
+            box-shadow: 0 0 5px rgba(56, 189, 248, 0.6);
+        }
+        .preset-select {
+            background: #1e293b;
+            color: #f8fafc;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            padding: 5px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+        }
+        .preset-select:focus {
+            border-color: #38bdf8;
+        }
+        .copies-input {
+            width: 52px;
+            background: #1e293b;
+            color: #38bdf8;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            padding: 4px 6px;
+            font-size: 12px;
+            font-weight: 700;
+            text-align: center;
+            outline: none;
+        }
+        .copies-input:focus {
+            border-color: #38bdf8;
         }
         .btn-reset {
             background: transparent;
             color: #94a3b8;
             border: 1px solid #475569;
-            border-radius: 5px;
-            padding: 5px 9px;
-            font-size: 11px;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 11.5px;
             font-weight: 600;
             cursor: pointer;
+            transition: all 0.2s;
         }
         .btn-reset:hover {
-            background: #e2e8f0;
-            color: #0f172a;
+            background: #334155;
+            color: #ffffff;
         }
         .btn-print-all {
-            padding: 7px 16px;
-            background: #d97706;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            font-size: 12.5px;
-            font-weight: 700;
-            cursor: pointer;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            box-shadow: 0 2px 6px rgba(217, 119, 6, 0.35);
+            background: #2563eb;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+            transition: background 0.15s ease;
         }
-        .btn-print-all:hover { background: #b45309; }
+        .btn-print-all:hover {
+            background: #1d4ed8;
+        }
 
-        /* ── Preview Grid ── */
+        /* ── Screen Preview Container ── */
         .page-container {
-            max-width: 1400px;
-            margin: 28px auto;
-            padding: 0 20px;
+            max-width: 1600px;
+            margin: 20px auto;
+            padding: 0 16px;
         }
         .grid {
             display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
+            flex-direction: column;
+            gap: 16px;
+            align-items: center;
             justify-content: center;
-            align-items: flex-start;
+        }
+        .tag-row {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: calc(var(--col-gap-mm, 2) * 1mm * var(--preview-zoom, 1.35));
         }
 
         /* ── Shelf Tag Card ── */
         .shelf-tag {
-            width: calc(var(--label-width-mm, 50) * 1mm * var(--preview-zoom, 1.35));
-            height: calc(var(--label-height-mm, 30) * 1mm * var(--preview-zoom, 1.35));
-            padding: calc(1.8mm * var(--preview-zoom, 1.35)) calc(2.4mm * var(--preview-zoom, 1.35));
+            width: calc(var(--label-width-mm, 32) * 1mm * var(--preview-zoom, 1.35));
+            height: calc(var(--label-height-mm, 25) * 1mm * var(--preview-zoom, 1.35));
+            padding: calc(1.5mm * var(--preview-zoom, 1.35)) calc(2mm * var(--preview-zoom, 1.35));
             background: #ffffff;
             border: 1.5px solid #1e293b;
-            border-radius: calc(2mm * var(--preview-zoom, 1.35));
+            border-radius: calc(1.5mm * var(--preview-zoom, 1.35));
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
-            gap: calc(1mm * var(--preview-zoom, 1.35));
+            gap: calc(0.8mm * var(--preview-zoom, 1.35));
             box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
             overflow: hidden;
+            flex-shrink: 0;
+            box-sizing: border-box;
         }
 
         .tag-rack {
@@ -229,11 +257,11 @@
             color: #166534;
             border: 1px solid #86efac;
             border-radius: 999px;
-            padding: calc(0.4mm * var(--preview-zoom, 1.35)) calc(2.2mm * var(--preview-zoom, 1.35));
-            font-size: calc(8.5px * var(--preview-zoom, 1.35));
+            padding: calc(0.3mm * var(--preview-zoom, 1.35)) calc(1.8mm * var(--preview-zoom, 1.35));
+            font-size: calc(8px * var(--preview-zoom, 1.35));
             font-weight: 800;
             letter-spacing: 0.2px;
-            line-height: 1.15;
+            line-height: 1.1;
             max-width: 100%;
             white-space: nowrap;
             overflow: hidden;
@@ -241,10 +269,10 @@
         }
 
         .tag-product-name {
-            font-size: calc(var(--name-font-size, 13) * 1px * var(--preview-zoom, 1.35));
+            font-size: calc(var(--name-font-size, 12) * 1px * var(--preview-zoom, 1.35));
             font-weight: 800;
             color: #0f172a;
-            line-height: 1.18;
+            line-height: 1.15;
             width: 100%;
             display: -webkit-box;
             -webkit-line-clamp: 2;
@@ -257,9 +285,9 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: calc(1.4mm * var(--preview-zoom, 1.35));
+            gap: calc(1mm * var(--preview-zoom, 1.35));
             flex-wrap: wrap;
-            font-size: calc(var(--price-font-size, 11) * 1px * var(--preview-zoom, 1.35));
+            font-size: calc(var(--price-font-size, 10) * 1px * var(--preview-zoom, 1.35));
             font-weight: 700;
             color: #334155;
             line-height: 1.1;
@@ -272,15 +300,15 @@
         .disc-pill {
             background: #dc2626;
             color: #ffffff;
-            padding: calc(0.3mm * var(--preview-zoom, 1.35)) calc(1.4mm * var(--preview-zoom, 1.35));
-            border-radius: 4px;
-            font-size: calc((var(--price-font-size, 11) - 1) * 1px * var(--preview-zoom, 1.35));
+            padding: calc(0.2mm * var(--preview-zoom, 1.35)) calc(1.2mm * var(--preview-zoom, 1.35));
+            border-radius: 3px;
+            font-size: calc((var(--price-font-size, 10) - 1) * 1px * var(--preview-zoom, 1.35));
             font-weight: 800;
-            line-height: 1.15;
+            line-height: 1.1;
         }
 
         .tag-offer-row {
-            font-size: calc(var(--offer-font-size, 15) * 1px * var(--preview-zoom, 1.35));
+            font-size: calc(var(--offer-font-size, 13) * 1px * var(--preview-zoom, 1.35));
             font-weight: 900;
             color: #15803d;
             line-height: 1.1;
@@ -288,35 +316,91 @@
         }
 
         @media print {
-            body {
-                background: #ffffff;
-                margin: 0;
-                padding: 0;
+            html, body {
+                background: #ffffff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
             }
             .no-print {
                 display: none !important;
             }
             .page-container {
-                margin: 0;
-                padding: 0;
-                max-width: none;
+                margin: 0 !important;
+                padding: 0 !important;
+                max-width: none !important;
+                width: 100% !important;
             }
             .grid {
-                display: block;
-                gap: 0;
+                display: block !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+            }
+            .tag-row {
+                display: flex !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                justify-content: flex-start !important;
+                gap: calc(var(--col-gap-mm, 2) * 1mm) !important;
+                width: calc(var(--row-width-mm, 100) * 1mm) !important;
+                height: calc(var(--label-height-mm, 25) * 1mm) !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                page-break-after: always !important;
+                break-after: page !important;
+                box-sizing: border-box !important;
+            }
+            .tag-row:last-child {
+                page-break-after: auto !important;
+                break-after: auto !important;
             }
             .shelf-tag {
-                --preview-zoom: 1;
-                box-shadow: none;
-                border: 1px solid #000000;
-                border-radius: 1.5mm;
-                margin: 0;
-                page-break-after: always;
-                break-after: page;
+                width: calc(var(--label-width-mm, 32) * 1mm) !important;
+                height: calc(var(--label-height-mm, 25) * 1mm) !important;
+                border: 1px solid #000000 !important;
+                border-radius: 1mm !important;
+                box-shadow: none !important;
+                padding: 1.2mm 1.5mm !important;
+                margin: 0 !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                page-break-after: avoid !important;
+                break-after: avoid !important;
+                flex-shrink: 0 !important;
+                box-sizing: border-box !important;
             }
-            .shelf-tag:last-child {
-                page-break-after: auto;
-                break-after: auto;
+            .tag-rack {
+                font-size: 7.5px !important;
+                padding: 0.2mm 1.5mm !important;
+                border: 0.5px solid #166534 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .tag-product-name {
+                font-size: calc(var(--name-font-size, 12) * 1px) !important;
+                color: #000000 !important;
+            }
+            .tag-price-row {
+                font-size: calc(var(--price-font-size, 10) * 1px) !important;
+                color: #000000 !important;
+            }
+            .price-strike {
+                color: #dc2626 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .disc-pill {
+                background: #000000 !important;
+                color: #ffffff !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .tag-offer-row {
+                font-size: calc(var(--offer-font-size, 13) * 1px) !important;
+                color: #000000 !important;
             }
         }
     </style>
@@ -359,45 +443,68 @@
             <div class="control-item">
                 <div class="control-header"><span>Tag Preset</span></div>
                 <select id="presetSelect" class="preset-select" onchange="applyPreset(this.value)">
-                    <option value="50x30">50 × 30 mm (Shelf Default)</option>
-                    <option value="60x40">60 × 40 mm (Large Shelf)</option>
-                    <option value="50x38">50 × 38 mm</option>
-                    <option value="38x38">38 × 38 mm</option>
-                    <option value="50x25">50 × 25 mm</option>
+                    <option value="32x25_3col">3-Up 32 × 25 mm (3 Columns Roll)</option>
+                    <option value="30x20_3col">3-Up 30 × 20 mm (3 Columns Roll)</option>
+                    <option value="35x25_3col">3-Up 35 × 25 mm (3 Columns Roll)</option>
+                    <option value="40x25_2col">2-Up 40 × 25 mm (2 Columns Roll)</option>
+                    <option value="50x30_2col">2-Up 50 × 30 mm (2 Columns Roll)</option>
+                    <option value="50x30">50 × 30 mm (Single Column)</option>
+                    <option value="60x40">60 × 40 mm (Single Column)</option>
+                    <option value="38x38">38 × 38 mm (Single Column)</option>
+                    <option value="50x25">50 × 25 mm (Single Column)</option>
+                </select>
+            </div>
+
+            <!-- Columns Selector -->
+            <div class="control-item">
+                <div class="control-header"><span>Columns:</span><span class="control-val" id="valCols">3</span></div>
+                <select id="columnsSelect" class="preset-select" onchange="setColumns(this.value)" title="Labels per row on the roll">
+                    <option value="1">1 Col (Single)</option>
+                    <option value="2">2 Cols (2-Up)</option>
+                    <option value="3" selected>3 Cols (3-Up Roll)</option>
+                    <option value="4">4 Cols (4-Up)</option>
                 </select>
             </div>
 
             <div class="control-item">
-                <div class="control-header"><span>Width</span><span class="control-val" id="valWidth">50mm</span></div>
+                <div class="control-header"><span>Width</span><span class="control-val" id="valWidth">32mm</span></div>
                 <div class="control-input-wrap">
-                    <input type="range" id="lblWidth" min="30" max="90" value="50" oninput="setWidth(this.value)">
+                    <input type="range" id="lblWidth" min="20" max="90" value="32" oninput="setWidth(this.value)">
                 </div>
             </div>
 
             <div class="control-item">
-                <div class="control-header"><span>Height</span><span class="control-val" id="valHeight">30mm</span></div>
+                <div class="control-header"><span>Height</span><span class="control-val" id="valHeight">25mm</span></div>
                 <div class="control-input-wrap">
-                    <input type="range" id="lblHeight" min="20" max="60" value="30" oninput="setHeight(this.value)">
+                    <input type="range" id="lblHeight" min="15" max="60" value="25" oninput="setHeight(this.value)">
+                </div>
+            </div>
+
+            <!-- Horizontal Gap between labels -->
+            <div class="control-item">
+                <div class="control-header"><span>Gap</span><span class="control-val" id="valGap">2mm</span></div>
+                <div class="control-input-wrap">
+                    <input type="range" id="colGap" min="0" max="6" value="2" oninput="setColGap(this.value)">
                 </div>
             </div>
 
             <div class="control-item">
-                <div class="control-header"><span>Name</span><span class="control-val" id="valNameFont">13px</span></div>
+                <div class="control-header"><span>Name</span><span class="control-val" id="valNameFont">12px</span></div>
                 <div class="control-input-wrap">
-                    <input type="range" id="nameFont" min="9" max="20" value="13" oninput="setNameFont(this.value)">
+                    <input type="range" id="nameFont" min="8" max="24" value="12" oninput="setNameFont(this.value)">
                 </div>
             </div>
 
             <div class="control-item">
-                <div class="control-header"><span>Offer</span><span class="control-val" id="valOfferFont">15px</span></div>
+                <div class="control-header"><span>Offer</span><span class="control-val" id="valOfferFont">13px</span></div>
                 <div class="control-input-wrap">
-                    <input type="range" id="offerFont" min="10" max="24" value="15" oninput="setOfferFont(this.value)">
+                    <input type="range" id="offerFont" min="9" max="26" value="13" oninput="setOfferFont(this.value)">
                 </div>
             </div>
 
             <div class="control-item">
                 <div class="control-header"><span>Copies</span></div>
-                <input type="number" id="copiesInput" class="copies-input" min="1" max="50" value="1" onchange="renderCopies(this.value)">
+                <input type="number" id="copiesInput" class="copies-input" min="1" max="200" value="3" onchange="renderCopies(this.value)">
             </div>
 
             <button type="button" class="btn-reset" onclick="resetDefaults()">
@@ -438,31 +545,76 @@
 </template>
 
 <script>
-    const STORAGE_KEY = 'yf_shelf_tag_settings_v1';
-    const DEFAULTS = { widthMm: 50, heightMm: 30, nameFont: 13, offerFont: 15, preset: '50x30', copies: 1 };
+    const STORAGE_KEY = 'yf_shelf_tag_settings_v3';
+    const DEFAULTS = {
+        widthMm: 32,
+        heightMm: 25,
+        cols: 3,
+        gap: 2,
+        nameFont: 12,
+        offerFont: 13,
+        preset: '32x25_3col',
+        copies: 3
+    };
+
     const PRESETS = {
-        '50x30': { widthMm: 50, heightMm: 30, nameFont: 13, offerFont: 15 },
-        '60x40': { widthMm: 60, heightMm: 40, nameFont: 15, offerFont: 18 },
-        '50x38': { widthMm: 50, heightMm: 38, nameFont: 13, offerFont: 16 },
-        '38x38': { widthMm: 38, heightMm: 38, nameFont: 11, offerFont: 13 },
-        '50x25': { widthMm: 50, heightMm: 25, nameFont: 11, offerFont: 13 }
+        '32x25_3col': { widthMm: 32, heightMm: 25, cols: 3, gap: 2, nameFont: 12, offerFont: 13 },
+        '30x20_3col': { widthMm: 30, heightMm: 20, cols: 3, gap: 2, nameFont: 10, offerFont: 11 },
+        '35x25_3col': { widthMm: 35, heightMm: 25, cols: 3, gap: 2, nameFont: 13, offerFont: 14 },
+        '40x25_2col': { widthMm: 40, heightMm: 25, cols: 2, gap: 2, nameFont: 13, offerFont: 14 },
+        '50x30_2col': { widthMm: 50, heightMm: 30, cols: 2, gap: 2, nameFont: 13, offerFont: 15 },
+        '50x30':      { widthMm: 50, heightMm: 30, cols: 1, gap: 0, nameFont: 13, offerFont: 15 },
+        '60x40':      { widthMm: 60, heightMm: 40, cols: 1, gap: 0, nameFont: 15, offerFont: 18 },
+        '38x38':      { widthMm: 38, heightMm: 38, cols: 1, gap: 0, nameFont: 11, offerFont: 13 },
+        '50x25':      { widthMm: 50, heightMm: 25, cols: 1, gap: 0, nameFont: 11, offerFont: 13 }
     };
 
     function updatePrintPageSize() {
-        const w = document.getElementById('lblWidth').value;
-        const h = document.getElementById('lblHeight').value;
-        document.getElementById('dynamicPrintStyle').textContent = `@page { size: ${w}mm ${h}mm; margin: 0mm; }`;
+        const w = parseFloat(document.getElementById('lblWidth').value) || 32;
+        const h = parseFloat(document.getElementById('lblHeight').value) || 25;
+        const cols = parseInt(document.getElementById('columnsSelect').value, 10) || 1;
+        const gap = parseFloat(document.getElementById('colGap')?.value || 2);
+
+        const totalWidth = cols === 1 ? w : (w * cols + gap * (cols - 1));
+
+        document.documentElement.style.setProperty('--row-width-mm', totalWidth);
+        document.documentElement.style.setProperty('--col-gap-mm', gap);
+
+        document.getElementById('dynamicPrintStyle').textContent = `
+            @page {
+                size: ${totalWidth}mm ${h}mm;
+                margin: 0mm;
+            }
+        `;
     }
 
     function saveSettings() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
             widthMm: +document.getElementById('lblWidth').value,
             heightMm: +document.getElementById('lblHeight').value,
+            cols: +document.getElementById('columnsSelect').value || 1,
+            gap: +document.getElementById('colGap').value || 2,
             nameFont: +document.getElementById('nameFont').value,
             offerFont: +document.getElementById('offerFont').value,
             preset: document.getElementById('presetSelect').value,
             copies: +document.getElementById('copiesInput').value || 1
         }));
+    }
+
+    function setColumns(val, persist = true) {
+        val = parseInt(val, 10) || 1;
+        document.getElementById('valCols').textContent = val;
+        renderCopies(document.getElementById('copiesInput').value, false);
+        updatePrintPageSize();
+        if (persist) saveSettings();
+    }
+
+    function setColGap(val, persist = true) {
+        val = parseFloat(val) || 0;
+        document.documentElement.style.setProperty('--col-gap-mm', val);
+        document.getElementById('valGap').textContent = val + 'mm';
+        updatePrintPageSize();
+        if (persist) saveSettings();
     }
 
     function setWidth(val, persist = true) {
@@ -487,7 +639,7 @@
 
     function setOfferFont(val, persist = true) {
         document.documentElement.style.setProperty('--offer-font-size', val);
-        document.documentElement.style.setProperty('--price-font-size', Math.max(9, Math.round(val * 0.75)));
+        document.documentElement.style.setProperty('--price-font-size', Math.max(8, Math.round(val * 0.75)));
         document.getElementById('valOfferFont').textContent = val + 'px';
         if (persist) saveSettings();
     }
@@ -497,25 +649,43 @@
         if (!p) return;
         document.getElementById('lblWidth').value = p.widthMm;
         document.getElementById('lblHeight').value = p.heightMm;
+        document.getElementById('columnsSelect').value = p.cols;
+        document.getElementById('colGap').value = p.gap;
+        document.getElementById('valCols').textContent = p.cols;
+        document.getElementById('valGap').textContent = p.gap + 'mm';
         document.getElementById('nameFont').value = p.nameFont;
         document.getElementById('offerFont').value = p.offerFont;
+
         setWidth(p.widthMm, false);
         setHeight(p.heightMm, false);
         setNameFont(p.nameFont, false);
         setOfferFont(p.offerFont, false);
+        renderCopies(document.getElementById('copiesInput').value, false);
+        updatePrintPageSize();
         saveSettings();
     }
 
-    function renderCopies(count) {
-        const n = Math.max(1, Math.min(50, parseInt(count, 10) || 1));
+    function renderCopies(count, persist = true) {
+        const n = Math.max(1, Math.min(200, parseInt(count, 10) || 1));
         document.getElementById('copiesInput').value = n;
         const grid = document.getElementById('tagGrid');
         const tpl = document.getElementById('shelfTagTemplate');
         grid.innerHTML = '';
+
+        const cols = parseInt(document.getElementById('columnsSelect')?.value, 10) || 1;
+
+        let currentRow = null;
         for (let i = 0; i < n; i++) {
-            grid.appendChild(tpl.content.cloneNode(true));
+            if (i % cols === 0) {
+                currentRow = document.createElement('div');
+                currentRow.className = 'tag-row';
+                grid.appendChild(currentRow);
+            }
+            currentRow.appendChild(tpl.content.cloneNode(true));
         }
-        saveSettings();
+
+        updatePrintPageSize();
+        if (persist) saveSettings();
     }
 
     function resetDefaults() {
@@ -532,13 +702,19 @@
         document.getElementById('presetSelect').value = s.preset || DEFAULTS.preset;
         document.getElementById('lblWidth').value = s.widthMm;
         document.getElementById('lblHeight').value = s.heightMm;
+        document.getElementById('columnsSelect').value = s.cols || DEFAULTS.cols;
+        document.getElementById('valCols').textContent = s.cols || DEFAULTS.cols;
+        document.getElementById('colGap').value = s.gap !== undefined ? s.gap : DEFAULTS.gap;
+        document.getElementById('valGap').textContent = (s.gap !== undefined ? s.gap : DEFAULTS.gap) + 'mm';
         document.getElementById('nameFont').value = s.nameFont;
         document.getElementById('offerFont').value = s.offerFont;
+
         setWidth(s.widthMm, false);
         setHeight(s.heightMm, false);
         setNameFont(s.nameFont, false);
         setOfferFont(s.offerFont, false);
-        renderCopies(s.copies || 1);
+        renderCopies(s.copies || DEFAULTS.copies, false);
+        updatePrintPageSize();
     })();
 </script>
 </body>

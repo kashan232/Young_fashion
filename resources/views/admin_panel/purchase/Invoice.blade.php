@@ -227,6 +227,12 @@
             </div>
 
             <div class="d-flex align-items-center gap-2 flex-wrap">
+                @if(!empty($purchase->vendor_inv_photo))
+                <a href="{{ asset($purchase->vendor_inv_photo) }}" target="_blank" class="btn btn-outline-primary btn-sm px-3" title="View attached vendor bill photo">
+                    <i class="fas fa-image text-primary me-1"></i> Vendor Bill Photo
+                </a>
+                @endif
+
                 <!-- 1. Print Half Page (A5 Landscape) -->
                 <button type="button" onclick="printSingleCopy()" class="btn btn-primary btn-sm px-3 shadow-sm">
                     <i class="fas fa-print me-1"></i> Print Half-Page (A5 Landscape)

@@ -30,6 +30,7 @@ use App\Http\Controllers\ColorController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VendorController;
+use App\Http\Controllers\VendorCategoryController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\WarehouseController;
 use App\Http\Controllers\WarehouseStockController;
@@ -235,6 +236,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/vendor/{vendor}/balance', [VendorController::class, 'getVendorBalance'])->name('vendor.balance');
     Route::get('/vendor/{vendor}/ledger-json', [VendorController::class, 'getVendorLedgerJson'])->name('vendor.ledger.json');
 
+    // Vendor Category Routes
+    Route::get('/vendor-categories', [VendorCategoryController::class, 'index'])->middleware('permission:vendors.view')->name('vendor_categories.index');
+    Route::post('/vendor-categories/store', [VendorCategoryController::class, 'store'])->middleware('permission:vendors.create|vendors.edit')->name('vendor_categories.store');
+    Route::get('/vendor-categories/delete/{id}', [VendorCategoryController::class, 'destroy'])->middleware('permission:vendors.delete')->name('vendor_categories.delete');
+
     // Warehouse Routes
     // ///
     Route::get('/warehouses/get/', [WarehouseController::class, 'getWarehouses'])->name('warehouses.get');
@@ -287,6 +293,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/purchase/quick', [PurchaseController::class, 'quickCreate'])->middleware('permission:purchases.create')->name('purchase.quick_create');
     Route::post('/purchase/quick', [PurchaseController::class, 'quickStore'])->middleware('permission:purchases.create')->name('purchase.quick_store');
     Route::get('/purchase/quick-search-products', [PurchaseController::class, 'quickSearchProducts'])->middleware('permission:purchases.create')->name('purchase.quick_search_products');
+    Route::get('/purchase/search-master-products', [PurchaseController::class, 'searchMasterProducts'])->middleware('permission:purchases.create')->name('purchase.search_master_products');
+    Route::get('/purchase/product-variants/{id}', [PurchaseController::class, 'getProductVariants'])->middleware('permission:purchases.create')->name('purchase.product_variants');
     
     // Purchase POS Routes
     Route::get('/purchase-pos', [App\Http\Controllers\PurchasePOSController::class, 'index'])->middleware('permission:purchase_pos.create')->name('purchase-pos.index');

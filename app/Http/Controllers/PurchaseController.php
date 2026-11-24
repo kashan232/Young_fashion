@@ -157,8 +157,225 @@ class PurchaseController extends Controller
             ? 'PUR-'.str_pad(((int) preg_replace('/[^0-9]/', '', $lastInvoice)) + 1, 3, '0', STR_PAD_LEFT)
             : 'PUR-001';
 
+        // Categories & Brands for Quick Add & Variant generation
+        $categories = \App\Models\Category::orderBy('name')->get();
+        $brands = \App\Models\Brand::orderBy('name')->get();
+
         // Return new V2 view
-        return view('admin_panel.purchase.add_purchase_v2', compact('Vendor', 'Warehouse', 'Purchase', 'accounts', 'nextInvoice'));
+        return view('admin_panel.purchase.add_purchase_v2', compact('Vendor', 'Warehouse', 'Purchase', 'accounts', 'nextInvoice', 'categories', 'brands'));
+    }
+
+    public function searchMasterProducts(Request $request)
+    {
+        $term = trim($request->get('q', ''));
+        if (empty($term)) {
+            return response()->json([]);
+        }
+
+        $products = Product::with(['category_relation', 'brand', 'unit'])
+            ->where('is_active', true)
+            ->where(function ($q) use ($term) {
+                $q->where('item_name', 'like', "%{$term}%")
+                  ->orWhere('item_code', 'like', "%{$term}%")
+                  ->orWhere('barcode_path', 'like', "%{$term}%")
+                  ->orWhere('color', 'like', "%{$term}%");
+            })
+            ->limit(25)
+            ->get();
+
+        $results = $products->map(function ($p) {
+            $variants = [];
+            if ($p->color) {
+                try {
+                    $parsed = is_string($p->color) ? json_decode($p->color, true) : $p->color;
+                    if (is_array($parsed)) {
+                        $variants = $parsed;
+                    }
+                } catch (\Exception $e) {}
+            }
+
+            return [
+                'id' => $p->id,
+                'item_name' => $p->item_name,
+                'item_code' => $p->item_code,
+                'barcode_path' => $p->barcode_path,
+                'category_name' => $p->category_relation->name ?? '',
+                'brand_name' => $p->brand->name ?? '',
+                'unit_name' => $p->unit->name ?? 'Pcs',
+                'purchase_price' => (float) ($p->purchase_price_per_piece ?? 0),
+                'sale_price' => (float) ($p->sale_price_per_piece ?? 0),
+                'variants_count' => count($variants),
+                'variants' => $variants,
+            ];
+        });
+
+        return response()->json($results);
+    }
+
+    public function getProductVariants($id)
+    {
+        $product = Product::with(['category_relation', 'brand', 'unit'])->findOrFail($id);
+
+        $variants = [];
+        if ($product->color) {
+            try {
+                $parsed = is_string($product->color) ? json_decode($product->color, true) : $product->color;
+                if (is_array($parsed)) {
+                    $variants = $parsed;
+                }
+            } catch (\Exception $e) {}
+        }
+
+        // Calculate variant stock
+        $purchasesList = DB::table('purchase_items as pi')
+            ->join('purchases as pur', 'pur.id', '=', 'pi.purchase_id')
+            ->where('pi.product_id', $product->id)
+            ->whereIn('pur.status_purchase', ['approved', 'Returned', 'Partial'])
+            ->select('pi.qty as total_pieces', 'pi.color')
+            ->get();
+
+        $purchaseReturnsList = DB::table('purchase_return_items as pri')
+            ->where('pri.product_id', $product->id)
+            ->select('pri.qty', 'pri.color')
+            ->get();
+
+        $salesList = DB::table('sale_items')
+            ->where('product_id', $product->id)
+            ->select('total_pieces', 'color')
+            ->get();
+
+        $webSalesList = DB::table('ecommerce_order_items as eoi')
+            ->join('ecommerce_orders as eo', 'eo.id', '=', 'eoi.ecommerce_order_id')
+            ->where('eoi.product_id', $product->id)
+            ->where('eo.is_stock_deducted', 1)
+            ->select('eoi.quantity as total_pieces', 'eoi.color', 'eoi.size')
+            ->get();
+
+        $salesListArray = $salesList->toArray();
+        foreach ($webSalesList as $wItem) {
+            $salesListArray[] = (object) [
+                'total_pieces' => $wItem->total_pieces,
+                'color' => json_encode([
+                    'color' => $wItem->color ?: '-',
+                    'size' => $wItem->size ?: '-'
+                ])
+            ];
+        }
+        $salesList = collect($salesListArray);
+
+        $returnsList = DB::table('sale_return_items as sri')
+            ->where('sri.product_id', $product->id)
+            ->select('sri.qty', 'sri.color')
+            ->get();
+
+        $adjList = DB::table('stock_movements')
+            ->where('product_id', $product->id)
+            ->where('type', 'adjustment')
+            ->whereNotIn('ref_type', ['INIT'])
+            ->select('qty', 'note')
+            ->get();
+
+        foreach ($variants as &$v) {
+            $purchased = 0;
+            foreach ($purchasesList as $pItem) {
+                if ($this->matchVariantHelper($pItem->color, $v)) {
+                    $purchased += (float) $pItem->total_pieces;
+                }
+            }
+            $pReturned = 0;
+            foreach ($purchaseReturnsList as $prItem) {
+                if ($this->matchVariantHelper($prItem->color, $v)) {
+                    $pReturned += (float) $prItem->qty;
+                }
+            }
+            $sold = 0;
+            foreach ($salesList as $sItem) {
+                if ($this->matchVariantHelper($sItem->color, $v)) {
+                    $sold += (float) $sItem->total_pieces;
+                }
+            }
+            $returnedQty = 0;
+            foreach ($returnsList as $rItem) {
+                if ($this->matchVariantHelper($rItem->color, $v)) {
+                    $returnedQty += (float) $rItem->qty;
+                }
+            }
+            $adjustments = 0;
+            foreach ($adjList as $adjItem) {
+                if ($this->matchAdjustmentHelper($adjItem->note, $v)) {
+                    $adjustments += (float) $adjItem->qty;
+                }
+            }
+
+            $initial = (float) ($v['stock'] ?? 0);
+            $v['current_stock'] = max(0, $initial + $purchased - $pReturned - $sold + $returnedQty + $adjustments);
+            if (!isset($v['purch_price']) || (float)$v['purch_price'] <= 0) {
+                $v['purch_price'] = (float) ($product->purchase_price_per_piece ?? 0);
+            }
+            if (!isset($v['sale_price']) || (float)$v['sale_price'] <= 0) {
+                $v['sale_price'] = (float) ($product->sale_price_per_piece ?? 0);
+            }
+        }
+        unset($v);
+
+        return response()->json([
+            'product' => [
+                'id' => $product->id,
+                'item_name' => $product->item_name,
+                'item_code' => $product->item_code,
+                'category_name' => $product->category_relation->name ?? '',
+                'brand_name' => $product->brand->name ?? '',
+                'unit_name' => $product->unit->name ?? 'Pcs',
+                'purchase_price' => (float) ($product->purchase_price_per_piece ?? 0),
+                'sale_price' => (float) ($product->sale_price_per_piece ?? 0),
+            ],
+            'variants' => $variants
+        ]);
+    }
+
+    private function matchVariantHelper($itemColor, $variant)
+    {
+        if (empty($itemColor)) return false;
+        $decoded = base64_decode($itemColor, true);
+        $vData = ($decoded !== false) ? json_decode($decoded, true) : null;
+        if (empty($vData)) {
+            $vData = json_decode($itemColor, true);
+        }
+        if (!is_array($vData)) {
+            return strcasecmp(trim($itemColor), trim($variant['color'] ?? '')) === 0;
+        }
+
+        $vColor = strtolower(trim($variant['color'] ?? '-'));
+        $vSize = strtolower(trim($variant['size'] ?? '-'));
+
+        $itemColorVal = strtolower(trim($vData['color'] ?? ($vData['color_val'] ?? '-')));
+        $itemSizeVal = strtolower(trim($vData['size'] ?? ($vData['size_val'] ?? '-')));
+
+        $colorMatches = ($vColor === $itemColorVal) || ($vColor === '-') || ($itemColorVal === '-');
+        $sizeMatches = ($vSize === $itemSizeVal) || ($vSize === '-') || ($itemSizeVal === '-');
+
+        if ($vColor !== '-' && $itemColorVal !== '-') {
+            return $colorMatches && $sizeMatches;
+        }
+        return $sizeMatches;
+    }
+
+    private function matchAdjustmentHelper($note, $variant)
+    {
+        if (empty($note)) return false;
+        $size = trim($variant['size'] ?? '');
+        $color = trim($variant['color'] ?? '');
+        if ($size && $size !== '-') {
+            if (stripos($note, "Size: {$size}") === false && stripos($note, "Size:{$size}") === false) {
+                return false;
+            }
+        }
+        if ($color && $color !== '-') {
+            if (stripos($note, "Color: {$color}") === false && stripos($note, "Color:{$color}") === false) {
+                return false;
+            }
+        }
+        return true;
     }
     public function quickCreate()
     {
@@ -729,18 +946,19 @@ class PurchaseController extends Controller
                 'branch_id' => 'nullable|exists:branches,id',
                 'warehouse_id' => 'required|exists:warehouses,id',
                 'note' => 'nullable|string',
+                'vendor_inv_photo' => 'nullable|file|image|max:15360',
                 'discount' => 'nullable|numeric|min:0',
                 'extra_cost' => 'nullable|numeric|min:0',
-                'product_id' => 'array',
-                'product_id.*' => 'nullable|exists:products,id',
-                'qty' => 'array',
-                'qty.*' => 'nullable|required_with:product_id.*|numeric|min:0.01',
-                'price' => 'array',
-                'price.*' => 'nullable|required_with:product_id.*|numeric|min:0',
-                'price_per_carton' => 'array',
+                'product_id' => 'nullable|array',
+                'product_id.*' => 'nullable',
+                'qty' => 'nullable|array',
+                'qty.*' => 'nullable|numeric',
+                'price' => 'nullable|array',
+                'price.*' => 'nullable|numeric',
+                'price_per_carton' => 'nullable|array',
                 'price_per_carton.*' => 'nullable|numeric|min:0',
-                'unit' => 'array',
-                'unit.*' => 'nullable|required_with:product_id.*|string',
+                'unit' => 'nullable|array',
+                'unit.*' => 'nullable|string',
                 'item_discount' => 'nullable|array',
                 'item_discount.*' => 'nullable|numeric|min:0',
                 'mfg_date' => 'nullable|array',
@@ -757,8 +975,20 @@ class PurchaseController extends Controller
             throw $e;
         }
 
+        // Upload vendor invoice photo if provided
+        $vendorInvPhotoPath = null;
+        if ($request->hasFile('vendor_inv_photo')) {
+            $photoFile = $request->file('vendor_inv_photo');
+            if ($photoFile->isValid()) {
+                $ext = $photoFile->getClientOriginalExtension() ?: 'jpg';
+                $photoName = 'vendor_inv_' . time() . '_' . uniqid() . '.' . $ext;
+                $photoFile->move(public_path('uploads/purchases'), $photoName);
+                $vendorInvPhotoPath = 'uploads/purchases/' . $photoName;
+            }
+        }
+
         // Wrap in transaction... to allow returning $purchase outside
-        $purchase = DB::transaction(function () use ($validated, $request, $gatepass) {
+        $purchase = DB::transaction(function () use ($validated, $request, $gatepass, $vendorInvPhotoPath) {
 
             // invoice number
             $lastInvoice = Purchase::latest('id')->value('invoice_no');
@@ -766,7 +996,7 @@ class PurchaseController extends Controller
                 ? 'PUR-'.str_pad(((int) preg_replace('/[^0-9]/', '', $lastInvoice)) + 1, 3, '0', STR_PAD_LEFT)
                 : 'PUR-001';
 
-            $branchId = (int) ($validated['branch_id'] ?? 1);                 // ✅ use real branch
+            $branchId = (int) ($validated['branch_id'] ?? 1);
             $warehouseId = (int) $validated['warehouse_id'];
 
             // Status Logic
@@ -780,6 +1010,7 @@ class PurchaseController extends Controller
                 'purchase_date' => $validated['purchase_date'] ?? now(),
                 'invoice_no' => $validated['invoice_no'] ?? $nextInvoice,
                 'note' => $validated['note'] ?? null,
+                'vendor_inv_photo' => $vendorInvPhotoPath,
                 'subtotal' => 0,
                 'discount' => 0,
                 'extra_cost' => 0,
@@ -790,12 +1021,19 @@ class PurchaseController extends Controller
             ]);
 
             $subtotal = 0;
-            $pids = $validated['product_id'] ?? [];
-            $qtys = $validated['qty'] ?? [];
-            $prices = $validated['price'] ?? [];
-            $cartonPrices = $validated['price_per_carton'] ?? [];
-            $units = $validated['unit'] ?? [];
-            $itemDiscs = $validated['item_discount'] ?? [];
+            $pids = $request->product_id ?? [];
+            $qtys = $request->qty ?? [];
+            $prices = $request->price ?? [];
+            $cartonPrices = $request->price_per_carton ?? [];
+            $units = $request->unit ?? [];
+            $itemDiscs = $request->item_discount ?? [];
+
+            // Multi-product & Variant fields
+            $isNews = $request->is_new ?? [];
+            $newProductNames = $request->new_product_name ?? [];
+            $newCategoryIds = $request->new_category_id ?? [];
+            $newBrandIds = $request->new_brand_id ?? [];
+            $variantsJsons = $request->product_variants_json ?? [];
 
             // Snapshot fields
             $sizeModes = $request->size_mode ?? [];
@@ -806,45 +1044,193 @@ class PurchaseController extends Controller
             $lengths = $request->length ?? [];
             $widths = $request->width ?? [];
 
-            foreach ($pids as $i => $pid) {
-                $pid = (int) ($pid ?? 0);
+            foreach ($pids as $i => $pidRaw) {
+                $isNew = !empty($isNews[$i]) && ($isNews[$i] == '1' || $isNews[$i] === true);
+                $variantsJson = $variantsJsons[$i] ?? null;
+                $variantsList = [];
+                if (!empty($variantsJson)) {
+                    $decoded = is_string($variantsJson) ? json_decode($variantsJson, true) : $variantsJson;
+                    if (is_array($decoded)) {
+                        $variantsList = $decoded;
+                    }
+                }
+
+                $product = null;
+
+                // 1. Resolve Product (New vs Existing)
+                if ($isNew) {
+                    $prodName = trim($newProductNames[$i] ?? '');
+                    if (empty($prodName)) continue;
+
+                    $lastProduct = Product::orderBy('id', 'desc')->first();
+                    $nextCode = $lastProduct ? ('ITEM-'.str_pad($lastProduct->id + 1, 4, '0', STR_PAD_LEFT)) : 'ITEM-0001';
+                    $firstBarcode = !empty($variantsList[0]['barcode']) ? $variantsList[0]['barcode'] : (string) rand(100000000000, 999999999999);
+
+                    $catalogVariants = [];
+                    foreach ($variantsList as $vIdx => $v) {
+                        $catalogVariants[] = [
+                            'name' => $prodName,
+                            'size' => $v['size'] ?? '-',
+                            'color' => $v['color'] ?? '-',
+                            'sale_price' => (float) ($v['sale_price'] ?? 0),
+                            'wholesale_price' => (float) ($v['sale_price'] ?? 0),
+                            'purch_price' => (float) ($v['purchase_price'] ?? 0),
+                            'weight_per_piece' => 0,
+                            'stock' => 0,
+                            'barcode' => !empty($v['barcode']) ? $v['barcode'] : (string) rand(100000, 999999),
+                            'conv_factor' => 1,
+                            'is_base_variant' => ($vIdx === 0 ? 1 : 0),
+                            'unit' => 'Pcs',
+                        ];
+                    }
+
+                    $pPricePiece = (float) ($prices[$i] ?? ($variantsList[0]['purchase_price'] ?? 0));
+                    $sPricePiece = (float) ($variantsList[0]['sale_price'] ?? 0);
+
+                    $product = Product::create([
+                        'item_name' => $prodName,
+                        'category_id' => !empty($newCategoryIds[$i]) ? $newCategoryIds[$i] : null,
+                        'brand_id' => !empty($newBrandIds[$i]) ? $newBrandIds[$i] : null,
+                        'color' => json_encode($catalogVariants),
+                        'item_code' => $nextCode,
+                        'barcode_path' => $firstBarcode,
+                        'purchase_price_per_piece' => $pPricePiece,
+                        'sale_price_per_piece' => $sPricePiece,
+                        'size_mode' => 'pieces',
+                        'pieces_per_box' => 1,
+                        'total_m2' => 0,
+                        'is_active' => 1,
+                    ]);
+                } else {
+                    $pid = (int) ($pidRaw ?? 0);
+                    if (!$pid) continue;
+                    $product = Product::find($pid);
+                    if (!$product) continue;
+                }
+
+                // 2. If Variants Details are Configured in Modal
+                if (!empty($variantsList) && is_array($variantsList)) {
+                    // If existing product, update/merge variants in product catalog
+                    if (!$isNew) {
+                        $existingVariants = [];
+                        if ($product->color) {
+                            $parsed = is_string($product->color) ? json_decode($product->color, true) : $product->color;
+                            if (is_array($parsed)) $existingVariants = $parsed;
+                        }
+                        foreach ($variantsList as $inVar) {
+                            $matched = false;
+                            foreach ($existingVariants as &$exVar) {
+                                $exSize = $exVar['size'] ?? '';
+                                $exColor = $exVar['color'] ?? '';
+                                if (strcasecmp(trim($exSize), trim($inVar['size'] ?? '-')) === 0 && strcasecmp(trim($exColor), trim($inVar['color'] ?? '-')) === 0) {
+                                    if (isset($inVar['sale_price']) && (float)$inVar['sale_price'] > 0) {
+                                        $exVar['sale_price'] = (float)$inVar['sale_price'];
+                                    }
+                                    if (isset($inVar['purchase_price']) && (float)$inVar['purchase_price'] > 0) {
+                                        $exVar['purch_price'] = (float)$inVar['purchase_price'];
+                                    }
+                                    if (!empty($inVar['barcode']) && empty($exVar['barcode'])) {
+                                        $exVar['barcode'] = $inVar['barcode'];
+                                    }
+                                    $matched = true;
+                                    break;
+                                }
+                            }
+                            unset($exVar);
+
+                            if (!$matched) {
+                                $existingVariants[] = [
+                                    'name' => $product->item_name,
+                                    'size' => $inVar['size'] ?? '-',
+                                    'color' => $inVar['color'] ?? '-',
+                                    'sale_price' => (float) ($inVar['sale_price'] ?? 0),
+                                    'wholesale_price' => (float) ($inVar['sale_price'] ?? 0),
+                                    'purch_price' => (float) ($inVar['purchase_price'] ?? 0),
+                                    'weight_per_piece' => 0,
+                                    'stock' => 0,
+                                    'barcode' => !empty($inVar['barcode']) ? $inVar['barcode'] : (string) rand(100000, 999999),
+                                    'conv_factor' => 1,
+                                    'is_base_variant' => 0,
+                                    'unit' => 'Pcs',
+                                ];
+                            }
+                        }
+                        $product->color = json_encode(array_values($existingVariants));
+                        $product->save();
+                    }
+
+                    // Create PurchaseItem for each variant with Qty > 0
+                    $discPercent = (float) ($itemDiscs[$i] ?? 0);
+                    $hasPurchasedVariant = false;
+
+                    foreach ($variantsList as $vItem) {
+                        $vQty = (float) ($vItem['qty'] ?? 0);
+                        if ($vQty <= 0) continue;
+
+                        $hasPurchasedVariant = true;
+                        $vPrice = (float) ($vItem['purchase_price'] ?? ($prices[$i] ?? 0));
+                        $vGross = $vQty * $vPrice;
+                        $vDiscAmt = $vGross * ($discPercent / 100);
+                        $vLineTotal = $vGross - $vDiscAmt;
+
+                        PurchaseItem::create([
+                            'purchase_id' => $purchase->id,
+                            'product_id' => $product->id,
+                            'unit' => 'Pcs',
+                            'price' => $vPrice,
+                            'item_discount' => $vDiscAmt,
+                            'qty' => $vQty,
+                            'line_total' => $vLineTotal,
+                            'color' => json_encode([
+                                'size' => $vItem['size'] ?? '-',
+                                'color' => $vItem['color'] ?? '-',
+                                'barcode' => $vItem['barcode'] ?? '',
+                                'sale_price' => (float) ($vItem['sale_price'] ?? 0),
+                            ]),
+                            'size_mode' => 'pieces',
+                            'pieces_per_box' => 1,
+                            'description' => $request->description[$i] ?? null,
+                        ]);
+
+                        $subtotal += $vLineTotal;
+                    }
+
+                    if ($hasPurchasedVariant) {
+                        continue; // Done with this product row
+                    }
+                }
+
+                // 3. Fallback: Standard Single Line Purchase Item
                 $qty = (float) ($qtys[$i] ?? 0);
                 $price = (float) ($prices[$i] ?? 0);
-                if (! $pid || $qty <= 0 || $price < 0) {
+                if ($qty <= 0 || $price < 0) {
                     continue;
                 }
 
                 $discPercent = (float) ($itemDiscs[$i] ?? 0);
                 $unit = $units[$i] ?? null;
 
-                // Calculate Line Total matching Frontend Logic
                 $curSizeMode = $sizeModes[$i] ?? null;
-                $curPPM2 = (float) ($ppm2[$i] ?? 0); // This is actually m2_per_piece if by_size
+                $curPPM2 = (float) ($ppm2[$i] ?? 0);
 
                 if ($curSizeMode === 'by_size') {
-                    // Frontend: pieces_per_m2 * totalPieces * price
-                    // where pieces_per_m2 is effectively m2 per piece, and price is price per m2
                     $grossTotal = $curPPM2 * $qty * $price;
                 } else {
-                    // Standard: pieces * price_per_piece
                     $grossTotal = $qty * $price;
                 }
 
-                // Calculate absolute discount from percentage
                 $discAmount = $grossTotal * ($discPercent / 100);
                 $lineTotal = $grossTotal - $discAmount;
 
                 PurchaseItem::create([
                     'purchase_id' => $purchase->id,
-                    'product_id' => $pid,
+                    'product_id' => $product->id,
                     'unit' => $unit,
                     'price' => $price,
-                    'item_discount' => $discAmount, // Store calculated amount
+                    'item_discount' => $discAmount,
                     'qty' => $qty,
-                    'line_total' => $lineTotal, // Fixed logic
-                    'color' => $request->color[$i] ?? null, // Save variant details
-
-                    // Snapshots
+                    'line_total' => $lineTotal,
+                    'color' => $request->color[$i] ?? null,
                     'size_mode' => $sizeModes[$i] ?? null,
                     'pieces_per_box' => $ppbs[$i] ?? 1,
                     'pieces_per_m2' => $ppm2[$i] ?? 0,

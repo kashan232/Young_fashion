@@ -608,6 +608,11 @@
                             </td>
                             <td class="fw-bold {{ $liveBalance > 0 ? 'text-danger' : 'text-success' }}">
                                 Rs. {{ number_format($liveBalance, 2) }}
+                                @if (!empty($v->credit_limit) && $v->credit_limit > 0)
+                                    <small class="text-muted d-block font-weight-normal" style="font-size: 0.72rem;">
+                                        Limit: Rs. {{ number_format($v->credit_limit, 0) }}
+                                    </small>
+                                @endif
                             </td>
                             <td>
                                 @if (!empty($v->payment_due_date) || !empty($v->payment_day))
@@ -664,6 +669,12 @@
                                             data-balance="Rs. {{ number_format($liveBalance, 2) }}"
                                             data-due="{{ !empty($v->payment_due_date) ? \Carbon\Carbon::parse($v->payment_due_date)->format('d M, Y') : (!empty($v->payment_day) ? 'Every '.$v->payment_day : '—') }}"
                                             data-address="{{ $v->address ?? '—' }}"
+                                            data-credit-limit="{{ (!empty($v->credit_limit) && $v->credit_limit > 0) ? 'Rs. ' . number_format($v->credit_limit, 2) : '—' }}"
+                                            data-payment-terms="{{ $v->payment_terms ?: '—' }}"
+                                            data-bank-name="{{ $v->bank_name ?: '' }}"
+                                            data-account-title="{{ $v->account_title ?: '' }}"
+                                            data-account-number="{{ $v->account_number ?: '' }}"
+                                            data-bank-details="{{ $v->bank_details ?: '' }}"
                                             data-date="{{ $v->created_at ? $v->created_at->format('d M, Y') : '—' }}"
                                             data-ledger-url="{{ route('vendor.ledger', $v->id) }}"
                                             data-payments-url="{{ route('vendor.payments') }}?vendor_id={{ $v->id }}"
@@ -711,6 +722,12 @@
                             <input type="hidden" class="v-balance" value="{{ $v->opening_balance }}">
                             <input type="hidden" class="v-due-date" value="{{ $v->payment_due_date }}">
                             <input type="hidden" class="v-due-day" value="{{ $v->payment_day }}">
+                            <input type="hidden" class="v-credit-limit" value="{{ $v->credit_limit }}">
+                            <input type="hidden" class="v-payment-terms" value="{{ $v->payment_terms }}">
+                            <input type="hidden" class="v-bank-name" value="{{ $v->bank_name }}">
+                            <input type="hidden" class="v-account-title" value="{{ $v->account_title }}">
+                            <input type="hidden" class="v-account-number" value="{{ $v->account_number }}">
+                            <input type="hidden" class="v-bank-details" value="{{ $v->bank_details }}">
                             <input type="hidden" class="v-address" value="{{ $v->address }}">
                         </tr>
                     @endforeach
@@ -761,7 +778,7 @@
                         @if ($v->phone)
                             <div><i class="fas fa-phone me-2 text-primary"></i> <strong>Phone:</strong> {{ $v->phone }}</div>
                         @endif
-                        <div><i class="fas fa-wallet me-2 {{ $liveBalance > 0 ? 'text-danger' : 'text-success' }}"></i> <strong>Balance:</strong> <span class="{{ $liveBalance > 0 ? 'text-danger' : 'text-success' }} fw-bold">Rs. {{ number_format($liveBalance, 2) }}</span></div>
+                        <div><i class="fas fa-wallet me-2 {{ $liveBalance > 0 ? 'text-danger' : 'text-success' }}"></i> <strong>Balance:</strong> <span class="{{ $liveBalance > 0 ? 'text-danger' : 'text-success' }} fw-bold">Rs. {{ number_format($liveBalance, 2) }}</span> @if(!empty($v->credit_limit) && $v->credit_limit > 0) <small class="text-muted ms-1">(Limit: Rs. {{ number_format($v->credit_limit, 0) }})</small> @endif</div>
                         @if (!empty($v->payment_due_date) || !empty($v->payment_day))
                             <div><i class="far fa-clock me-2 text-danger"></i> <strong>Due Payment:</strong> 
                                 @if (!empty($v->payment_due_date))
@@ -808,6 +825,12 @@
                                     data-balance="Rs. {{ number_format($liveBalance, 2) }}"
                                     data-due="{{ !empty($v->payment_due_date) ? \Carbon\Carbon::parse($v->payment_due_date)->format('d M, Y') : (!empty($v->payment_day) ? 'Every '.$v->payment_day : '—') }}"
                                     data-address="{{ $v->address ?? '—' }}"
+                                    data-credit-limit="{{ (!empty($v->credit_limit) && $v->credit_limit > 0) ? 'Rs. ' . number_format($v->credit_limit, 2) : '—' }}"
+                                    data-payment-terms="{{ $v->payment_terms ?: '—' }}"
+                                    data-bank-name="{{ $v->bank_name ?: '' }}"
+                                    data-account-title="{{ $v->account_title ?: '' }}"
+                                    data-account-number="{{ $v->account_number ?: '' }}"
+                                    data-bank-details="{{ $v->bank_details ?: '' }}"
                                     data-date="{{ $v->created_at ? $v->created_at->format('d M, Y') : '—' }}"
                                     data-ledger-url="{{ route('vendor.ledger', $v->id) }}"
                                     data-payments-url="{{ route('vendor.payments') }}?vendor_id={{ $v->id }}"
@@ -856,6 +879,12 @@
                     <input type="hidden" class="v-balance" value="{{ $v->opening_balance }}">
                     <input type="hidden" class="v-due-date" value="{{ $v->payment_due_date }}">
                     <input type="hidden" class="v-due-day" value="{{ $v->payment_day }}">
+                    <input type="hidden" class="v-credit-limit" value="{{ $v->credit_limit }}">
+                    <input type="hidden" class="v-payment-terms" value="{{ $v->payment_terms }}">
+                    <input type="hidden" class="v-bank-name" value="{{ $v->bank_name }}">
+                    <input type="hidden" class="v-account-title" value="{{ $v->account_title }}">
+                    <input type="hidden" class="v-account-number" value="{{ $v->account_number }}">
+                    <input type="hidden" class="v-bank-details" value="{{ $v->bank_details }}">
                     <input type="hidden" class="v-address" value="{{ $v->address }}">
                 </div>
             @endforeach
@@ -888,13 +917,26 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="vcategory">Vendor Category</label>
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <label for="vcategory" class="mb-0">Vendor Category</label>
+                                    <a href="{{ route('vendor_categories.index') }}" target="_blank" class="text-primary font-weight-bold" style="font-size: 0.76rem;" title="Manage categories">
+                                        <i class="fas fa-cog mr-1"></i>Manage
+                                    </a>
+                                </div>
                                 <select class="form-control" name="category" id="vcategory">
                                     <option value="">Select category...</option>
-                                    <option value="Manufacturer">Manufacturer</option>
-                                    <option value="Distributor">Distributor</option>
-                                    <option value="Wholesaler">Wholesaler</option>
-                                    <option value="Supplier">Supplier</option>
+                                    @if(isset($vendorCategories) && $vendorCategories->count() > 0)
+                                        @foreach($vendorCategories as $cat)
+                                            <option value="{{ $cat->name }}">{{ $cat->name }}</option>
+                                        @endforeach
+                                    @else
+                                        <option value="Loafer / Manufacturer">Loafer / Manufacturer</option>
+                                        <option value="Sneakers / Supplier">Sneakers / Supplier</option>
+                                        <option value="Manufacturer">Manufacturer</option>
+                                        <option value="Distributor">Distributor</option>
+                                        <option value="Wholesaler">Wholesaler</option>
+                                        <option value="Supplier">Supplier</option>
+                                    @endif
                                 </select>
                             </div>
                         </div>
@@ -944,6 +986,67 @@
                                     <option value="Saturday">Every Saturday</option>
                                     <option value="Sunday">Every Sunday</option>
                                 </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="vcredit_limit">Credit Limit (Rs.)</label>
+                                <input type="number" step="any" min="0" class="form-control" name="credit_limit" id="vcredit_limit" placeholder="e.g. 100000" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="vpayment_terms">Payment Terms</label>
+                                <input type="text" class="form-control" name="payment_terms" id="vpayment_terms" list="paymentTermsList" placeholder="e.g. 30 days credit" />
+                                <datalist id="paymentTermsList">
+                                    <option value="Cash / Immediate">
+                                    <option value="7 days credit">
+                                    <option value="15 days credit">
+                                    <option value="30 days credit">
+                                    <option value="45 days credit">
+                                    <option value="60 days credit">
+                                    <option value="90 days credit">
+                                </datalist>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bank Account Details Section -->
+                    <div class="p-3 mb-3 rounded" style="background: #f8fafc; border: 1px dashed #cbd5e1;">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-university text-primary mr-2" style="font-size: 0.95rem;"></i>
+                            <span class="font-weight-bold text-dark" style="font-size: 0.88rem;">Bank Account Details</span>
+                            <small class="text-muted ml-2">(Optional)</small>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-2">
+                                    <label for="vbank_name" style="font-size: 0.8rem;">Bank Name</label>
+                                    <input type="text" class="form-control" name="bank_name" id="vbank_name" placeholder="e.g. Meezan Bank, HBL, MCB..." />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-2">
+                                    <label for="vaccount_title" style="font-size: 0.8rem;">Account Title</label>
+                                    <input type="text" class="form-control" name="account_title" id="vaccount_title" placeholder="e.g. Title / Account Holder..." />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-0">
+                                    <label for="vaccount_number" style="font-size: 0.8rem;">Account / IBAN Number</label>
+                                    <input type="text" class="form-control" name="account_number" id="vaccount_number" placeholder="e.g. 01020304050 or PK..." />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-0">
+                                    <label for="vbank_details" style="font-size: 0.8rem;">Branch / Additional Info</label>
+                                    <input type="text" class="form-control" name="bank_details" id="vbank_details" placeholder="e.g. Main Branch, Branch Code..." />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1004,12 +1107,48 @@
                     <span class="vprofile-info-value" id="vpDue">—</span>
                 </div>
                 <div class="vprofile-info-row">
+                    <span class="vprofile-info-label"><i class="fas fa-shield-alt mr-2 text-info"></i> Credit Limit:</span>
+                    <span class="vprofile-info-value font-weight-bold text-dark" id="vpCreditLimit">—</span>
+                </div>
+                <div class="vprofile-info-row">
+                    <span class="vprofile-info-label"><i class="fas fa-file-contract mr-2 text-primary"></i> Payment Terms:</span>
+                    <span class="vprofile-info-value font-weight-bold text-dark" id="vpPaymentTerms">—</span>
+                </div>
+                <div class="vprofile-info-row">
                     <span class="vprofile-info-label"><i class="fas fa-map-marker-alt mr-2 text-muted"></i> Address:</span>
                     <span class="vprofile-info-value" id="vpAddress" style="max-width: 60%;">—</span>
                 </div>
                 <div class="vprofile-info-row">
                     <span class="vprofile-info-label"><i class="fas fa-calendar-check mr-2 text-muted"></i> Joined Date:</span>
                     <span class="vprofile-info-value" id="vpDate">—</span>
+                </div>
+
+                <!-- Bank Accounts Details in Profile -->
+                <div class="mt-3 pt-3 border-top">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="font-weight-bold text-dark" style="font-size: 0.86rem;">
+                            <i class="fas fa-university text-success mr-2"></i> Bank Account Details
+                        </span>
+                        <span class="badge badge-light border text-muted" id="vpBankStatusBadge" style="font-size: 0.72rem;">Available</span>
+                    </div>
+                    <div id="vpBankDetailsContainer" class="p-3 rounded bg-light" style="border: 1px solid #e2e8f0; font-size: 0.85rem;">
+                        <div class="vprofile-info-row py-1 border-0">
+                            <span class="vprofile-info-label text-muted" style="font-size: 0.8rem;">Bank Name:</span>
+                            <span class="vprofile-info-value text-dark" id="vpBankName">—</span>
+                        </div>
+                        <div class="vprofile-info-row py-1 border-0">
+                            <span class="vprofile-info-label text-muted" style="font-size: 0.8rem;">Account Title:</span>
+                            <span class="vprofile-info-value text-dark" id="vpAccountTitle">—</span>
+                        </div>
+                        <div class="vprofile-info-row py-1 border-0">
+                            <span class="vprofile-info-label text-muted" style="font-size: 0.8rem;">Account / IBAN:</span>
+                            <span class="vprofile-info-value text-primary font-weight-bold" id="vpAccountNumber">—</span>
+                        </div>
+                        <div class="vprofile-info-row py-1 border-0" id="vpBankBranchRow">
+                            <span class="vprofile-info-label text-muted" style="font-size: 0.8rem;">Branch / Details:</span>
+                            <span class="vprofile-info-value text-dark" id="vpBankDetails">—</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer bg-light px-4 py-3 border-top d-flex align-items-center justify-content-between">
@@ -1055,6 +1194,12 @@
             $('#vstatus').val('1');
             $('#vpayment_due_date').val('');
             $('#vpayment_day').val('');
+            $('#vcredit_limit').val('');
+            $('#vpayment_terms').val('');
+            $('#vbank_name').val('');
+            $('#vaccount_title').val('');
+            $('#vaccount_number').val('');
+            $('#vbank_details').val('');
             $('#modalTitle').html('<i class="fas fa-truck text-primary mr-2"></i>New Vendor');
             $('#opening_balance').prop('readonly', false);
             $('#vendorModal').modal('show');
@@ -1072,6 +1217,12 @@
             const balance = $container.find('.v-balance').val();
             const dueDate = $container.find('.v-due-date').val();
             const dueDay = $container.find('.v-due-day').val();
+            const creditLimit = $container.find('.v-credit-limit').val();
+            const paymentTerms = $container.find('.v-payment-terms').val();
+            const bankName = $container.find('.v-bank-name').val();
+            const accountTitle = $container.find('.v-account-title').val();
+            const accountNumber = $container.find('.v-account-number').val();
+            const bankDetails = $container.find('.v-bank-details').val();
             const address = $container.find('.v-address').val();
 
             $('#vendor_id').val(id);
@@ -1082,6 +1233,12 @@
             $('#opening_balance').val(balance).prop('readonly', true);
             $('#vpayment_due_date').val(dueDate || '');
             $('#vpayment_day').val(dueDay || '');
+            $('#vcredit_limit').val(creditLimit || '');
+            $('#vpayment_terms').val(paymentTerms || '');
+            $('#vbank_name').val(bankName || '');
+            $('#vaccount_title').val(accountTitle || '');
+            $('#vaccount_number').val(accountNumber || '');
+            $('#vbank_details').val(bankDetails || '');
             $('#vaddress').val(address);
 
             $('#modalTitle').html('<i class="fas fa-edit text-primary mr-2"></i>Edit Vendor');
@@ -1096,6 +1253,12 @@
             const status = $(this).data('status');
             const balance = $(this).data('balance');
             const due = $(this).data('due');
+            const creditLimit = $(this).data('credit-limit');
+            const paymentTerms = $(this).data('payment-terms');
+            const bankName = $(this).data('bank-name');
+            const accountTitle = $(this).data('account-title');
+            const accountNumber = $(this).data('account-number');
+            const bankDetails = $(this).data('bank-details');
             const address = $(this).data('address');
             const date = $(this).data('date');
             const ledgerUrl = $(this).data('ledger-url');
@@ -1110,10 +1273,32 @@
                 .addClass(status === 'Active' ? 'badge-success' : 'badge-secondary');
             $('#vpBalance').text(balance || 'Rs. 0.00');
             $('#vpDue').text(due || '—');
+            $('#vpCreditLimit').text(creditLimit || '—');
+            $('#vpPaymentTerms').text(paymentTerms || '—');
             $('#vpAddress').text(address || '—');
             $('#vpDate').text(date || '—');
             $('#vpLedgerBtn').attr('href', ledgerUrl || '#');
             $('#vpPaymentsBtn').attr('href', paymentsUrl || '#');
+
+            const hasBank = bankName || accountTitle || accountNumber || bankDetails;
+            if (hasBank) {
+                $('#vpBankStatusBadge').text('Saved').removeClass('badge-secondary').addClass('badge-success');
+                $('#vpBankName').text(bankName || '—');
+                $('#vpAccountTitle').text(accountTitle || '—');
+                $('#vpAccountNumber').text(accountNumber || '—');
+                if (bankDetails) {
+                    $('#vpBankDetails').text(bankDetails);
+                    $('#vpBankBranchRow').show();
+                } else {
+                    $('#vpBankBranchRow').hide();
+                }
+            } else {
+                $('#vpBankStatusBadge').text('Not Set').removeClass('badge-success').addClass('badge-secondary');
+                $('#vpBankName').text('—');
+                $('#vpAccountTitle').text('—');
+                $('#vpAccountNumber').text('—');
+                $('#vpBankBranchRow').hide();
+            }
 
             $('#vendorProfileModal').modal('show');
         });

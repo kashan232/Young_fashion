@@ -19,6 +19,12 @@ class Vendor extends Model
         'opening_balance',
         'payment_due_date',
         'payment_day',
+        'credit_limit',
+        'payment_terms',
+        'bank_name',
+        'account_title',
+        'account_number',
+        'bank_details',
     ];
 
     public function ledger()

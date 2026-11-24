@@ -59,12 +59,15 @@ class VendorController extends Controller
             }
         }
 
+        $vendorCategories = \App\Models\VendorCategory::where('status', 1)->orderBy('name')->get();
+
         return view('admin_panel.vendors.index', compact(
             'vendors',
             'activeVendorsCount',
             'totalPayables',
             'dueThisWeekAmount',
-            'dueThisWeekCount'
+            'dueThisWeekCount',
+            'vendorCategories'
         ));
     }
 
@@ -73,16 +76,35 @@ class VendorController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'category' => 'nullable|string|in:Manufacturer,Distributor,Wholesaler,Supplier',
+            'category' => 'nullable|string|max:150',
             'status' => 'nullable|in:0,1',
             'phone' => 'nullable|string|max:50',
             'address' => 'nullable|string',
             'payment_due_date' => 'nullable|date',
             'payment_day' => 'nullable|string|max:20',
+            'credit_limit' => 'nullable|numeric|min:0',
+            'payment_terms' => 'nullable|string|max:150',
+            'bank_name' => 'nullable|string|max:150',
+            'account_title' => 'nullable|string|max:150',
+            'account_number' => 'nullable|string|max:100',
+            'bank_details' => 'nullable|string',
             'opening_balance' => $request->id ? 'nullable|numeric' : 'required|numeric',
         ]);
 
-        $data = $request->only(['name', 'category', 'phone', 'address', 'payment_due_date', 'payment_day']);
+        $data = $request->only([
+            'name',
+            'category',
+            'phone',
+            'address',
+            'payment_due_date',
+            'payment_day',
+            'payment_terms',
+            'bank_name',
+            'account_title',
+            'account_number',
+            'bank_details',
+        ]);
+        $data['credit_limit'] = $request->filled('credit_limit') ? (float) $request->credit_limit : 0;
         $data['status'] = $request->has('status') ? (int) $request->status : 1;
 
         if ($request->id) {
@@ -389,6 +411,12 @@ class VendorController extends Controller
             'vendor_name'     => $vendor->name,
             'phone'           => $vendor->phone ?? 'N/A',
             'address'         => $vendor->address ?? 'N/A',
+            'credit_limit'    => (float) ($vendor->credit_limit ?? 0),
+            'payment_terms'   => $vendor->payment_terms ?? '',
+            'bank_name'       => $vendor->bank_name ?? '',
+            'account_title'   => $vendor->account_title ?? '',
+            'account_number'  => $vendor->account_number ?? '',
+            'bank_details'    => $vendor->bank_details ?? '',
         ]);
     }
 
