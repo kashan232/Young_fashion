@@ -1189,7 +1189,7 @@
             const productNameInput = document.querySelector('input[name="product_name"]');
             if (productNameInput) {
                 productNameInput.addEventListener('input', function() {
-                    const baseInput = document.querySelector('input.base-name-input');
+                    const baseInput = document.querySelector('.base-name-input');
                     if (baseInput && !manualNames[baseInput.dataset.vid]) {
                         baseInput.value = this.value;
                     }
@@ -1200,14 +1200,15 @@
                 const tbody = targetTbody || getFirstVariantsBody();
                 if (!tbody) return;
                 const tr = document.createElement('tr');
-                const productName = productNameInput.value || '';
-                const baseUnitName = unitDropdown ? unitDropdown.options[unitDropdown.selectedIndex].text : 'Kg';
+                tr.className = 'base-variant-row';
+                const productName = productNameInput ? (productNameInput.value || '') : '';
+                const baseUnitName = (unitDropdown && unitDropdown.selectedIndex >= 0) ? unitDropdown.options[unitDropdown.selectedIndex].text : 'Kg';
                 const isCartonMode = unitDropdown && unitDropdown.value === 'by_cartons';
                 const sectionColor = (tbody.closest('.variant-section')?.querySelector('.section-color-input')?.value || '').trim();
                 const vid = 'base_' + Date.now();
                 tr.innerHTML = `
                     <td class="p-1">
-                        <select class="form-select form-select-sm fw-bold var-name-select" name="variant_name[]" data-vid="${vid}">
+                        <select class="form-select form-select-sm fw-bold var-name-select base-name-input" name="variant_name[]" data-vid="${vid}">
                             <option value="">Select Color...</option>
                             ${buildColorSelectOptions(sectionColor)}
                         </select>
@@ -1291,9 +1292,15 @@
                 if (baseWholesaleInp) baseWholesaleInp.addEventListener('input', updatePriceSuggestions);
                 if (baseStockInp) baseStockInp.addEventListener('input', updateVariantStocksFromBase);
                 
-                tr.querySelector('.base-name-input').addEventListener('input', function() {
-                    manualNames[vid] = true;
-                });
+                const baseNameInp = tr.querySelector('.base-name-input') || tr.querySelector('.var-name-select');
+                if (baseNameInp) {
+                    baseNameInp.addEventListener('input', function() {
+                        manualNames[vid] = true;
+                    });
+                    baseNameInp.addEventListener('change', function() {
+                        manualNames[vid] = true;
+                    });
+                }
                 toggleFactorColumns();
             }
 
@@ -1377,7 +1384,7 @@
                 
                 const isCartonMode = unitDropdown && unitDropdown.value === 'by_cartons';
                 let factor = 1;
-                let suggestedName = productNameInput.value || '';
+                let suggestedName = productNameInput ? (productNameInput.value || '') : '';
                 if (weightGrams) {
                     factor = parseFloat(weightGrams) > 10 ? parseFloat((weightGrams / 1000).toFixed(6)) : parseFloat(weightGrams);
                     suggestedName += ` - ${weightGrams}g`;
@@ -1601,15 +1608,15 @@
                 }
             }
 
-            enableVariantsBtn.addEventListener('click', handleAddSectionClick);
+            if (enableVariantsBtn) {
+                enableVariantsBtn.addEventListener('click', handleAddSectionClick);
+                enableVariantsBtn.innerHTML = '<i class="fas fa-plus-circle me-1"></i>Add Variant Section';
+                enableVariantsBtn.className = 'btn btn-sm btn-primary fw-bold shadow-sm';
+            }
             const addVariantSectionBottomBtn = document.getElementById('addVariantSectionBottomBtn');
             if (addVariantSectionBottomBtn) {
                 addVariantSectionBottomBtn.addEventListener('click', handleAddSectionClick);
             }
-
-            // Always ensure the top button reads + Add Variant Section
-            enableVariantsBtn.innerHTML = '<i class="fas fa-plus-circle me-1"></i>Add Variant Section';
-            enableVariantsBtn.className = 'btn btn-sm btn-primary fw-bold shadow-sm';
 
             function duplicateVariantRow(sourceRow) {
                 const targetTbody = sourceRow.closest('tbody.variants-body') || getFirstVariantsBody();

@@ -293,6 +293,92 @@
                                         <small class="text-muted" style="font-size: 11px;">(Bulk reserve in warehouse)</small>
                                     </div>
                                 </div>
+
+                                {{-- Supplier / Vendor Name --}}
+                                <div class="col-sm-6 col-md-4">
+                                    <div class="field-box" style="background: #f8fafc; border-color: #cbd5e1 !important;">
+                                        <div class="field-label" style="color: #475569 !important;">
+                                            <i class="fas fa-truck-moving text-primary me-1"></i> Supplier / Vendor
+                                        </div>
+                                        <div class="field-value">
+                                            @if($primaryVendor)
+                                                <a href="{{ route('vendor.ledger', $primaryVendor->id) }}" class="text-primary text-decoration-none fw-bold" title="View Vendor Ledger">
+                                                    {{ $primaryVendor->name }}
+                                                </a>
+                                                @if(!empty($primaryVendor->phone))
+                                                    <div class="text-muted small mt-0" style="font-size: 11px; font-weight: 500;">
+                                                        <i class="fas fa-phone-alt me-1 text-secondary" style="font-size: 9px;"></i>{{ $primaryVendor->phone }}
+                                                    </div>
+                                                @endif
+                                            @else
+                                                <span class="text-muted fw-normal" style="font-size: 13px;">Direct / Not Linked</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Manufacturing & Expiry Date (FEFO Target) --}}
+                                <div class="col-sm-6 col-md-4">
+                                    <div class="field-box" style="background: {{ !empty($fefoStatus['is_expired']) ? '#fef2f2' : (!empty($fefoStatus['is_critical']) ? '#fff7ed' : '#f8fafc') }}; border-color: {{ !empty($fefoStatus['is_expired']) ? '#fecaca' : (!empty($fefoStatus['is_critical']) ? '#fed7aa' : '#cbd5e1') }} !important;">
+                                        <div class="field-label d-flex align-items-center justify-content-between">
+                                            <span style="color: #475569;"><i class="fas fa-calendar-alt text-primary me-1"></i> Mfg &amp; Expiry (FEFO)</span>
+                                            @if($fefoStatus)
+                                                <span class="badge bg-{{ $fefoStatus['class'] }} text-white" style="font-size: 10px; font-weight: 600;">
+                                                    <i class="fas {{ $fefoStatus['icon'] }} me-1"></i>{{ $fefoStatus['label'] }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <div class="field-value">
+                                            @if($earliestExpiryBatch && $earliestExpiryBatch->exp_date)
+                                                <div class="d-flex align-items-baseline gap-2 flex-wrap">
+                                                    <span class="text-dark fw-bold" style="font-size: 13.5px;">
+                                                        Exp: {{ \Carbon\Carbon::parse($earliestExpiryBatch->exp_date)->format('d M Y') }}
+                                                    </span>
+                                                    @if($latestMfgBatch && $latestMfgBatch->mfg_date)
+                                                        <span class="text-muted small" style="font-size: 11px;">
+                                                            (Mfg: {{ \Carbon\Carbon::parse($latestMfgBatch->mfg_date)->format('d M Y') }})
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                                <div class="mt-1" style="font-size: 11px; font-weight: 600; color: {{ !empty($fefoStatus['is_expired']) ? '#dc2626' : (!empty($fefoStatus['is_critical']) ? '#ea580c' : '#16a34a') }};">
+                                                    <i class="fas fa-stopwatch me-1"></i>{{ $fefoStatus['days'] ?? '' }}
+                                                </div>
+                                            @elseif($latestMfgBatch && $latestMfgBatch->mfg_date)
+                                                <span class="text-dark fw-bold" style="font-size: 13.5px;">
+                                                    Mfg: {{ \Carbon\Carbon::parse($latestMfgBatch->mfg_date)->format('d M Y') }}
+                                                </span>
+                                                <div class="text-muted small" style="font-size: 11px;">No Expiry Configured</div>
+                                            @else
+                                                <span class="text-muted fw-normal" style="font-size: 13px;">Not Configured</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Article Description & Specifications --}}
+                                <div class="col-12">
+                                    <div class="field-box" style="background: #f8fafc; border-color: #cbd5e1 !important;">
+                                        <div class="field-label" style="color: #475569 !important;">
+                                            <i class="fas fa-align-left text-primary me-1"></i> Article Description &amp; Specifications
+                                        </div>
+                                        <div class="field-value text-dark fw-normal" style="font-size: 13px; line-height: 1.5;">
+                                            @php
+                                                $articleDesc = $product->meta_description ?? ($product->description ?? null);
+                                                if (!$articleDesc && $purchaseBatches->isNotEmpty()) {
+                                                    $descBatch = $purchaseBatches->first(function($b) { return !empty($b->description); });
+                                                    if ($descBatch) {
+                                                        $articleDesc = $descBatch->description;
+                                                    }
+                                                }
+                                            @endphp
+                                            @if($articleDesc)
+                                                {{ $articleDesc }}
+                                            @else
+                                                <span class="text-muted fst-italic">No article description provided.</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -540,6 +626,161 @@
                 <div class="p-3 bg-light border-top d-flex justify-content-between align-items-center text-muted small flex-wrap gap-2">
                     <span id="variantShowingCounter">Showing all {{ count($variants) }} variants</span>
                     <span class="fst-italic"><i class="fas fa-info-circle me-1 text-primary"></i>Click on any variant's photo button to view high-resolution multi-angle photos.</span>
+                </div>
+            </div>
+
+            {{-- ── 3. Purchase Batches & Expiry Management (FEFO Algorithm Queue) ── --}}
+            <div class="view-card mt-4">
+                <div class="view-card-header flex-wrap gap-2">
+                    <div>
+                        <span class="fw-bold text-dark fs-5">
+                            <i class="fas fa-hourglass-half text-primary me-2"></i>Purchase Batches &amp; Expiry Tracker (FEFO Priority Queue)
+                        </span>
+                        <div class="text-muted small mt-1">
+                            <strong>First-Expired, First-Out (FEFO):</strong> Batches nearest to expiration date are ranked first so warehouse &amp; sales dispatch them earliest.
+                        </div>
+                    </div>
+                    <div>
+                        <a href="{{ route('add_purchase') }}" class="btn btn-sm btn-outline-primary fw-bold" style="border-radius: 8px;">
+                            <i class="fas fa-plus me-1"></i> New Purchase Inward
+                        </a>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" style="font-size: 13px;">
+                        <thead class="table-light text-muted text-uppercase" style="font-size: 11px; letter-spacing: 0.5px;">
+                            <tr>
+                                <th class="ps-4 py-3 text-center" style="width: 130px;">FEFO Priority</th>
+                                <th class="py-3 text-start" style="min-width: 130px;">Purchase Invoice</th>
+                                <th class="py-3 text-start" style="min-width: 160px;">Supplier / Vendor</th>
+                                <th class="py-3 text-center" style="width: 100px;">Qty Inward</th>
+                                <th class="py-3 text-center" style="width: 120px;">Mfg Date</th>
+                                <th class="py-3 text-center" style="width: 120px;">Exp Date</th>
+                                <th class="py-3 text-center" style="width: 160px;">Shelf Life / Countdown</th>
+                                <th class="py-3 text-start">Batch Note / Article Description</th>
+                                <th class="pe-4 py-3 text-center" style="width: 110px;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($purchaseBatches as $bIdx => $bItem)
+                                @php
+                                    $bPurchase = $bItem->purchase;
+                                    $bVendor = $bPurchase ? $bPurchase->vendor : null;
+                                    $bExp = $bItem->exp_date ? \Carbon\Carbon::parse($bItem->exp_date) : null;
+                                    $bMfg = $bItem->mfg_date ? \Carbon\Carbon::parse($bItem->mfg_date) : null;
+                                    $bDays = null;
+                                    if ($bExp) {
+                                        $bDays = (int) \Carbon\Carbon::today()->diffInDays($bExp, false);
+                                    }
+                                @endphp
+                                <tr>
+                                    <td class="ps-4 py-3 text-center">
+                                        @if($bExp)
+                                            @if($bIdx === 0)
+                                                <span class="badge bg-danger text-white px-2 py-1 shadow-sm" style="font-size: 11px; font-weight: 700;">
+                                                    <i class="fas fa-bolt me-1"></i>#1 SELL FIRST
+                                                </span>
+                                            @else
+                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" style="font-size: 11px; font-weight: 600;">
+                                                    #{{ $bIdx + 1 }} Sell Next
+                                                </span>
+                                            @endif
+                                        @else
+                                            <span class="badge bg-light text-muted border px-2 py-1" style="font-size: 11px;">
+                                                Standard
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 text-start">
+                                        @if($bPurchase)
+                                            <a href="{{ route('purchase.invoice', $bPurchase->id) }}" class="fw-bold text-primary text-decoration-none" title="View Purchase Invoice">
+                                                #{{ $bPurchase->invoice_no ?? $bPurchase->id }}
+                                            </a>
+                                            <div class="text-muted small" style="font-size: 11px;">
+                                                {{ $bPurchase->purchase_date ? \Carbon\Carbon::parse($bPurchase->purchase_date)->format('d M Y') : '-' }}
+                                            </div>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 text-start">
+                                        @if($bVendor)
+                                            <a href="{{ route('vendor.ledger', $bVendor->id) }}" class="text-dark fw-bold text-decoration-none">
+                                                {{ $bVendor->name }}
+                                            </a>
+                                            @if($bVendor->phone)
+                                                <div class="text-muted small" style="font-size: 11px;">
+                                                    <i class="fas fa-phone-alt me-1 text-secondary" style="font-size: 9px;"></i>{{ $bVendor->phone }}
+                                                </div>
+                                            @endif
+                                        @else
+                                            <span class="text-muted">Direct Supplier</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 text-center fw-bold text-dark">
+                                        {{ $bItem->qty ?? ($bItem->quantity ?? 1) }} Pcs
+                                    </td>
+                                    <td class="py-3 text-center">
+                                        {{ $bMfg ? $bMfg->format('d M Y') : '-' }}
+                                    </td>
+                                    <td class="py-3 text-center">
+                                        @if($bExp)
+                                            <span class="fw-bold {{ $bDays < 0 ? 'text-danger' : ($bDays <= 30 ? 'text-warning' : 'text-dark') }}">
+                                                {{ $bExp->format('d M Y') }}
+                                            </span>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 text-center">
+                                        @if($bExp)
+                                            @if($bDays < 0)
+                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
+                                                    <i class="fas fa-times-circle me-1"></i>Expired ({{ abs($bDays) }}d ago)
+                                                </span>
+                                            @elseif($bDays <= 30)
+                                                <span class="badge bg-danger text-white px-2 py-1 shadow-sm">
+                                                    <i class="fas fa-fire me-1"></i>{{ $bDays }} days left
+                                                </span>
+                                            @elseif($bDays <= 90)
+                                                <span class="badge bg-warning text-dark px-2 py-1">
+                                                    <i class="fas fa-clock me-1"></i>{{ $bDays }} days left
+                                                </span>
+                                            @else
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                                    <i class="fas fa-check-circle me-1"></i>{{ $bDays }} days left
+                                                </span>
+                                            @endif
+                                        @else
+                                            <span class="text-muted small fst-italic">No Expiry</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 text-start text-muted">
+                                        {{ $bItem->description ?? ($product->meta_description ?? '-') }}
+                                    </td>
+                                    <td class="pe-4 py-3 text-center">
+                                        @if(!$bExp)
+                                            <span class="badge bg-light text-muted border">No Expiry</span>
+                                        @elseif($bDays < 0)
+                                            <span class="badge bg-danger text-white">Expired</span>
+                                        @elseif($bDays <= 30)
+                                            <span class="badge bg-danger text-white">Critical</span>
+                                        @elseif($bDays <= 90)
+                                            <span class="badge bg-warning text-dark">Expiring Soon</span>
+                                        @else
+                                            <span class="badge bg-success text-white">Fresh</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="9" class="text-center py-4 text-muted">
+                                        <i class="fas fa-box-open me-2 text-secondary"></i>No purchase batches recorded yet for this article. Add purchase entries via Purchase Inward to track supplier history and FEFO shelf life.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
 

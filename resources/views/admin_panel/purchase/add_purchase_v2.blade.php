@@ -715,6 +715,30 @@
                     </button>
                 </div>
                 <div class="modal-body p-3 bg-light">
+                    <!-- Batch & Expiry (FEFO) Details Strip -->
+                    <div class="card p-2.5 mb-2.5 border bg-white shadow-xs" style="border-radius: 8px;">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold mb-1 text-muted">
+                                    <i class="bi bi-calendar-check text-primary me-1"></i> Manufacturing Date (Mfg)
+                                </label>
+                                <input type="date" class="form-control form-control-sm pvm-input" id="pvm_mfg_date">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold mb-1 text-muted">
+                                    <i class="bi bi-calendar-x text-danger me-1"></i> Expiry Date (FEFO Target)
+                                </label>
+                                <input type="date" class="form-control form-control-sm pvm-input border-danger" id="pvm_exp_date" title="Earliest expiring products will be prioritized for sale first (FEFO)">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold mb-1 text-muted">
+                                    <i class="bi bi-tag text-secondary me-1"></i> Batch / Lot / Description
+                                </label>
+                                <input type="text" class="form-control form-control-sm pvm-input" id="pvm_description" placeholder="e.g. Lot # 01, Fresh Import">
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Quick Presets & Bulk Fill Strip -->
                     <div class="card pvm-presets-card">
                         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
@@ -1337,6 +1361,14 @@
                     <input type="hidden" name="size_mode[]" class="hidden-size-mode" value="pieces">
                     <input type="hidden" name="pieces_per_box[]" class="hidden-pieces-per-box" value="1">
                     <input type="hidden" name="pieces_per_m2[]" class="hidden-pieces-per-m2" value="0">
+                    <input type="hidden" name="mfg_date[]" class="hidden-mfg-date" value="${initialData && initialData.mfg_date ? initialData.mfg_date : ''}">
+                    <input type="hidden" name="exp_date[]" class="hidden-exp-date" value="${initialData && initialData.exp_date ? initialData.exp_date : ''}">
+                    <input type="hidden" name="description[]" class="hidden-item-desc" value="${initialData && initialData.description ? initialData.description : ''}">
+                    <div class="row-batch-pill-wrap px-2 py-0.5 d-none">
+                        <span class="badge bg-warning-subtle text-dark border batch-pill" style="font-size: 10.5px;">
+                            <i class="bi bi-calendar-event text-danger me-1"></i><span class="batch-pill-text"></span>
+                        </span>
+                    </div>
                 </td>
                 <td class="text-center align-middle">
                     <div class="d-flex align-items-center justify-content-center gap-1.5">
@@ -1476,6 +1508,11 @@
 
             $('#pvm_product_title').text(title);
             $('#pvm_sku_badge').text('SKU: ' + sku);
+
+            // Load manufacturing & expiry date for this row
+            $('#pvm_mfg_date').val($row.find('.hidden-mfg-date').val() || '');
+            $('#pvm_exp_date').val($row.find('.hidden-exp-date').val() || '');
+            $('#pvm_description').val($row.find('.hidden-item-desc').val() || '');
 
             let variants = rowVariantsMap[rowId] || [];
 
@@ -1699,6 +1736,28 @@
             $row.find('.main-qty-input').val(totalQty);
             $row.find('.price').val(avgCost.toFixed(2));
             $row.find('.hidden-variants-json').val(JSON.stringify(variants));
+
+            // Save manufacturing & expiry date
+            const mfg = $('#pvm_mfg_date').val() || '';
+            const exp = $('#pvm_exp_date').val() || '';
+            const desc = $('#pvm_description').val() || '';
+
+            $row.find('.hidden-mfg-date').val(mfg);
+            $row.find('.hidden-exp-date').val(exp);
+            $row.find('.hidden-item-desc').val(desc);
+
+            const $pillWrap = $row.find('.row-batch-pill-wrap');
+            const $pillText = $row.find('.batch-pill-text');
+            if (exp || mfg) {
+                $pillWrap.removeClass('d-none');
+                let pillLabel = '';
+                if (exp) pillLabel += 'Exp: ' + exp;
+                if (mfg) pillLabel += (pillLabel ? ' | ' : '') + 'Mfg: ' + mfg;
+                if (desc) pillLabel += ' (' + desc + ')';
+                $pillText.text(pillLabel);
+            } else {
+                $pillWrap.addClass('d-none');
+            }
 
             updateRowVariantDisplay(activeModalRowId);
             recalcRow($row);

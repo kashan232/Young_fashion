@@ -514,11 +514,11 @@
             </div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon" style="background:#f5f3ff; color:#7c3aed;"><i class="fas fa-cubes"></i></div>
+            <div class="stat-icon" style="background:#f5f3ff; color:#7c3aed;"><i class="fas fa-tags"></i></div>
             <div>
-                <div class="stat-label">Total Variants</div>
-                <div class="stat-value">{{ $totalVariantsCount ?? 0 }}</div>
-                <div class="stat-sub">across {{ $products->total() }} articles</div>
+                <div class="stat-label">Total Category</div>
+                <div class="stat-value">{{ $totalCategoriesCount ?? ($categories->count() ?? 0) }}</div>
+                <div class="stat-sub">product categories</div>
             </div>
         </div>
         <div class="stat-card">
@@ -790,13 +790,13 @@
                                     </div>
                                     <div class="item-meta">
                                         <span class="item-code">{{ $product->item_code }}</span>
-                                        @if($variantCount > 0)
-                                            <span class="meta-chip" style="background:#eef2ff; color:#4f46e5; border-color:#c7d2fe; font-weight:700;" title="Total variants in this article">
-                                                <i class="fas fa-cubes" style="font-size:.58rem;"></i> {{ $variantCount }} {{ $variantCount === 1 ? 'Variant' : 'Variants' }}@if($uniqueColors > 0) · {{ $uniqueColors }} {{ $uniqueColors === 1 ? 'Color' : 'Colors' }}@endif
+                                        @if($uniqueColors > 0)
+                                            <span class="meta-chip" style="background:#f5f3ff; color:#7c3aed; border-color:#ddd6fe; font-weight:700;" title="Color variants in this article">
+                                                <i class="fas fa-palette" style="font-size:.58rem;"></i> {{ $uniqueColors }} {{ $uniqueColors === 1 ? 'Color' : 'Colors' }}
                                             </span>
                                         @else
-                                            <span class="meta-chip" style="background:#f8fafc; color:#64748b;" title="No variants added">
-                                                <i class="fas fa-cube" style="font-size:.58rem;"></i> 0 Variants
+                                            <span class="meta-chip" style="background:#f8fafc; color:#64748b;" title="No color variants">
+                                                <i class="fas fa-palette" style="font-size:.58rem;"></i> 0 Colors
                                             </span>
                                         @endif
                                 @if(!empty($product->rack_shelf))
@@ -815,8 +815,8 @@
                                     @if(!empty($colorGroups))
                                         <div class="d-flex flex-wrap gap-1 mt-1">
                                             @foreach($colorGroups as $cg)
-                                                <span class="meta-chip" style="background:#fff7ed; color:#9a3412; border-color:#fed7aa; font-size:10px; font-weight:600;" title="Variant Color &amp; Sizes">
-                                                    <i class="fas fa-palette" style="font-size:.55rem;"></i> {{ $cg['label'] }}@if(!empty($cg['sizes'])) ({{ implode(', ', $cg['sizes']) }})@endif
+                                                <span class="meta-chip" style="background:#fff7ed; color:#9a3412; border-color:#fed7aa; font-size:10px; font-weight:600;" title="Color Variant">
+                                                    <i class="fas fa-palette" style="font-size:.55rem;"></i> {{ $cg['label'] }}
                                                 </span>
                                             @endforeach
                                         </div>
@@ -992,10 +992,12 @@
                                         }
                                     }
                                 @endphp
-                                <span class="meta-chip" style="background:#eef2ff; color:#4f46e5; border-color:#c7d2fe; font-weight:700;"><i class="fas fa-cubes"></i> {{ $mVarCount }} {{ $mVarCount === 1 ? 'Variant' : 'Variants' }}</span>
-                                @foreach($mColorGroups as $cg)
-                                    <span class="meta-chip" style="background:#fff7ed; color:#9a3412; border-color:#fed7aa; font-size:10px; font-weight:600;"><i class="fas fa-palette" style="font-size:.55rem;"></i> {{ $cg['label'] }}@if(!empty($cg['sizes'])) ({{ implode(', ', $cg['sizes']) }})@endif</span>
-                                @endforeach
+                                @if(!empty($mColorGroups))
+                                    <span class="meta-chip" style="background:#f5f3ff; color:#7c3aed; border-color:#ddd6fe; font-weight:700;"><i class="fas fa-palette"></i> {{ count($mColorGroups) }} {{ count($mColorGroups) === 1 ? 'Color' : 'Colors' }}</span>
+                                    @foreach($mColorGroups as $cg)
+                                        <span class="meta-chip" style="background:#fff7ed; color:#9a3412; border-color:#fed7aa; font-size:10px; font-weight:600;"><i class="fas fa-palette" style="font-size:.55rem;"></i> {{ $cg['label'] }}</span>
+                                    @endforeach
+                                @endif
                                 @if($hasDiscount)
                                     <span class="badge bg-danger text-white" style="font-size:10px;"><i class="fas fa-tags me-1"></i>{{ $maxDiscPerc > 0 ? rtrim(rtrim(number_format($maxDiscPerc, 2), '0'), '.') . '% OFF' : 'Rs. ' . number_format($maxDiscAmt) . ' OFF' }}</span>
                                 @endif

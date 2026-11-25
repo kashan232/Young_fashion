@@ -106,6 +106,11 @@ class Product extends Model
         return $this->hasMany(ProductWebImage::class)->orderBy('sort_order', 'asc');
     }
 
+    public function purchaseItems()
+    {
+        return $this->hasMany(PurchaseItem::class, 'product_id');
+    }
+
     protected static function booted()
     {
         static::saved(function ($product) {

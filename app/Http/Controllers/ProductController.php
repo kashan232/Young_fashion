@@ -492,21 +492,13 @@ class ProductController extends Controller
             $query->where('is_active', $request->status === 'active' ? 1 : 0);
         }
 
-        $totalVariantsCount = 0;
-        (clone $query)->select('id', 'color')->chunk(500, function ($chunk) use (&$totalVariantsCount) {
-            foreach ($chunk as $item) {
-                $decoded = is_string($item->color) ? json_decode($item->color, true) : $item->color;
-                if (is_array($decoded)) {
-                    $totalVariantsCount += count($decoded);
-                }
-            }
-        });
+        $totalCategoriesCount = Category::count();
 
         $products   = $query->latest()->paginate(20)->withQueryString();
         $categories = Category::orderBy('name')->get();
         $brands     = Brand::orderBy('name')->get();
 
-        return view('admin_panel.product.index', compact('products', 'categories', 'brands', 'totalVariantsCount'));
+        return view('admin_panel.product.index', compact('products', 'categories', 'brands', 'totalCategoriesCount'));
     }
 
     public function productview($id)
@@ -1915,7 +1907,95 @@ class ProductController extends Controller
         }
         unset($v);
 
-        return view('admin_panel.product.show', compact('product', 'variants', 'totalStock', 'shopStock', 'warehouseStock', 'productData', 'colorWebImgsMap'));
+        // Fetch purchase items for this product with purchases & vendors sorted by FEFO (First-Expired, First-Out)
+        $purchaseBatches = \App\Models\PurchaseItem::with(['purchase.vendor'])
+            ->where('product_id', $product->id)
+            ->whereHas('purchase')
+            ->orderByRaw('exp_date IS NULL, exp_date ASC, id ASC')
+            ->get();
+
+        // Primary / Latest Supplier
+        $primaryVendor = null;
+        if ($purchaseBatches->isNotEmpty()) {
+            $sortedByPurchaseDate = $purchaseBatches->sortByDesc(function($item) {
+                return $item->purchase->purchase_date ?? $item->created_at;
+            });
+            $primaryVendor = $sortedByPurchaseDate->first()->purchase->vendor ?? null;
+        }
+
+        // FEFO Analysis: Earliest Expiry Batch
+        $earliestExpiryBatch = $purchaseBatches->filter(function($item) {
+            return !empty($item->exp_date);
+        })->first();
+
+        // Latest Manufacturing Date batch
+        $latestMfgBatch = $purchaseBatches->filter(function($item) {
+            return !empty($item->mfg_date);
+        })->sortByDesc('mfg_date')->first();
+
+        $fefoStatus = null;
+        if ($earliestExpiryBatch && $earliestExpiryBatch->exp_date) {
+            $today = \Carbon\Carbon::today();
+            $expDate = \Carbon\Carbon::parse($earliestExpiryBatch->exp_date);
+            $daysRemaining = (int) $today->diffInDays($expDate, false);
+
+            if ($daysRemaining < 0) {
+                $fefoStatus = [
+                    'label' => 'Expired',
+                    'class' => 'danger',
+                    'icon' => 'fa-exclamation-triangle',
+                    'days' => abs($daysRemaining) . ' days ago',
+                    'days_num' => $daysRemaining,
+                    'batch' => $earliestExpiryBatch,
+                    'is_expired' => true,
+                ];
+            } elseif ($daysRemaining <= 30) {
+                $fefoStatus = [
+                    'label' => 'Critical Expiry (< 30 Days)',
+                    'class' => 'danger',
+                    'icon' => 'fa-fire-alt',
+                    'days' => $daysRemaining . ' days left',
+                    'days_num' => $daysRemaining,
+                    'batch' => $earliestExpiryBatch,
+                    'is_critical' => true,
+                ];
+            } elseif ($daysRemaining <= 90) {
+                $fefoStatus = [
+                    'label' => 'Expiring Soon (< 90 Days)',
+                    'class' => 'warning',
+                    'icon' => 'fa-clock',
+                    'days' => $daysRemaining . ' days left',
+                    'days_num' => $daysRemaining,
+                    'batch' => $earliestExpiryBatch,
+                    'is_warning' => true,
+                ];
+            } else {
+                $fefoStatus = [
+                    'label' => 'Optimal / Fresh',
+                    'class' => 'success',
+                    'icon' => 'fa-shield-alt',
+                    'days' => $daysRemaining . ' days left',
+                    'days_num' => $daysRemaining,
+                    'batch' => $earliestExpiryBatch,
+                    'is_fresh' => true,
+                ];
+            }
+        }
+
+        return view('admin_panel.product.show', compact(
+            'product',
+            'variants',
+            'totalStock',
+            'shopStock',
+            'warehouseStock',
+            'productData',
+            'colorWebImgsMap',
+            'purchaseBatches',
+            'primaryVendor',
+            'earliestExpiryBatch',
+            'latestMfgBatch',
+            'fefoStatus'
+        ));
     }
     public function edit($id)
     {
@@ -1925,6 +2005,8 @@ class ProductController extends Controller
         $subcategories = SubCategory::all();
         $brands = Brand::all();
         $sizes = Size::all();
+        $colors = \App\Models\Color::select('id', 'name', 'color_code')->orderBy('name', 'asc')->get();
+        $units = Unit::select('id', 'name')->get();
 
         // Calculate current stock from WarehouseStock (the real source of truth)
         $totalPieces = $product->warehouseStocks->sum('total_pieces');
@@ -1947,7 +2029,7 @@ class ProductController extends Controller
             }
         }
 
-        return view('admin_panel.product.edit', compact('sizes', 'product', 'categories', 'subcategories', 'brands'));
+        return view('admin_panel.product.edit', compact('sizes', 'product', 'categories', 'subcategories', 'brands', 'colors', 'units'));
     }
 
     // ===== Barcode view =====
