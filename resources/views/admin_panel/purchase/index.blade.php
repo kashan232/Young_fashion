@@ -286,6 +286,52 @@
                     </div>
                 </div>
 
+                {{-- Summary Statistics Cards --}}
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-sm-6 col-lg-4">
+                        <div class="card border-0 shadow-sm rounded-4 h-100" style="background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%); border-left: 5px solid #3b82f6 !important;">
+                            <div class="card-body p-3 p-md-4 d-flex align-items-center justify-content-between">
+                                <div>
+                                    <span class="text-uppercase text-muted fw-bold small" style="letter-spacing: 0.5px; font-size: 11px;">Total Invoice</span>
+                                    <h3 class="fw-bolder mb-0 text-dark mt-1" id="stat_total_invoices">{{ number_format($totalInvoices ?? 0) }}</h3>
+                                    <small class="text-muted">Total purchase invoices</small>
+                                </div>
+                                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background-color: #eff6ff; color: #2563eb; font-size: 20px;">
+                                    <i class="fas fa-file-invoice"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-4">
+                        <div class="card border-0 shadow-sm rounded-4 h-100" style="background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%); border-left: 5px solid #10b981 !important;">
+                            <div class="card-body p-3 p-md-4 d-flex align-items-center justify-content-between">
+                                <div>
+                                    <span class="text-uppercase text-muted fw-bold small" style="letter-spacing: 0.5px; font-size: 11px;">Total Purchase</span>
+                                    <h3 class="fw-bolder mb-0 text-success mt-1">Rs. <span id="stat_total_purchase">{{ number_format($totalPurchase ?? 0, 2) }}</span></h3>
+                                    <small class="text-muted">Net purchase amount</small>
+                                </div>
+                                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background-color: #ecfdf5; color: #059669; font-size: 20px;">
+                                    <i class="fas fa-shopping-bag"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-4">
+                        <div class="card border-0 shadow-sm rounded-4 h-100" style="background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%); border-left: 5px solid #f59e0b !important;">
+                            <div class="card-body p-3 p-md-4 d-flex align-items-center justify-content-between">
+                                <div>
+                                    <span class="text-uppercase text-muted fw-bold small" style="letter-spacing: 0.5px; font-size: 11px;">Total Pending Orders</span>
+                                    <h3 class="fw-bolder mb-0 text-warning mt-1" id="stat_total_pendings">{{ number_format($totalPendings ?? 0) }}</h3>
+                                    <small class="text-muted">Rs. <span id="stat_total_pending_amount">{{ number_format($totalPendingAmount ?? 0, 2) }}</span> pending</small>
+                                </div>
+                                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background-color: #fffbeb; color: #d97706; font-size: 20px;">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {{-- Status Filters --}}
                 <div class="mb-4 purch-status-pills">
                     <a href="{{ route('Purchase.home', ['status' => 'all']) }}"
@@ -293,12 +339,12 @@
                         All
                     </a>
                     <a href="{{ route('Purchase.home', ['status' => 'approved']) }}"
-                        class="btn btn-sm {{ request('status') == 'approved' ? 'btn-success' : 'btn-outline-success' }} rounded-3 shadow-sm px-3">
-                        Approved
+                        class="btn btn-sm {{ request('status') == 'approved' || request('status') == 'received' ? 'btn-success' : 'btn-outline-success' }} rounded-3 shadow-sm px-3">
+                        Received
                     </a>
                     <a href="{{ route('Purchase.home', ['status' => 'draft']) }}"
-                        class="btn btn-sm {{ request('status') == 'draft' ? 'btn-warning text-dark' : 'btn-outline-warning' }} rounded-3 shadow-sm px-3">
-                        Draft
+                        class="btn btn-sm {{ request('status') == 'draft' || request('status') == 'pending' ? 'btn-warning text-dark' : 'btn-outline-warning' }} rounded-3 shadow-sm px-3">
+                        Pending
                     </a>
                     <a href="{{ route('Purchase.home', ['status' => 'Returned']) }}"
                         class="btn btn-sm {{ request('status') == 'Returned' ? 'btn-danger' : 'btn-outline-danger' }} rounded-3 shadow-sm px-3">
@@ -348,8 +394,8 @@
                                         <input type="text" class="form-control" name="bill_no" id="filter_bill_no" placeholder="PUR-...">
                                     </div>
                                     <div class="col-md-1">
-                                        <label class="form-label mb-1">M.Bill#</label>
-                                        <input type="text" class="form-control" name="reference" id="filter_reference" placeholder="M.Bill...">
+                                        <label class="form-label mb-1">Vendor Bill#</label>
+                                        <input type="text" class="form-control" name="reference" id="filter_reference" placeholder="Vendor Bill...">
                                     </div>
                                     <div class="col-md-2">
                                         <label class="form-label mb-1">Vendor</label>
@@ -389,12 +435,10 @@
                                         <th class="py-3 text-secondary fw-semibold text-uppercase small">Bill#</th>
                                         <th class="py-3 text-secondary fw-semibold text-uppercase small">Date</th>
                                         <th class="py-3 text-secondary fw-semibold text-uppercase small">Invoice No</th>
-                                        <th class="py-3 text-secondary fw-semibold text-uppercase small">M.Bill</th>
+                                        <th class="py-3 text-secondary fw-semibold text-uppercase small">Vendor bill no#</th>
                                         <th class="py-3 text-secondary fw-semibold text-uppercase small">Status</th>
                                         <th class="py-3 text-secondary fw-semibold text-uppercase small">Vendor</th>
                                         <th class="py-3 text-secondary fw-semibold text-uppercase small">Location</th>
-                                        <th class="py-3 text-secondary fw-semibold text-uppercase small text-end">Inline Disc</th>
-                                        <th class="py-3 text-secondary fw-semibold text-uppercase small text-end">Add. Disc</th>
                                         <th class="py-3 text-secondary fw-semibold text-uppercase small text-end">Net Amount</th>
                                         <th class="py-3 text-secondary fw-semibold text-uppercase small text-end">Paid</th>
                                         <th class="py-3 text-secondary fw-semibold text-uppercase small text-end">Due</th>
@@ -626,6 +670,20 @@
                         
                         // 2. Safely replace the table body HTML
                         $('#purchaseTableBody').html(response.html);
+
+                        // 2b. Update stat cards
+                        if (response.total_invoices !== undefined) {
+                            $('#stat_total_invoices').text(response.total_invoices);
+                        }
+                        if (response.total_purchase !== undefined) {
+                            $('#stat_total_purchase').text(response.total_purchase);
+                        }
+                        if (response.total_pendings !== undefined) {
+                            $('#stat_total_pendings').text(response.total_pendings);
+                        }
+                        if (response.total_pending_amount !== undefined) {
+                            $('#stat_total_pending_amount').text(response.total_pending_amount);
+                        }
                         
                         // 3. Re-initialize the DataTable on the new HTML
                         $('.datanew').DataTable({

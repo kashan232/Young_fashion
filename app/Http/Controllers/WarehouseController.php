@@ -63,18 +63,29 @@ class WarehouseController extends Controller
 
     public function store(Request $request)
     {
-        if ($request->id) {
+        $request->validate([
+            'warehouse_name' => 'required|string|max:255',
+            'location' => 'nullable|string|max:255',
+            'remarks' => 'nullable|string',
+        ]);
+
+        $data = $request->only(['warehouse_name', 'location', 'remarks']);
+
+        if ($request->filled('id')) {
             if (! auth()->user()->can('warehouse.edit')) {
                 return back()->with('error', 'Unauthorized action.');
             }
-            Warehouse::findOrFail($request->id)->update($request->all());
+            $warehouse = Warehouse::findOrFail($request->id);
+            $warehouse->update($data);
 
             return back()->with('success', 'Warehouse Updated Successfully');
         } else {
             if (! auth()->user()->can('warehouse.create')) {
                 return back()->with('error', 'Unauthorized action.');
             }
-            Warehouse::create($request->all());
+            $data['creater_id'] = auth()->id();
+            $data['branch_id'] = auth()->user()->branch_id ?? 1;
+            Warehouse::create($data);
 
             return back()->with('success', 'Warehouse Created Successfully');
         }

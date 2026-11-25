@@ -11,12 +11,12 @@
         <td class="font-monospace text-dark">{{ $purchase->invoice_no }}</td>
         <td class="font-monospace text-dark small">{{ $purchase->note ?? '-' }}</td>
         <td>
-            @if ($purchase->status_purchase == 'draft')
-                <span class="badge badge-warning text-dark border border-warning">Draft</span>
+            @if ($purchase->status_purchase == 'draft' || $purchase->status_purchase == 'pending')
+                <span class="badge badge-warning text-dark border border-warning">Pending</span>
             @elseif ($purchase->status_purchase == 'Returned')
                 <span class="badge bg-danger text-white border border-danger">Returned</span>
             @else
-                <span class="badge badge-success border border-success">Approved</span>
+                <span class="badge badge-success border border-success">Received</span>
             @endif
         </td>
         <td>
@@ -30,34 +30,6 @@
         </td>
         <td class="text-muted small">
             {{ $purchase->warehouse->warehouse_name ?? 'N/A' }}
-        </td>
-
-        <td class="text-end text-dark">
-            @php
-                $inline_val = $purchase->items->sum('item_discount');
-                $gross_subtotal = $purchase->subtotal + $inline_val;
-                $inline_pct = $gross_subtotal > 0 ? ($inline_val / $gross_subtotal) * 100 : 0;
-            @endphp
-            Rs. {{ number_format($inline_val, 2) }}
-            @if ($inline_val > 0)
-                <div class="text-muted small mt-1" style="font-size: 10px;">({{ number_format($inline_pct, 1) }}%)</div>
-            @endif
-        </td>
-
-        <td class="text-end text-dark">
-            @if ($purchase->additional_discount > 0)
-                @php
-                    $add_val = $purchase->additional_discount;
-                    $original_net = $purchase->net_amount + $add_val;
-                    $add_pct = $original_net > 0 ? ($add_val / $original_net) * 100 : 0;
-                @endphp
-                <span class="badge rounded-pill border px-2 py-1" style="background-color: #fff8e1; color: #b78103; border-color: #ffe082 !important; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
-                    <i class="fas fa-tag" style="font-size: 10px;"></i> Rs. {{ number_format($add_val, 2) }}
-                </span>
-                <div class="text-muted small mt-1" style="font-size: 10px;">({{ number_format($add_pct, 1) }}%)</div>
-            @else
-                <span class="text-muted">Rs. 0.00</span>
-            @endif
         </td>
 
         <td class="text-end fw-bold text-dark">
@@ -145,20 +117,18 @@
                         @endcan
                     @endif
 
-                    @if ($purchase->status_purchase == 'draft')
-                        @can('purchases.delete')
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <form action="{{ route('purchase.destroy', $purchase->id) }}" method="POST" class="d-inline delete-form">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2 delete-btn text-danger">
-                                        <i class="fas fa-trash-alt fa-fw"></i> Delete
-                                    </button>
-                                </form>
-                            </li>
-                        @endcan
-                    @endif
+                    @can('purchases.delete')
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form action="{{ route('purchase.destroy', $purchase->id) }}" method="POST" class="d-inline delete-form">
+                                @csrf
+                                @method('DELETE')
+                                <button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2 delete-btn text-danger">
+                                    <i class="fas fa-trash-alt fa-fw"></i> Delete Invoice
+                                </button>
+                            </form>
+                        </li>
+                    @endcan
                 </ul>
             </div>
         </td>
@@ -166,19 +136,19 @@
 
     {{-- Mobile Table Card Row (< 768px) --}}
     <tr class="d-table-row d-md-none border-0">
-        <td colspan="14" class="p-0 border-0 bg-transparent">
+        <td colspan="12" class="p-0 border-0 bg-transparent">
             <div class="purch-mcard p-3 bg-white rounded-3 border mb-3 shadow-sm">
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <div class="d-flex align-items-center gap-2">
                         <input type="checkbox" class="select-purchase-row" value="{{ $purchase->id }}" style="width: 16px; height: 16px;">
                         <span class="fw-bold text-dark fs-6">#{{ $purchase->invoice_no }}</span>
                     </div>
-                    @if ($purchase->status_purchase == 'draft')
-                        <span class="badge bg-warning text-dark">Draft</span>
+                    @if ($purchase->status_purchase == 'draft' || $purchase->status_purchase == 'pending')
+                        <span class="badge bg-warning text-dark">Pending</span>
                     @elseif ($purchase->status_purchase == 'Returned')
                         <span class="badge bg-danger">Returned</span>
                     @else
-                        <span class="badge bg-success">Approved</span>
+                        <span class="badge bg-success">Received</span>
                     @endif
                 </div>
 
@@ -224,7 +194,13 @@
                         </a>
                     @endcan
 
-                    @if ($purchase->status_purchase != 'draft')
+                    @if ($purchase->status_purchase == 'draft' || $purchase->status_purchase == 'pending')
+                        @can('purchases.create')
+                            <a href="{{ route('purchase.confirm', $purchase->id) }}" class="btn btn-sm btn-success fw-bold confirm-purchase-btn" style="border-radius: 8px;">
+                                <i class="fas fa-check-circle me-1"></i> Confirm
+                            </a>
+                        @endcan
+                    @else
                         @can('purchases.view')
                             <a href="{{ route('purchase.invoice', $purchase->id) }}" class="btn btn-sm btn-outline-info fw-bold" style="border-radius: 8px;">
                                 <i class="fas fa-file-invoice me-1"></i> Invoice
@@ -233,22 +209,17 @@
                                 <i class="fas fa-receipt me-1"></i> Receipt
                             </a>
                         @endcan
-                    @else
-                        @can('purchases.create')
-                            <a href="{{ route('purchase.confirm', $purchase->id) }}" class="btn btn-sm btn-success fw-bold confirm-purchase-btn" style="border-radius: 8px;">
-                                <i class="fas fa-check-circle me-1"></i> Confirm
-                            </a>
-                        @endcan
-                        @can('purchases.delete')
-                            <form action="{{ route('purchase.destroy', $purchase->id) }}" method="POST" class="d-inline delete-form">
-                                @csrf
-                                @method('DELETE')
-                                <button type="button" class="btn btn-sm btn-outline-danger fw-bold delete-btn w-100" style="border-radius: 8px;">
-                                    <i class="fas fa-trash-alt me-1"></i> Delete
-                                </button>
-                            </form>
-                        @endcan
                     @endif
+
+                    @can('purchases.delete')
+                        <form action="{{ route('purchase.destroy', $purchase->id) }}" method="POST" class="d-inline delete-form" style="grid-column: span 2;">
+                            @csrf
+                            @method('DELETE')
+                            <button type="button" class="btn btn-sm btn-outline-danger fw-bold delete-btn w-100" style="border-radius: 8px;">
+                                <i class="fas fa-trash-alt me-1"></i> Delete Invoice
+                            </button>
+                        </form>
+                    @endcan
                 </div>
             </div>
         </td>

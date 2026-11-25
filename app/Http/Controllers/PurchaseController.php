@@ -58,7 +58,13 @@ class PurchaseController extends Controller
         $query = Purchase::with(['branch', 'warehouse', 'vendor', 'items', 'returns']);
 
         if ($request->has('status') && $request->status != 'all') {
-            $query->where('status_purchase', $request->status);
+            if ($request->status == 'approved' || $request->status == 'received') {
+                $query->whereIn('status_purchase', ['approved', 'received']);
+            } elseif ($request->status == 'draft' || $request->status == 'pending') {
+                $query->whereIn('status_purchase', ['draft', 'pending']);
+            } else {
+                $query->where('status_purchase', $request->status);
+            }
         }
 
         // Apply Date Filters
@@ -119,17 +125,31 @@ class PurchaseController extends Controller
             $purchase->has_partial_return = $totalReturned > 0 && $totalReturned < $purchase->net_amount;
         });
 
-        // If AJAX request, return only table rows partial
+        // Summary Statistics
+        $totalInvoices = $Purchase->count();
+        $totalPurchase = $Purchase->sum('updated_net_amount');
+        $totalPendings = $Purchase->filter(function($p) {
+            return in_array($p->status_purchase, ['draft', 'pending']);
+        })->count();
+        $totalPendingAmount = $Purchase->filter(function($p) {
+            return in_array($p->status_purchase, ['draft', 'pending']);
+        })->sum('updated_net_amount');
+
+        // If AJAX request, return table rows partial and statistics
         if ($request->ajax()) {
             return response()->json([
-                'html' => view('admin_panel.purchase.partials.purchase_table_body', compact('Purchase'))->render()
+                'html' => view('admin_panel.purchase.partials.purchase_table_body', compact('Purchase'))->render(),
+                'total_invoices' => number_format($totalInvoices),
+                'total_purchase' => number_format($totalPurchase, 2),
+                'total_pendings' => number_format($totalPendings),
+                'total_pending_amount' => number_format($totalPendingAmount, 2),
             ]);
         }
 
         // Load all vendors for filter dropdown
         $vendors = Vendor::orderBy('name')->get();
 
-        return view('admin_panel.purchase.index', compact('Purchase', 'vendors'));
+        return view('admin_panel.purchase.index', compact('Purchase', 'vendors', 'totalInvoices', 'totalPurchase', 'totalPendings', 'totalPendingAmount'));
     }
 
     public function addBill($gatepassId)
@@ -1661,7 +1681,7 @@ class PurchaseController extends Controller
 
     public function edit($id)
     {
-        $purchase = Purchase::with('items.product')->findOrFail($id);
+        $purchase = Purchase::with(['items.product', 'vendor', 'warehouse'])->findOrFail($id);
 
         $Vendor = Vendor::all();
         $Warehouse = Warehouse::all();
@@ -1670,40 +1690,145 @@ class PurchaseController extends Controller
             $q->whereIn('name', ['Cash', 'Bank']);
         })->where('status', 1)->orderBy('title')->get();
 
-        return view('admin_panel.purchase.edit', compact('purchase', 'Vendor', 'Warehouse', 'accounts'));
+        $categories = \App\Models\Category::orderBy('name')->get();
+        $brands = \App\Models\Brand::orderBy('name')->get();
+
+        // Group purchase items for V2 interface
+        $groupedItems = [];
+        $itemsByProduct = $purchase->items->groupBy(function($item) {
+            return $item->product_id ?: ('item_' . $item->id);
+        });
+
+        foreach ($itemsByProduct as $prodId => $items) {
+            $firstItem = $items->first();
+            $product = $firstItem->product;
+            $totalQty = (float) $items->sum('qty');
+            $price = (float) $firstItem->price;
+
+            // Build variants list
+            $variants = [];
+            if ($product && !empty($product->color)) {
+                $catalogVars = is_string($product->color) ? json_decode($product->color, true) : $product->color;
+                if (is_array($catalogVars)) {
+                    foreach ($catalogVars as $cv) {
+                        $variants[] = [
+                            'size' => $cv['size'] ?? '-',
+                            'color' => $cv['color'] ?? '-',
+                            'barcode' => $cv['barcode'] ?? '',
+                            'current_stock' => (float) ($cv['stock'] ?? 0),
+                            'qty' => 0,
+                            'purchase_price' => (float) ($cv['purch_price'] ?? $price),
+                            'sale_price' => (float) ($cv['sale_price'] ?? 0),
+                        ];
+                    }
+                }
+            }
+
+            foreach ($items as $it) {
+                $parsedColor = null;
+                if (!empty($it->color)) {
+                    $raw = $it->color;
+                    if (base64_encode(base64_decode($raw, true)) === $raw) {
+                        $raw = base64_decode($raw);
+                    }
+                    $parsedColor = json_decode($raw, true);
+                }
+                $size = is_array($parsedColor) ? ($parsedColor['size'] ?? '-') : '-';
+                $color = is_array($parsedColor) ? ($parsedColor['color'] ?? '-') : ($it->color ?: '-');
+                $barcode = is_array($parsedColor) ? ($parsedColor['barcode'] ?? '') : '';
+                $salePrice = is_array($parsedColor) ? ($parsedColor['sale_price'] ?? 0) : 0;
+
+                $matched = false;
+                foreach ($variants as &$v) {
+                    if (strcasecmp(trim($v['size']), trim($size)) === 0 && strcasecmp(trim($v['color']), trim($color)) === 0) {
+                        $v['qty'] = (float) $it->qty;
+                        $v['purchase_price'] = (float) $it->price;
+                        if ($salePrice > 0) $v['sale_price'] = (float) $salePrice;
+                        if (!empty($barcode) && empty($v['barcode'])) $v['barcode'] = $barcode;
+                        $matched = true;
+                        break;
+                    }
+                }
+                unset($v);
+
+                if (!$matched) {
+                    $variants[] = [
+                        'size' => $size,
+                        'color' => $color,
+                        'barcode' => $barcode,
+                        'current_stock' => 0,
+                        'qty' => (float) $it->qty,
+                        'purchase_price' => (float) $it->price,
+                        'sale_price' => (float) $salePrice,
+                    ];
+                }
+            }
+
+            $discVal = (float) $items->sum('item_discount');
+            $grossVal = $totalQty * $price;
+            $discPct = $grossVal > 0 ? ($discVal / $grossVal) * 100 : 0;
+
+            $groupedItems[] = [
+                'product_id' => $product ? $product->id : null,
+                'product_name' => $product ? $product->item_name : ($firstItem->description ?? 'Product'),
+                'product_code' => $product ? $product->item_code : '',
+                'unit' => $firstItem->unit ?? 'Pcs',
+                'total_qty' => $totalQty,
+                'price' => $price,
+                'discount_percent' => round($discPct, 2),
+                'discount_amount' => $discVal,
+                'line_total' => $grossVal - $discVal,
+                'mfg_date' => $firstItem->mfg_date,
+                'exp_date' => $firstItem->exp_date,
+                'description' => $firstItem->description,
+                'variants' => $variants,
+            ];
+        }
+
+        return view('admin_panel.purchase.edit', compact('purchase', 'Vendor', 'Warehouse', 'accounts', 'categories', 'brands', 'groupedItems'));
     }
 
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
             'invoice_no' => 'nullable|string',
+            'purchase_order_no' => 'nullable|string',
             'vendor_id' => 'nullable|exists:vendors,id',
             'purchase_date' => 'nullable|date',
             'branch_id' => 'nullable|exists:branches,id',
             'warehouse_id' => 'required|exists:warehouses,id',
             'note' => 'nullable|string',
+            'vendor_inv_photo' => 'nullable|file|image|max:15360',
             'discount' => 'nullable|numeric|min:0',
             'extra_cost' => 'nullable|numeric|min:0',
 
-            'product_id' => 'array',
-            'product_id.*' => 'nullable|exists:products,id',
-            'qty' => 'array',
-            'qty.*' => 'nullable|required_with:product_id.*|numeric|min:0',
-            'price' => 'array',
-            'price.*' => 'nullable|required_with:product_id.*|numeric|min:0',
-            'unit' => 'array',
-            'unit.*' => 'nullable|required_with:product_id.*|string',
+            'product_id' => 'nullable|array',
+            'product_id.*' => 'nullable',
+            'qty' => 'nullable|array',
+            'qty.*' => 'nullable|numeric|min:0',
+            'price' => 'nullable|array',
+            'price.*' => 'nullable|numeric|min:0',
+            'unit' => 'nullable|array',
+            'unit.*' => 'nullable|string',
             'item_discount' => 'nullable|array',
             'item_discount.*' => 'nullable|numeric|min:0',
             'mfg_date' => 'nullable|array',
-            'mfg_date.*' => 'nullable|date',
             'exp_date' => 'nullable|array',
-            'exp_date.*' => 'nullable|date',
             'description' => 'nullable|array',
-            'description.*' => 'nullable|string',
         ]);
 
-        DB::transaction(function () use ($validated, $request, $id) {
+        $vendorInvPhotoPath = null;
+        if ($request->hasFile('vendor_inv_photo')) {
+            $photoFile = $request->file('vendor_inv_photo');
+            if ($photoFile->isValid()) {
+                $ext = $photoFile->getClientOriginalExtension() ?: 'jpg';
+                $photoName = 'vendor_inv_' . time() . '_' . uniqid() . '.' . $ext;
+                $photoFile->move(public_path('uploads/purchases'), $photoName);
+                $vendorInvPhotoPath = 'uploads/purchases/' . $photoName;
+            }
+        }
+
+        $purchase = DB::transaction(function () use ($validated, $request, $id, $vendorInvPhotoPath) {
             $purchase = Purchase::with('items')->findOrFail($id);
             $oldNetAmount = $purchase->net_amount;
 
@@ -1720,68 +1845,99 @@ class PurchaseController extends Controller
             $newMap = collect();
 
             // Arrays from request
-            $pids = $validated['product_id'] ?? [];
-            $qtys = $validated['qty'] ?? [];
-            $prices = $validated['price'] ?? [];
-            $units = $validated['unit'] ?? [];
-            $itemDiscs = $validated['item_discount'] ?? [];
+            $pids = $request->product_id ?? [];
+            $qtys = $request->qty ?? [];
+            $prices = $request->price ?? [];
+            $units = $request->unit ?? [];
+            $itemDiscs = $request->item_discount ?? [];
+            $variantsJsons = $request->product_variants_json ?? [];
 
             // Snapshot fields (Raw Request)
             $sizeModes = $request->size_mode ?? [];
             $ppbs = $request->pieces_per_box ?? [];
             $ppm2 = $request->pieces_per_m2 ?? [];
-            $boxesQtys = $request->boxes_qty ?? [];
-            $looseQtys = $request->loose_qty ?? [];
-            $lengths = $request->length ?? [];
-            $widths = $request->width ?? [];
 
-            foreach ($pids as $i => $pid) {
-                $pid = (int) ($pid ?? 0);
-                $qty = (float) ($qtys[$i] ?? 0);
-                $price = (float) ($prices[$i] ?? 0);
+            foreach ($pids as $i => $pidRaw) {
+                $pid = (int) ($pidRaw ?? 0);
+                if (!$pid) continue;
 
-                if (! $pid || $qty <= 0) {
-                    continue;
+                $product = Product::find($pid);
+                if (!$product) continue;
+
+                $variantsJson = $variantsJsons[$i] ?? null;
+                $variantsList = [];
+                if (!empty($variantsJson)) {
+                    $decoded = is_string($variantsJson) ? json_decode($variantsJson, true) : $variantsJson;
+                    if (is_array($decoded)) {
+                        $variantsList = $decoded;
+                    }
                 }
 
                 $discPercent = (float) ($itemDiscs[$i] ?? 0);
-                $unit = $units[$i] ?? null;
+                $unit = $units[$i] ?? 'Pcs';
+                $hasPurchasedVariant = false;
 
-                // --- Calculation Logic (Matches store()) ---
-                $curSizeMode = $sizeModes[$i] ?? null;
-                $curPPM2 = (float) ($ppm2[$i] ?? 0);
+                if (!empty($variantsList) && is_array($variantsList)) {
+                    foreach ($variantsList as $vItem) {
+                        $vQty = (float) ($vItem['qty'] ?? 0);
+                        if ($vQty <= 0) continue;
 
-                if ($curSizeMode === 'by_size') {
-                    // price is per m2. Gross = TotalPieces * m2_per_piece * price_per_m2
-                    $grossTotal = $curPPM2 * $qty * $price;
-                } else {
-                    // price is always treated as per-piece for purchase entry
-                    $grossTotal = $qty * $price;
+                        $hasPurchasedVariant = true;
+                        $vPrice = (float) ($vItem['purchase_price'] ?? ($prices[$i] ?? 0));
+                        $vGross = $vQty * $vPrice;
+                        $vDiscAmt = $vGross * ($discPercent / 100);
+                        $vLineTotal = $vGross - $vDiscAmt;
+
+                        PurchaseItem::create([
+                            'purchase_id' => $purchase->id,
+                            'product_id' => $product->id,
+                            'unit' => 'Pcs',
+                            'price' => $vPrice,
+                            'item_discount' => $vDiscAmt,
+                            'qty' => $vQty,
+                            'line_total' => $vLineTotal,
+                            'color' => json_encode([
+                                'size' => $vItem['size'] ?? '-',
+                                'color' => $vItem['color'] ?? '-',
+                                'barcode' => $vItem['barcode'] ?? '',
+                                'sale_price' => (float) ($vItem['sale_price'] ?? 0),
+                            ]),
+                            'size_mode' => 'pieces',
+                            'pieces_per_box' => 1,
+                            'mfg_date' => !empty($request->mfg_date[$i]) ? $request->mfg_date[$i] : null,
+                            'exp_date' => !empty($request->exp_date[$i]) ? $request->exp_date[$i] : null,
+                            'description' => $request->description[$i] ?? null,
+                        ]);
+
+                        $subtotal += $vLineTotal;
+                        $newMap[$pid] = ($newMap[$pid] ?? 0) + $vQty;
+                    }
                 }
 
-                // Calculate absolute discount from percentage
+                if ($hasPurchasedVariant) {
+                    continue;
+                }
+
+                $qty = (float) ($qtys[$i] ?? 0);
+                $price = (float) ($prices[$i] ?? 0);
+                if ($qty <= 0) continue;
+
+                $grossTotal = $qty * $price;
                 $discAmount = $grossTotal * ($discPercent / 100);
                 $lineTotal = $grossTotal - $discAmount;
-                // ------------------------------------------
 
                 PurchaseItem::create([
                     'purchase_id' => $purchase->id,
                     'product_id' => $pid,
                     'unit' => $unit,
                     'price' => $price,
-                    'item_discount' => $discAmount, // Store calculated amount
+                    'item_discount' => $discAmount,
                     'qty' => $qty,
                     'line_total' => $lineTotal,
                     'color' => $request->color[$i] ?? null,
-
-                    // Snapshots
-                    'size_mode' => $sizeModes[$i] ?? null,
+                    'size_mode' => $sizeModes[$i] ?? 'pieces',
                     'pieces_per_box' => $ppbs[$i] ?? 1,
                     'pieces_per_m2' => $ppm2[$i] ?? 0,
-                    'boxes_qty' => $boxesQtys[$i] ?? 0,
-                    'loose_qty' => $looseQtys[$i] ?? 0,
-                    'length' => $lengths[$i] ?? null,
-                    'width' => $widths[$i] ?? null,
                     'mfg_date' => !empty($request->mfg_date[$i]) ? $request->mfg_date[$i] : null,
                     'exp_date' => !empty($request->exp_date[$i]) ? $request->exp_date[$i] : null,
                     'description' => $request->description[$i] ?? null,
@@ -1792,14 +1948,24 @@ class PurchaseController extends Controller
             }
 
             // header update
-            $purchase->update([
+            $headerData = [
                 'vendor_id' => $validated['vendor_id'] ?? $purchase->vendor_id,
                 'branch_id' => $branchId,
                 'warehouse_id' => $warehouseId,
                 'purchase_date' => $validated['purchase_date'] ?? $purchase->purchase_date,
                 'invoice_no' => $validated['invoice_no'] ?? $purchase->invoice_no,
                 'note' => $validated['note'] ?? $purchase->note,
-            ]);
+            ];
+
+            if ($request->filled('purchase_order_no')) {
+                $headerData['purchase_order_no'] = $request->purchase_order_no;
+            }
+
+            if ($vendorInvPhotoPath) {
+                $headerData['vendor_inv_photo'] = $vendorInvPhotoPath;
+            }
+
+            $purchase->update($headerData);
 
             // totals
             $discount = (float) ($request->discount ?? 0);
@@ -1812,16 +1978,14 @@ class PurchaseController extends Controller
                 'additional_discount' => $discount,
                 'extra_cost' => $extraCost,
                 'net_amount' => $netAmount,
-                'due_amount' => $netAmount, // Assuming fully due? Or should we subtract paid?
-                // Paid amount is separate (transactions).
-                // The 'due_amount' usually tracks how much is left.
-                // If we paid partial, tracking logic might need paid_amount check.
-                // But standard approach here: due = net - paid
+                'due_amount' => max(0, $netAmount - $purchase->paid_amount),
             ]);
 
-            // Recalculate Due based on net - paid
-            $paid = $purchase->paid_amount;
-            $purchase->update(['due_amount' => $netAmount - $paid]);
+            // If action is approved and purchase was draft, approve it
+            if ($request->action === 'approved' && $purchase->status_purchase === 'draft') {
+                $purchase->status_purchase = 'approved';
+                $purchase->save();
+            }
 
             // If this purchase is linked to a gatepass => NO stock changes here
             $isLinkedToGatepass = \App\Models\InwardGatepass::where('purchase_id', $purchase->id)->exists();
@@ -1897,7 +2061,18 @@ class PurchaseController extends Controller
                     ->where('account_id', $apAccountId)
                     ->update(['credit' => $purchase->net_amount]);
             }
+
+            return $purchase;
         });
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Purchase updated successfully.',
+                'invoice_url' => route('purchase.invoice', $purchase->id),
+                'redirect_url' => route('Purchase.home'),
+            ]);
+        }
 
         return redirect()->route('Purchase.home')->with('success', 'Purchase updated successfully!');
     }

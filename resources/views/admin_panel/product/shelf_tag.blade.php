@@ -288,17 +288,17 @@
             gap: calc(1mm * var(--preview-zoom, 1.35));
             flex-wrap: wrap;
             font-size: calc(var(--price-font-size, 10) * 1px * var(--preview-zoom, 1.35));
-            font-weight: 700;
-            color: #334155;
+            font-weight: 800;
+            color: #000000;
             line-height: 1.1;
         }
         .price-strike {
-            color: #dc2626;
-            text-decoration: line-through;
-            font-weight: 700;
+            color: #000000;
+            text-decoration: line-through 1.5px;
+            font-weight: 800;
         }
         .disc-pill {
-            background: #dc2626;
+            background: #000000;
             color: #ffffff;
             padding: calc(0.2mm * var(--preview-zoom, 1.35)) calc(1.2mm * var(--preview-zoom, 1.35));
             border-radius: 3px;
@@ -310,7 +310,7 @@
         .tag-offer-row {
             font-size: calc(var(--offer-font-size, 13) * 1px * var(--preview-zoom, 1.35));
             font-weight: 900;
-            color: #15803d;
+            color: #000000;
             line-height: 1.1;
             letter-spacing: -0.2px;
         }
@@ -375,32 +375,40 @@
             .tag-rack {
                 font-size: 7.5px !important;
                 padding: 0.2mm 1.5mm !important;
-                border: 0.5px solid #166534 !important;
+                border: 1px solid #000000 !important;
+                color: #000000 !important;
+                background: #ffffff !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
             .tag-product-name {
                 font-size: calc(var(--name-font-size, 12) * 1px) !important;
                 color: #000000 !important;
+                font-weight: 800 !important;
             }
             .tag-price-row {
                 font-size: calc(var(--price-font-size, 10) * 1px) !important;
                 color: #000000 !important;
+                font-weight: 800 !important;
             }
             .price-strike {
-                color: #dc2626 !important;
+                color: #000000 !important;
+                font-weight: 800 !important;
+                text-decoration: line-through 1.5px !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
             .disc-pill {
                 background: #000000 !important;
                 color: #ffffff !important;
+                font-weight: 800 !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
             .tag-offer-row {
                 font-size: calc(var(--offer-font-size, 13) * 1px) !important;
                 color: #000000 !important;
+                font-weight: 900 !important;
             }
         }
     </style>

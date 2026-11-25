@@ -67,93 +67,67 @@
     </div>
 </div>
 
-{{-- ── 3. Items Table (Optimized for Footwear Variants) ── --}}
+{{-- ── 3. Items Table (Grouped by Article) ── --}}
 <table class="table table-bordered mb-3 half-inv-table" style="font-size: 11px;">
     <thead>
         <tr>
             <th class="text-center" style="width: 5%;">#</th>
-            <th class="text-start" style="width: 38%;">Shoe Article &amp; Model</th>
-            <th class="text-center" style="width: 10%;">Size</th>
-            <th class="text-center" style="width: 11%;">Color</th>
-            <th class="text-center" style="width: 12%;">Barcode</th>
-            <th class="text-center" style="width: 8%;">Qty</th>
-            <th class="text-end" style="width: 8%;">Rate</th>
-            <th class="text-end" style="width: 8%;">Total</th>
+            <th class="text-start" style="width: 45%;">Article</th>
+            <th class="text-center" style="width: 15%;">Item Code</th>
+            <th class="text-center" style="width: 13%;">Total Quantity</th>
+            <th class="text-end" style="width: 11%;">Rate</th>
+            <th class="text-end" style="width: 11%;">Total</th>
         </tr>
     </thead>
     <tbody>
         @php
             $totalQtySum = 0;
-            $itemsList = $purchase->items ?? [];
+            // Group purchase items by product so all variants of the same article show as 1 line
+            $groupedInvoiceItems = ($purchase->items ?? collect())->groupBy(function($item) {
+                return $item->product_id ?: ('item_' . $item->id);
+            });
+            $rowIdx = 0;
         @endphp
-        @forelse($itemsList as $idx => $item)
+        @forelse($groupedInvoiceItems as $prodKey => $group)
             @php
-                $vSize = '-';
-                $vColor = '-';
-                $vBarcode = $item->product->item_code ?? '-';
-                if (!empty($item->color)) {
-                    $decodedColor = base64_decode($item->color, true);
-                    $vData = ($decodedColor !== false) ? json_decode($decodedColor, true) : null;
-                    if (empty($vData)) {
-                        $vData = json_decode($item->color, true);
-                    }
-                    if (!empty($vData) && is_array($vData)) {
-                        $vSize = (!empty($vData['size']) && $vData['size'] !== '-') ? $vData['size'] : '-';
-                        $vColor = (!empty($vData['color']) && $vData['color'] !== '-') ? $vData['color'] : '-';
-                        if (!empty($vData['barcode'])) $vBarcode = $vData['barcode'];
-                    } else {
-                        $vColor = (string)$item->color;
-                    }
-                }
-                $qty = (float)$item->qty;
-                $totalQtySum += $qty;
+                $rowIdx++;
+                $firstItem = $group->first();
+                $product = $firstItem->product;
+                $articleName = $product ? $product->item_name : ($firstItem->description ?? 'Shoe Item');
+                $itemCode = $product ? $product->item_code : '-';
+                $groupQty = (float) $group->sum('qty');
+                $totalQtySum += $groupQty;
+                $rate = (float) $firstItem->price;
+                $groupTotal = (float) $group->sum('line_total');
+                $unit = $firstItem->unit ?? 'Prs';
             @endphp
             <tr>
-                <td class="text-center text-muted fw-bold">{{ $idx + 1 }}</td>
+                <td class="text-center text-muted fw-bold">{{ $rowIdx }}</td>
                 <td class="text-start fw-bold text-dark">
-                    {{ $item->product->item_name ?? 'Shoe Item' }}
-                    @if(!empty($item->description))
-                        <div class="text-muted fw-normal" style="font-size: 9.5px;">{{ $item->description }}</div>
-                    @endif
-                    @if(!empty($item->mfg_date) || !empty($item->exp_date))
-                        <div class="d-flex gap-2 text-muted fw-normal mt-0.5" style="font-size: 9px;">
-                            @if(!empty($item->mfg_date))
-                                <span><strong>Mfg:</strong> {{ \Carbon\Carbon::parse($item->mfg_date)->format('d-M-Y') }}</span>
-                            @endif
-                            @if(!empty($item->exp_date))
-                                <span class="text-danger"><strong>Exp:</strong> {{ \Carbon\Carbon::parse($item->exp_date)->format('d-M-Y') }}</span>
-                            @endif
-                        </div>
-                    @endif
-                </td>
-                <td class="text-center">
-                    <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 10px;">{{ $vSize }}</span>
-                </td>
-                <td class="text-center">
-                    <span class="badge bg-secondary text-white px-2 py-1" style="font-size: 10px;">{{ $vColor }}</span>
+                    {{ $articleName }}
                 </td>
                 <td class="text-center font-monospace text-dark" style="font-size: 10.5px;">
-                    {{ $vBarcode }}
+                    {{ $itemCode }}
                 </td>
                 <td class="text-center fw-bold text-dark">
-                    {{ $qty }} <small class="text-muted">Prs</small>
+                    {{ $groupQty }} <small class="text-muted">{{ $unit }}</small>
                 </td>
                 <td class="text-end font-monospace">
-                    {{ number_format((float)$item->price, 2) }}
+                    {{ number_format($rate, 2) }}
                 </td>
                 <td class="text-end fw-bold text-dark font-monospace">
-                    {{ number_format((float)$item->line_total, 2) }}
+                    {{ number_format($groupTotal, 2) }}
                 </td>
             </tr>
         @empty
             <tr>
-                <td colspan="8" class="text-center py-3 text-muted">No items recorded in this invoice.</td>
+                <td colspan="6" class="text-center py-3 text-muted">No items recorded in this invoice.</td>
             </tr>
         @endforelse
     </tbody>
     <tfoot class="table-light fw-bold" style="font-size: 11px;">
         <tr>
-            <td colspan="5" class="text-end text-uppercase pe-2">Total Quantity:</td>
+            <td colspan="3" class="text-end text-uppercase pe-2">Total Quantity:</td>
             <td class="text-center text-primary">{{ $totalQtySum }} Prs</td>
             <td class="text-end pe-2">Subtotal:</td>
             <td class="text-end font-monospace">Rs. {{ number_format((float)$purchase->subtotal, 2) }}</td>
