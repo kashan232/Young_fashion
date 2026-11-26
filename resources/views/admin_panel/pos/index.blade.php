@@ -194,17 +194,20 @@
 
     .product-card-promo-badge {
         position: absolute;
-        top: 6px;
-        right: 6px;
+        top: 4px;
+        right: 4px;
         background: #dc2626;
         color: #ffffff;
-        font-size: 9.5px;
+        font-size: 8.5px;
         font-weight: 800;
-        padding: 2px 6px;
-        border-radius: 6px;
-        box-shadow: 0 2px 6px rgba(220, 38, 38, 0.35);
+        padding: 1px 5px;
+        border-radius: 4px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
         z-index: 2;
         letter-spacing: 0.2px;
+        line-height: 1.2;
+        white-space: nowrap;
+        pointer-events: none;
     }
 
     .product-card-orig-price {
@@ -230,6 +233,79 @@
     
     .product-card-stock.out {
         color: #ef4444;
+    }
+
+    /* POS QUICK FILTERS BAR */
+    .pos-filters-bar {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        margin-bottom: 12px;
+    }
+    .pos-filter-group {
+        display: inline-flex;
+        align-items: center;
+        position: relative;
+    }
+    .pos-filter-select {
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        font-weight: 600;
+        font-size: 12px;
+        padding: 6px 26px 6px 10px;
+        color: #334155;
+        background-color: #f8fafc;
+        transition: all 0.2s ease;
+        min-width: 110px;
+        max-width: 165px;
+        cursor: pointer;
+        outline: none;
+    }
+    .pos-filter-select:hover {
+        border-color: #94a3b8;
+        background-color: #ffffff;
+    }
+    .pos-filter-select:focus {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+        background-color: #ffffff;
+    }
+    .pos-filter-select.active-filter {
+        background-color: #eef2ff;
+        border-color: #4f46e5;
+        color: #4338ca;
+        font-weight: 700;
+    }
+    .btn-reset-filters {
+        padding: 5px 11px;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.15s;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .btn-reset-filters:hover {
+        background: #f1f5f9;
+        color: #0f172a;
+        border-color: #94a3b8;
+    }
+    .filter-count-badge {
+        font-size: 11.5px;
+        font-weight: 600;
+        color: #64748b;
+        margin-left: auto;
     }
     
     /* RIGHT PANEL: CART & CHECKOUT */
@@ -616,6 +692,71 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- QUICK SEARCH FILTERS (Category, Brand, Color, Size, Price Range) -->
+                <div class="pos-filters-bar">
+                    <!-- Category -->
+                    <div class="pos-filter-group">
+                        <select id="filterCategory" class="form-select form-select-sm pos-filter-select" title="Filter by Category">
+                            <option value="">Category (All)</option>
+                            @foreach($categories ?? [] as $cat)
+                                <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Brand -->
+                    <div class="pos-filter-group">
+                        <select id="filterBrand" class="form-select form-select-sm pos-filter-select" title="Filter by Brand">
+                            <option value="">Brand (All)</option>
+                            @foreach($brands ?? [] as $br)
+                                <option value="{{ $br->id }}">{{ $br->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Color -->
+                    <div class="pos-filter-group">
+                        <select id="filterColor" class="form-select form-select-sm pos-filter-select" title="Filter by Color">
+                            <option value="">Color (All)</option>
+                            @foreach($allColors ?? [] as $col)
+                                <option value="{{ $col }}">{{ $col }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Size -->
+                    <div class="pos-filter-group">
+                        <select id="filterSize" class="form-select form-select-sm pos-filter-select" title="Filter by Size">
+                            <option value="">Size (All)</option>
+                            @foreach($allSizes ?? [] as $sz)
+                                <option value="{{ $sz }}">Size: {{ $sz }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Price Range -->
+                    <div class="pos-filter-group">
+                        <select id="filterPriceRange" class="form-select form-select-sm pos-filter-select" title="Filter by Price Range">
+                            <option value="">Price Range (All)</option>
+                            <option value="0-2000">Under Rs. 2,000</option>
+                            <option value="2000-4000">Rs. 2,000 - 4,000</option>
+                            <option value="4000-6000">Rs. 4,000 - 6,000</option>
+                            <option value="6000-10000">Rs. 6,000 - 10,000</option>
+                            <option value="10000+">Above Rs. 10,000</option>
+                        </select>
+                    </div>
+
+                    <!-- Reset Filters Button -->
+                    <button type="button" class="btn-reset-filters" id="btnResetFilters" title="Reset all filters">
+                        <i class="fas fa-rotate-left"></i> Reset
+                    </button>
+
+                    <!-- Filter Count Indicator -->
+                    <div class="filter-count-badge">
+                        Showing <strong id="filteredProductsCount" class="text-primary">{{ count($posProducts) }}</strong> / {{ count($posProducts) }} items
+                    </div>
+                </div>
                 
                 <div class="pos-grid-container">
                     <div class="pos-grid" id="productsGrid">
@@ -628,6 +769,12 @@
                                  data-id="{{ $product['id'] }}" 
                                  data-name="{{ $product['name'] }}" 
                                  data-sku="{{ $product['sku'] }}" 
+                                 data-category-id="{{ $product['category_id'] ?? '' }}"
+                                 data-category="{{ $product['category_name'] ?? '' }}"
+                                 data-brand-id="{{ $product['brand_id'] ?? '' }}"
+                                 data-brand="{{ $product['brand_name'] ?? '' }}"
+                                 data-colors="{{ implode(',', $product['colors'] ?? []) }}"
+                                 data-sizes="{{ implode(',', $product['sizes'] ?? []) }}"
                                  data-price="{{ $product['price'] }}"
                                  data-original-price="{{ $product['original_price'] ?? $product['price'] }}"
                                  data-discount-amount="{{ $product['discount_amount'] ?? 0 }}"
@@ -647,12 +794,10 @@
                                         @php
                                             $cardPerc = (float)($product['discount_percentage'] ?? 0);
                                             $cardBadgeText = $cardPerc > 0
-                                                ? rtrim(rtrim(number_format($cardPerc, 2), '0'), '.') . '% OFF'
-                                                : 'Rs ' . number_format($product['discount_amount'], 0) . ' OFF';
+                                                ? '-' . rtrim(rtrim(number_format($cardPerc, 2), '0'), '.') . '%'
+                                                : '-Rs ' . number_format($product['discount_amount'], 0);
                                         @endphp
-                                        <span class="product-card-promo-badge">
-                                            <i class="fas fa-tag me-1"></i>{{ $cardBadgeText }}
-                                        </span>
+                                        <span class="product-card-promo-badge">{{ $cardBadgeText }}</span>
                                     @endif
                                     @if ($product['image'])
                                         <img src="{{ $product['image'] }}" alt="{{ $product['name'] }}">
@@ -1289,18 +1434,73 @@
             $('#walkinNameInput').val('');
         });
 
-        // Filter Grid Products via Search Input
-        $('#posSearch').on('input', function() {
-            let term = $(this).val().toLowerCase();
+        // Unified Instant Filtering (Search, Category, Brand, Color, Size, Price Range)
+        function applyPosFilters() {
+            let term = ($('#posSearch').val() || '').toLowerCase().trim();
+            let catId = ($('#filterCategory').val() || '').toString();
+            let brandId = ($('#filterBrand').val() || '').toString();
+            let color = ($('#filterColor').val() || '').toUpperCase().trim();
+            let size = ($('#filterSize').val() || '').toUpperCase().trim();
+            let priceRange = ($('#filterPriceRange').val() || '').trim();
+
+            $('#filterCategory').toggleClass('active-filter', !!catId);
+            $('#filterBrand').toggleClass('active-filter', !!brandId);
+            $('#filterColor').toggleClass('active-filter', !!color);
+            $('#filterSize').toggleClass('active-filter', !!size);
+            $('#filterPriceRange').toggleClass('active-filter', !!priceRange);
+
+            let minPrice = 0;
+            let maxPrice = Infinity;
+            if (priceRange) {
+                if (priceRange.endsWith('+')) {
+                    minPrice = parseFloat(priceRange.replace('+', '')) || 0;
+                } else if (priceRange.includes('-')) {
+                    let parts = priceRange.split('-');
+                    minPrice = parseFloat(parts[0]) || 0;
+                    maxPrice = parseFloat(parts[1]) || Infinity;
+                }
+            }
+
+            let visibleCount = 0;
             $('.product-card').each(function() {
-                let name = $(this).data('name').toLowerCase();
-                let sku = $(this).data('sku').toLowerCase();
-                if (name.includes(term) || sku.includes(term)) {
-                    $(this).show();
+                let card = $(this);
+                let name = (card.data('name') || '').toString().toLowerCase();
+                let sku = (card.data('sku') || '').toString().toLowerCase();
+                let cardCatId = (card.data('category-id') || '').toString();
+                let cardBrandId = (card.data('brand-id') || '').toString();
+                let cardColors = (card.data('colors') || '').toString().toUpperCase().split(',').map(s => s.trim()).filter(Boolean);
+                let cardSizes = (card.data('sizes') || '').toString().toUpperCase().split(',').map(s => s.trim()).filter(Boolean);
+                let cardPrice = parseFloat(card.data('price')) || 0;
+
+                let matchSearch = !term || name.includes(term) || sku.includes(term);
+                let matchCat = !catId || cardCatId === catId;
+                let matchBrand = !brandId || cardBrandId === brandId;
+                let matchColor = !color || cardColors.includes(color);
+                let matchSize = !size || cardSizes.includes(size);
+                let matchPrice = cardPrice >= minPrice && cardPrice <= maxPrice;
+
+                if (matchSearch && matchCat && matchBrand && matchColor && matchSize && matchPrice) {
+                    card.show();
+                    visibleCount++;
                 } else {
-                    $(this).hide();
+                    card.hide();
                 }
             });
+
+            $('#filteredProductsCount').text(visibleCount);
+        }
+
+        $('#posSearch').on('input', applyPosFilters);
+        $('#filterCategory, #filterBrand, #filterColor, #filterSize, #filterPriceRange').on('change', applyPosFilters);
+
+        $('#btnResetFilters').on('click', function() {
+            $('#posSearch').val('');
+            $('#filterCategory').val('');
+            $('#filterBrand').val('');
+            $('#filterColor').val('');
+            $('#filterSize').val('');
+            $('#filterPriceRange').val('');
+            applyPosFilters();
         });
 
         // Click on Product Card

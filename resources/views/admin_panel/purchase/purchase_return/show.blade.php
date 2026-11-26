@@ -250,42 +250,27 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach ($return->items as $item)
+                @php
+                    $groupedReturnItems = ($return->items ?? collect())->groupBy(function($item) {
+                        return $item->product_id ?: ('item_' . $item->id);
+                    });
+                @endphp
+                @foreach ($groupedReturnItems as $prodKey => $group)
                     @php
-                        // Check Product Defaults (since not stored on item)
-                        $product = $item->product;
+                        $firstItem = $group->first();
+                        $product = $firstItem->product;
                         $piecesPerBox = $product->pieces_per_box ?? 1;
                         $sizeMode = $product->size_mode ?? 'by_pieces';
 
-                        $totalPieces = (int) $item->qty;
+                        $totalPieces = (int) $group->sum('qty');
                         $boxes = $piecesPerBox > 1 ? floor($totalPieces / $piecesPerBox) : 0;
                         $loosePieces = $piecesPerBox > 1 ? $totalPieces % $piecesPerBox : $totalPieces;
-                        
-                        $colorStr = '';
-                        if (!empty($item->color)) {
-                            $decoded = base64_decode($item->color, true);
-                            if ($decoded !== false && is_string($decoded) && str_starts_with(trim($decoded), '{')) {
-                                $parsed = json_decode($decoded, true);
-                                if (json_last_error() === JSON_ERROR_NONE && is_array($parsed)) {
-                                    $parts = [];
-                                    if (!empty($parsed['size']) && $parsed['size'] !== '-') $parts[] = $parsed['size'];
-                                    if (!empty($parsed['color']) && $parsed['color'] !== '-') $parts[] = $parsed['color'];
-                                    $colorStr = implode(' | ', $parts);
-                                } else {
-                                    $colorStr = $item->color;
-                                }
-                            } else {
-                                $colorStr = $item->color;
-                            }
-                        }
+                        $groupTotal = (float) $group->sum('line_total');
                     @endphp
                     <tr>
                         <td class="text-start">
                             <div style="font-weight: bold; font-size: 12px;">
-                                {{ $product->item_name ?? 'Item' }}
-                                @if($colorStr)
-                                    <span style="font-weight: normal; font-size: 11px;"> ({{ $colorStr }})</span>
-                                @endif
+                                {{ $product->item_name ?? ($firstItem->description ?? 'Item') }}
                             </div>
                             <small class="text-muted">{{ $product->item_code ?? '' }}</small>
                         </td>
@@ -307,15 +292,15 @@
                         </td>
 
                         <td class="text-center">
-                            {{ $item->unit ?? 'pc' }}
+                            {{ $firstItem->unit ?? 'pc' }}
                         </td>
 
                         <td class="text-end">
-                            {{ number_format($item->price, 2) }}
+                            {{ number_format($firstItem->price, 2) }}
                         </td>
 
                         <td class="text-end fw-bold">
-                            {{ number_format($item->line_total, 2) }}
+                            {{ number_format($groupTotal, 2) }}
                         </td>
                     </tr>
                 @endforeach

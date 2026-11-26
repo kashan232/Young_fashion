@@ -7,6 +7,8 @@ use App\Models\AccountHead;
 use App\Models\Customer;
 use App\Models\Product;
 use App\Models\WarehouseStock;
+use App\Models\Category;
+use App\Models\Brand;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -16,11 +18,18 @@ class POSController extends Controller
     public function index(Request $request = null)
     {
         // 1. Fetch all active products
-        $products = Product::where('is_active', true)->with(['warehouseStocks', 'activeDiscounts'])->get();
+        $products = Product::where('is_active', true)
+            ->with(['warehouseStocks', 'activeDiscounts', 'category_relation', 'brand'])
+            ->get();
 
+        $allColors = [];
+        $allSizes = [];
         $posProducts = [];
         foreach ($products as $p) {
             $ppb = $p->pieces_per_box > 0 ? $p->pieces_per_box : 1;
+
+            $productColors = [];
+            $productSizes = [];
 
             $variants = [];
             if ($p->color) {
@@ -31,6 +40,32 @@ class POSController extends Controller
                     }
                 } catch (\Exception $e) {}
             }
+
+            if (!empty($variants)) {
+                foreach ($variants as $v) {
+                    $c = trim($v['color'] ?? '');
+                    if ($c !== '' && $c !== '-') {
+                        $productColors[] = strtoupper($c);
+                        $allColors[] = strtoupper($c);
+                    }
+                    $s = trim($v['size'] ?? '');
+                    if ($s !== '' && $s !== '-') {
+                        $productSizes[] = strtoupper($s);
+                        $allSizes[] = strtoupper($s);
+                    }
+                }
+            } else {
+                if (!empty($p->size) && $p->size !== '-') {
+                    $productSizes[] = strtoupper(trim($p->size));
+                    $allSizes[] = strtoupper(trim($p->size));
+                }
+                if (!empty($p->color) && !is_array(json_decode($p->color, true)) && $p->color !== '-') {
+                    $productColors[] = strtoupper(trim($p->color));
+                    $allColors[] = strtoupper(trim($p->color));
+                }
+            }
+            $productColors = array_values(array_unique($productColors));
+            $productSizes = array_values(array_unique($productSizes));
 
             if (count($variants) > 0) {
                 // Fetch all sales, returns, purchases, and purchase returns for this product to distribute
@@ -266,6 +301,12 @@ class POSController extends Controller
                     'id' => $p->id,
                     'name' => $p->item_name,
                     'sku' => $p->item_code ?? '',
+                    'category_id' => $p->category_id ?? '',
+                    'category_name' => optional($p->category_relation)->name ?? '',
+                    'brand_id' => $p->brand_id ?? '',
+                    'brand_name' => optional($p->brand)->name ?? '',
+                    'colors' => $productColors,
+                    'sizes' => $productSizes,
                     'stock' => $totalStockDisplay,
                     'stock_pieces' => $totalStockPieces,
                     'size_mode' => $p->size_mode,
@@ -303,6 +344,12 @@ class POSController extends Controller
                     'id' => $p->id,
                     'name' => $p->item_name,
                     'sku' => $p->item_code ?? '',
+                    'category_id' => $p->category_id ?? '',
+                    'category_name' => optional($p->category_relation)->name ?? '',
+                    'brand_id' => $p->brand_id ?? '',
+                    'brand_name' => optional($p->brand)->name ?? '',
+                    'colors' => $productColors,
+                    'sizes' => $productSizes,
                     'stock' => $stockDisplay,
                     'stock_pieces' => $stockPieces,
                     'size_mode' => $p->size_mode,
@@ -440,7 +487,15 @@ class POSController extends Controller
             }
         }
 
-        return view('admin_panel.pos.index', compact('posProducts', 'customers', 'accounts', 'vendors', 'editSaleData'));
+        $categories = Category::orderBy('name')->get();
+        $brands = Brand::orderBy('name')->get();
+        $allColors = array_values(array_unique($allColors));
+        sort($allColors);
+        $allSizes = array_values(array_unique($allSizes));
+        natsort($allSizes);
+        $allSizes = array_values($allSizes);
+
+        return view('admin_panel.pos.index', compact('posProducts', 'customers', 'accounts', 'vendors', 'editSaleData', 'categories', 'brands', 'allColors', 'allSizes'));
     }
 
     private function matchSaleItemToVariant($saleItem, $variant)

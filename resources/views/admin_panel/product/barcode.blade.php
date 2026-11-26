@@ -472,6 +472,14 @@
             print-color-adjust: exact !important;
             white-space: nowrap;
         }
+        .size-pill[contenteditable="true"] {
+            cursor: text;
+        }
+        .size-pill[contenteditable="true"]:focus {
+            outline: 1.5px dashed #38bdf8;
+            outline-offset: 1px;
+            background: #1e293b;
+        }
         .color-pill {
             background: #ffffff;
             color: #000000;
@@ -622,6 +630,7 @@
                 color: #ffffff !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
+                outline: none !important;
             }
             .color-pill {
                 font-size: calc(var(--variant-font-size, 12) * 0.9px) !important;
@@ -801,6 +810,17 @@
                 <span>Price</span>
             </label>
 
+            <!-- 11. Quick Color Tag Tool -->
+            <div class="control-item" title="Quickly set or change color tag for all labels (e.g. BLACK)">
+                <div class="control-header">
+                    <span>Color Tag:</span>
+                </div>
+                <div class="control-input-wrap">
+                    <input type="text" id="batchColorInput" class="select-preset" style="width: 75px; text-transform: uppercase; font-size: 11px; padding: 2px 5px;" placeholder="e.g. BLACK">
+                    <button type="button" class="btn-step" style="width: auto; padding: 0 6px; font-size: 10px; font-weight: bold;" onclick="applyBatchColor()">Set</button>
+                </div>
+            </div>
+
             <!-- Reset Button -->
             <button type="button" class="btn-reset" onclick="resetToDefaults()" title="Reset to standard defaults">
                 <i class="fas fa-rotate-left"></i> Reset
@@ -831,6 +851,46 @@
         @php
             $vSize = (!empty($variant['size']) && $variant['size'] !== '-') ? trim($variant['size']) : null;
             $vColor = (!empty($variant['color']) && $variant['color'] !== '-') ? trim($variant['color']) : null;
+
+            // 1. If color is not set, extract from variant name e.g. "Chelsea Boots - 41 (Black)" or "Black"
+            if (!$vColor && !empty($variant['name'])) {
+                if (preg_match('/\(([^)]+)\)/', $variant['name'], $m)) {
+                    $vColor = trim($m[1]);
+                } elseif (preg_match('/\b(Black|White|Brown|Tan|Navy|Red|Blue|Grey|Gray|Green|Yellow|Orange|Maroon|Pink|Beige|Olive|Silver|Gold)\b/i', $variant['name'], $m)) {
+                    $vColor = trim($m[1]);
+                }
+            }
+
+            // 2. If size has color prefix like "BL-40", "BLK-40", "BRN-40"
+            if ($vSize && preg_match('/^(BL|BLK|BRN|BROWN|WHT|WHITE|NAVY|RED|BLUE)[-\/](.+)$/i', $vSize, $sm)) {
+                $prefix = strtoupper($sm[1]);
+                $prefixMap = [
+                    'BL' => 'BLACK',
+                    'BLK' => 'BLACK',
+                    'BRN' => 'BROWN',
+                    'WHT' => 'WHITE',
+                ];
+                if (!$vColor) {
+                    $vColor = $prefixMap[$prefix] ?? $prefix;
+                }
+                $vSize = trim($sm[2]);
+            }
+
+            // 3. Format unified pill label: e.g. BLACK/40, BROWN/42
+            if ($vColor && $vSize) {
+                $pillLabel = strtoupper($vColor) . '/' . $vSize;
+            } elseif ($vColor) {
+                $pillLabel = strtoupper($vColor);
+            } elseif ($vSize) {
+                $pillLabel = (stripos($vSize, 'size') !== false || strpos($vSize, '/') !== false)
+                    ? strtoupper($vSize)
+                    : 'SIZE: ' . $vSize;
+            } elseif (!empty($variant['name'])) {
+                $pillLabel = strtoupper($variant['name']);
+            } else {
+                $pillLabel = 'STANDARD';
+            }
+
             $vBarcode = $variant['barcode'] ?? null;
             $vPrice = (float)($variant['sale_price'] ?? 0);
         @endphp
@@ -841,17 +901,9 @@
                 {{-- 1. Article Name (Bara Font for Shelf & Shoe Box) --}}
                 <div class="product-name" title="{{ $product->item_name }}">{{ $product->item_name }}</div>
 
-                {{-- 2. Size & Color Prominent Pill for Stock Boy --}}
+                {{-- 2. Size & Color Prominent Pill for Stock Boy (e.g. BLACK/40) --}}
                 <div class="variant-info">
-                    @if($vSize)
-                        <span class="size-pill">SIZE: {{ $vSize }}</span>
-                    @endif
-                    @if($vColor)
-                        <span class="color-pill">{{ $vColor }}</span>
-                    @endif
-                    @if(!$vSize && !$vColor && !empty($variant['name']))
-                        <span class="name-pill">{{ $variant['name'] }}</span>
-                    @endif
+                    <span class="size-pill" contenteditable="true" title="Click to edit before print">{{ $pillLabel }}</span>
                 </div>
 
                 {{-- 3. Barcode (Chota & Crisp) --}}
@@ -894,19 +946,25 @@
         @php
             $fallbackCode = $product->barcode_path ?: $product->item_code;
             $fallbackPrice = (float)($product->sale_price_per_piece ?: ($product->sale_price_per_box ?: 0));
+            $fbColor = (!empty($product->color) && !is_array(json_decode($product->color))) ? trim($product->color) : null;
+            $fbSize = (!empty($product->size) && $product->size !== '-') ? trim($product->size) : null;
+            if ($fbColor && $fbSize) {
+                $fbLabel = strtoupper($fbColor) . '/' . $fbSize;
+            } elseif ($fbColor) {
+                $fbLabel = strtoupper($fbColor);
+            } elseif ($fbSize) {
+                $fbLabel = (stripos($fbSize, 'size') !== false || strpos($fbSize, '/') !== false)
+                    ? strtoupper($fbSize)
+                    : 'SIZE: ' . $fbSize;
+            } else {
+                $fbLabel = 'STANDARD';
+            }
         @endphp
         <div class="barcode-card" id="card-main">
             <div class="label" id="label-main">
                 <div class="product-name" title="{{ $product->item_name }}">{{ $product->item_name }}</div>
                 <div class="variant-info">
-                    @if(!empty($product->size))
-                        <span class="size-pill">SIZE: {{ $product->size }}</span>
-                    @else
-                        <span class="size-pill">Standard</span>
-                    @endif
-                    @if(!empty($product->color) && !is_array(json_decode($product->color)))
-                        <span class="color-pill">{{ $product->color }}</span>
-                    @endif
+                    <span class="size-pill" contenteditable="true" title="Click to edit before print">{{ $fbLabel }}</span>
                 </div>
                 <div class="barcode-wrap">
                     @if(!empty($fallbackCode))
@@ -1181,6 +1239,25 @@
             document.body.classList.remove('show-price-mode');
         }
         if (save) saveSettings();
+    }
+
+    function applyBatchColor() {
+        const colVal = (document.getElementById('batchColorInput')?.value || '').trim().toUpperCase();
+        if (!colVal) return;
+        document.querySelectorAll('.size-pill').forEach(pill => {
+            let text = pill.innerText.trim();
+            if (text.includes('/')) {
+                const parts = text.split('/');
+                pill.innerText = colVal + '/' + parts.slice(1).join('/');
+            } else if (text.toUpperCase().startsWith('SIZE:')) {
+                const s = text.substring(5).trim();
+                pill.innerText = colVal + '/' + s;
+            } else if (/^\d+$/.test(text)) {
+                pill.innerText = colVal + '/' + text;
+            } else {
+                pill.innerText = colVal + '/' + text;
+            }
+        });
     }
 
     function adjustDimension(inputId, step) {

@@ -2209,67 +2209,52 @@ class PurchaseController extends Controller
         $returnedQtyMap = [];
         foreach ($pastReturns as $pr) {
             foreach ($pr->items as $prItem) {
-                $key = $prItem->product_id . '_' . ($prItem->color ?? '');
-                if (!isset($returnedQtyMap[$key])) {
-                    $returnedQtyMap[$key] = 0;
-                }
-                $returnedQtyMap[$key] += $prItem->qty;
+                $pid = $prItem->product_id;
+                $returnedQtyMap[$pid] = ($returnedQtyMap[$pid] ?? 0) + (float) $prItem->qty;
             }
         }
         
+        // 2. Group purchase items by product_id so variants of the same article show as 1 line
+        $groupedItems = ($purchase->items ?? collect())->groupBy(function($item) {
+            return $item->product_id ?: ('item_' . $item->id);
+        });
+
         $purchaseItems = [];
         $hasReturnableItems = false;
         
-        foreach ($purchase->items as $item) {
-            $key = $item->product_id . '_' . ($item->color ?? '');
-            $alreadyReturned = $returnedQtyMap[$key] ?? 0;
-            $remaining = max(0, $item->qty - $alreadyReturned);
+        foreach ($groupedItems as $productId => $group) {
+            $firstItem = $group->first();
+            $product = $firstItem->product;
+            
+            $totalPurchasedQty = (float) $group->sum('qty');
+            $alreadyReturned = (float) ($returnedQtyMap[$firstItem->product_id] ?? 0);
+            $remaining = max(0, $totalPurchasedQty - $alreadyReturned);
             
             if ($remaining > 0) {
                  $hasReturnableItems = true;
             }
             
-            $itemName = optional($item->product)->item_name ?? 'Unknown Product';
-            $colorStr = '';
-            if (!empty($item->color)) {
-                $decoded = base64_decode($item->color, true);
-                if ($decoded !== false && is_string($decoded) && str_starts_with(trim($decoded), '{')) {
-                    $parsed = json_decode($decoded, true);
-                    if (json_last_error() === JSON_ERROR_NONE && is_array($parsed)) {
-                        $parts = [];
-                        if (!empty($parsed['size']) && $parsed['size'] !== '-') $parts[] = $parsed['size'];
-                        if (!empty($parsed['color']) && $parsed['color'] !== '-') $parts[] = $parsed['color'];
-                        $colorStr = implode(' | ', $parts);
-                    } else {
-                        $colorStr = $item->color;
-                    }
-                } else {
-                    $colorStr = $item->color;
-                }
-            }
-            if ($colorStr) {
-                $itemName .= ' (' . $colorStr . ')';
-            }
+            $itemName = $product ? $product->item_name : ($firstItem->description ?? 'Unknown Product');
             
             $purchaseItems[] = [
-                'product_id' => $item->product_id,
+                'product_id' => $firstItem->product_id,
                 'item_name' => $itemName,
-                'brand' => optional(optional($item->product)->brand)->name ?? '',
-                'item_code' => optional($item->product)->item_code ?? '',
+                'brand' => optional(optional($product)->brand)->name ?? '',
+                'item_code' => optional($product)->item_code ?? '',
                 // Fix: Prioritize Product Master PPB to ensure correct Frontend Box calculation
-                'pieces_per_box' => (optional($item->product)->pieces_per_box > 0) ? $item->product->pieces_per_box : ($item->pieces_per_box ?? 1),
-                'size_mode' => $item->size_mode ?? optional($item->product)->size_mode ?? 'by_pieces',
-                'pieces_per_m2' => $item->pieces_per_m2 ?? optional($item->product)->pieces_per_m2 ?? 0,
-                'price' => $item->price,
+                'pieces_per_box' => (optional($product)->pieces_per_box > 0) ? $product->pieces_per_box : ($firstItem->pieces_per_box ?? 1),
+                'size_mode' => $firstItem->size_mode ?? optional($product)->size_mode ?? 'by_pieces',
+                'pieces_per_m2' => $firstItem->pieces_per_m2 ?? optional($product)->pieces_per_m2 ?? 0,
+                'price' => (float) $firstItem->price,
                 
                 // Qty Logic for Partial Return
-                'original_qty' => $item->qty,
+                'original_qty' => $totalPurchasedQty,
                 'returned_qty' => $alreadyReturned,
                 'qty' => $remaining, // Current Limit
                 
-                'unit' => $item->unit ?? 'pc',
-                'discount' => $item->item_discount,
-                'color' => $item->color,
+                'unit' => $firstItem->unit ?? 'pc',
+                'discount' => (float) $group->sum('item_discount'),
+                'color' => '',
             ];
         }
         
