@@ -616,6 +616,13 @@
                 <input type="hidden" id="tel" name="tel">
                 <input type="hidden" id="previousBalance" value="0">
                 <input type="hidden" id="rangeBalance" value="0">
+                <input type="hidden" name="subTotal1" id="subTotal1" value="0">
+                <input type="hidden" name="total_subtotal" id="subTotal2" value="0">
+                <input type="hidden" name="total_extra_cost" id="discountAmount" value="0">
+                <input type="hidden" name="total_net" id="totalBalance" value="0">
+                <input type="hidden" name="cash" value="0">
+                <input type="hidden" name="card" value="0">
+                <input type="hidden" name="change" id="backendChange" value="0">
 
                 <!-- 2-COLUMN RESPONSIVE POS LAYOUT -->
                 <div class="row g-2 align-items-stretch">
@@ -803,6 +810,10 @@
                                     <span class="text-muted">Line Discount</span>
                                     <span class="fw-bold text-danger" id="tLineDisc">0.00</span>
                                 </div>
+                                <div class="summary-row" id="rowOrderDisc">
+                                    <span class="text-muted">Order Discount</span>
+                                    <span class="fw-bold text-danger" id="tOrderDisc">0.00</span>
+                                </div>
                                 <div class="summary-row">
                                     <span class="fw-bold text-dark">Net Total</span>
                                     <span class="summary-val-net" id="tSub">0.00</span>
@@ -812,9 +823,10 @@
                                     <span class="fw-bold text-success" id="receiptsTotalBadge">0.00</span>
                                 </div>
                                 <div class="summary-row pt-1">
-                                    <span class="fw-bold text-danger">Change</span>
+                                    <span class="fw-bold text-danger" id="changeLabel">Change</span>
                                     <span class="summary-val-change" id="walkinChange">-0.00</span>
                                 </div>
+                                <span id="receiptsTotal" class="d-none">0.00</span>
                             </div>
 
                             <!-- Payment Methods Card -->
@@ -851,10 +863,14 @@
                     </div>
 
                     <div class="d-flex align-items-center gap-2">
-                        <span class="text-muted fw-semibold" style="font-size:0.8rem;">Discount (Rs.)</span>
-                        <div class="input-group input-group-sm" style="width: 130px;">
-                            <input type="number" class="form-control text-end fw-bold text-danger" id="walkinDiscountRs" value="0" placeholder="0">
-                            <span class="input-group-text bg-light text-muted">%</span>
+                        <span class="text-muted fw-semibold" style="font-size:0.8rem;"><i class="fas fa-tag text-danger me-1"></i>Discount</span>
+                        <div class="input-group input-group-sm" style="width: 125px;" title="Discount in Rupees (Rs.)">
+                            <span class="input-group-text bg-light text-muted py-0 px-2 fw-bold" style="font-size:0.75rem;">Rs.</span>
+                            <input type="number" step="any" min="0" class="form-control text-end fw-bold text-danger px-1" id="walkinDiscountRs" name="walkinDiscountRs" value="0" placeholder="0.00" style="font-size:0.8rem;">
+                        </div>
+                        <div class="input-group input-group-sm" style="width: 95px;" title="Discount in Percentage (%)">
+                            <input type="number" step="any" min="0" max="100" class="form-control text-end fw-bold text-danger px-1" id="discountPercent" name="discountPercent" value="0" placeholder="0" style="font-size:0.8rem;">
+                            <span class="input-group-text bg-light text-muted py-0 px-2 fw-bold" style="font-size:0.75rem;">%</span>
                         </div>
                     </div>
 
@@ -864,7 +880,7 @@
                     </div>
 
                     <div class="d-flex align-items-center gap-2">
-                        <span class="text-muted fw-semibold" style="font-size:0.8rem;">Change</span>
+                        <span class="text-muted fw-semibold" style="font-size:0.8rem;" id="bottomChangeLabel">Change</span>
                         <span class="fs-6 fw-bold text-danger" id="bottomChangeVal">-0.00</span>
                     </div>
 

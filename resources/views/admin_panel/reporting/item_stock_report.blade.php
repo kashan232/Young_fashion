@@ -66,6 +66,17 @@
         .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
         .mode-pills { flex-wrap: wrap; }
     }
+
+    @media print {
+        body { background: #ffffff !important; font-size: 11px; }
+        .no-print, header, .sidebar, .navbar, footer, .rpt-filter-card, .mode-pills, .btn, .view-history-btn { display: none !important; }
+        .rpt-page { padding: 0 !important; background: #fff !important; }
+        .kpi-grid { display: grid !important; grid-template-columns: repeat(4, 1fr) !important; margin-bottom: 12px !important; }
+        .kpi-card { box-shadow: none !important; border: 1px solid #ccc !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        .card { border: none !important; box-shadow: none !important; }
+        #stockTable { font-size: 10px !important; width: 100% !important; }
+        #stockTable th { background-color: #f1f5f9 !important; color: #000 !important; -webkit-print-color-adjust: exact !important; }
+    }
 </style>
 
 <div class="rpt-page">
@@ -125,12 +136,12 @@
     </div>
 
     {{-- Filter Panel --}}
-    <div class="rpt-filter-card">
+    <div class="rpt-filter-card no-print">
         <form id="stockFilterForm" class="row g-2 align-items-end">
             <input type="hidden" name="report_mode" id="report_mode" value="summary">
 
             {{-- Category --}}
-            <div class="col-md-2">
+            <div class="col-lg-2 col-md-4 col-sm-6">
                 <label class="rpt-flabel">Category</label>
                 <select name="category_id" id="category_id" class="rpt-finput">
                     <option value="all">-- All Categories --</option>
@@ -141,7 +152,7 @@
             </div>
 
             {{-- Warehouse --}}
-            <div class="col-md-2">
+            <div class="col-lg-2 col-md-4 col-sm-6">
                 <label class="rpt-flabel">Warehouse</label>
                 <select name="warehouse_id" id="warehouse_id" class="rpt-finput">
                     @if(isset($warehouses) && count($warehouses) > 0)
@@ -156,7 +167,7 @@
             </div>
 
             {{-- Unit Mode Filter --}}
-            <div class="col-md-2">
+            <div class="col-lg-2 col-md-4 col-sm-6">
                 <label class="rpt-flabel">Unit / Size Type</label>
                 <select name="unit_type" id="unit_type" class="rpt-finput">
                     <option value="all">All Units (Pcs / Kg / M²)</option>
@@ -166,21 +177,39 @@
                 </select>
             </div>
 
+            {{-- From Date --}}
+            <div class="col-lg-3 col-md-6 col-sm-6">
+                <label class="rpt-flabel">From Date (Optional)</label>
+                <input type="date" name="date_from" id="date_from" class="rpt-finput">
+            </div>
+
+            {{-- To Date --}}
+            <div class="col-lg-3 col-md-6 col-sm-6">
+                <label class="rpt-flabel">To Date (Optional)</label>
+                <input type="date" name="date_to" id="date_to" class="rpt-finput">
+            </div>
+
             {{-- Product --}}
-            <div class="col-md-3">
-                <label class="rpt-flabel">Search Product</label>
+            <div class="col-lg-6 col-md-6 col-sm-12">
+                <label class="rpt-flabel">Search Specific Product</label>
                 <select name="product_id" id="product_id" class="form-control select2">
                     <option value="all">-- All Products --</option>
                 </select>
             </div>
 
             {{-- Buttons --}}
-            <div class="col-md-3 text-end d-flex gap-2">
-                <button type="button" id="btnSearch" class="btn btn-primary btn-sm flex-fill fw-bold" style="height:38px; border-radius:8px;">
+            <div class="col-lg-6 col-md-6 col-sm-12 text-end d-flex gap-2 justify-content-end">
+                <button type="button" id="btnSearch" class="btn btn-primary btn-sm px-3 fw-bold" style="height:38px; border-radius:8px;">
                     <i class="fas fa-search me-1"></i> Apply Filter
                 </button>
-                <button type="button" id="btnExportCsv" class="btn btn-outline-secondary btn-sm fw-bold" style="height:38px; border-radius:8px;">
+                <button type="button" id="btnResetStockFilter" class="btn btn-light border btn-sm px-3 fw-bold text-secondary" style="height:38px; border-radius:8px;">
+                    <i class="fas fa-undo me-1"></i> Reset
+                </button>
+                <button type="button" id="btnExportCsv" class="btn btn-outline-success btn-sm px-3 fw-bold" style="height:38px; border-radius:8px;">
                     <i class="fas fa-file-excel me-1"></i> Export
+                </button>
+                <button type="button" id="btnPrintStockReport" class="btn btn-outline-secondary btn-sm px-3 fw-bold" style="height:38px; border-radius:8px;">
+                    <i class="fas fa-print me-1"></i> Print
                 </button>
             </div>
         </form>
@@ -332,6 +361,8 @@ $(document).ready(function() {
                 product_id:  $('#product_id').val(),
                 warehouse_id: $('#warehouse_id').val(),
                 unit_type:   $('#unit_type').val(),
+                date_from:   $('#date_from').val(),
+                date_to:     $('#date_to').val(),
                 report_mode: mode
             },
             success: function (res) {
@@ -537,6 +568,22 @@ $(document).ready(function() {
                 }
             }
         });
+    });
+
+    // Print Report
+    $('#btnPrintStockReport').on('click', function () {
+        window.print();
+    });
+
+    // Reset Filter
+    $('#btnResetStockFilter').on('click', function () {
+        $('#category_id').val('all');
+        $('#warehouse_id').val('all');
+        $('#unit_type').val('all');
+        $('#date_from').val('');
+        $('#date_to').val('');
+        $('#product_id').val('all').trigger('change');
+        fetchStockReport();
     });
 
     // Export CSV

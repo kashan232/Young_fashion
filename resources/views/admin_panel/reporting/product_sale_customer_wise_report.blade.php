@@ -134,11 +134,18 @@
 
                     {{-- 2. MID: Date Range Inputs --}}
                     <div class="d-flex align-items-center gap-2 me-auto flex-wrap">
+                        <select id="quick_date_desk" class="form-select form-select-sm fw-bold quickDateInput" style="height: 32px; width: 125px; font-size: .78rem; border-radius: 6px;">
+                            <option value="this_month" selected>This Month</option>
+                            <option value="today">Today (Aaj)</option>
+                            <option value="yesterday">Yesterday (Kal)</option>
+                            <option value="last_7">Last 7 Days</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
                         <label for="filterFromDateDesk" class="sale-filter-label mb-0 ms-1 me-1">From:</label>
-                        <input type="date" name="from_date" id="filterFromDateDesk" class="form-control form-control-sm fw-bold" value="{{ date('Y-m-01') }}" style="height: 32px; width: 135px; font-size: .78rem; border-radius: 6px;">
+                        <input type="date" name="from_date" id="filterFromDateDesk" class="form-control form-control-sm fw-bold" value="{{ date('Y-m-01') }}" style="height: 32px; width: 130px; font-size: .78rem; border-radius: 6px;">
                         
-                        <label for="filterToDateDesk" class="sale-filter-label mb-0 ms-3 me-1">To:</label>
-                        <input type="date" name="to_date" id="filterToDateDesk" class="form-control form-control-sm fw-bold" value="{{ date('Y-m-d') }}" style="height: 32px; width: 135px; font-size: .78rem; border-radius: 6px;">
+                        <label for="filterToDateDesk" class="sale-filter-label mb-0 ms-2 me-1">To:</label>
+                        <input type="date" name="to_date" id="filterToDateDesk" class="form-control form-control-sm fw-bold" value="{{ date('Y-m-d') }}" style="height: 32px; width: 130px; font-size: .78rem; border-radius: 6px;">
                     </div>
 
                     {{-- 3. LAST: Action Buttons with X-Axis Gap --}}
@@ -224,6 +231,16 @@
                     </div>
 
                     {{-- 3. From Date & To Date --}}
+                    <div class="col-12 mb-1">
+                        <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 11px;">Quick Preset</label>
+                        <select id="quick_date_mob" class="form-select form-select-sm quickDateInput" style="font-size: 11px;">
+                            <option value="this_month" selected>This Month</option>
+                            <option value="today">Today (Aaj)</option>
+                            <option value="yesterday">Yesterday (Kal)</option>
+                            <option value="last_7">Last 7 Days</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                    </div>
                     <div class="col-6 mb-1">
                         <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 11px;">From Date</label>
                         <input type="date" name="from_date" id="filterFromDateMob" class="form-control form-control-sm" value="{{ date('Y-m-01') }}" style="font-size: 11px;">
@@ -406,10 +423,46 @@
             }
 
             // Sync Mobile & Desktop Date Inputs
-            $('#filterFromDateDesk').on('change', function() { $('#filterFromDateMob').val($(this).val()); });
-            $('#filterFromDateMob').on('change', function() { $('#filterFromDateDesk').val($(this).val()); });
-            $('#filterToDateDesk').on('change', function() { $('#filterToDateMob').val($(this).val()); });
-            $('#filterToDateMob').on('change', function() { $('#filterToDateDesk').val($(this).val()); });
+            $('#filterFromDateDesk').on('change', function() { $('#filterFromDateMob').val($(this).val()); $('.quickDateInput').val('custom'); });
+            $('#filterFromDateMob').on('change', function() { $('#filterFromDateDesk').val($(this).val()); $('.quickDateInput').val('custom'); });
+            $('#filterToDateDesk').on('change', function() { $('#filterToDateMob').val($(this).val()); $('.quickDateInput').val('custom'); });
+            $('#filterToDateMob').on('change', function() { $('#filterToDateDesk').val($(this).val()); $('.quickDateInput').val('custom'); });
+
+            function applyQuickDate(val) {
+                let now = new Date();
+                let pad = (n) => String(n).padStart(2, '0');
+                let toYmd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+                if (val === 'today') {
+                    let str = toYmd(now);
+                    $('#filterFromDateDesk, #filterFromDateMob').val(str);
+                    $('#filterToDateDesk, #filterToDateMob').val(str);
+                } else if (val === 'yesterday') {
+                    let yest = new Date(now);
+                    yest.setDate(yest.getDate() - 1);
+                    let str = toYmd(yest);
+                    $('#filterFromDateDesk, #filterFromDateMob').val(str);
+                    $('#filterToDateDesk, #filterToDateMob').val(str);
+                } else if (val === 'last_7') {
+                    let past = new Date(now);
+                    past.setDate(past.getDate() - 6);
+                    $('#filterFromDateDesk, #filterFromDateMob').val(toYmd(past));
+                    $('#filterToDateDesk, #filterToDateMob').val(toYmd(now));
+                } else if (val === 'this_month') {
+                    let firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+                    $('#filterFromDateDesk, #filterFromDateMob').val(toYmd(firstDay));
+                    $('#filterToDateDesk, #filterToDateMob').val(toYmd(now));
+                }
+            }
+
+            $('.quickDateInput').on('change', function() {
+                let val = $(this).val();
+                $('.quickDateInput').val(val);
+                if (val !== 'custom') {
+                    applyQuickDate(val);
+                    loadReportData();
+                }
+            });
 
             function loadReportData() {
                 $('#reportDataContainer').html(`
@@ -487,7 +540,7 @@
                                                     <thead>
                                                         <tr>
                                                             <th class="text-center" style="width: 35px;">#</th>
-                                                            <th style="width: 90px;">CODE</th>
+                                                            <th style="width: 115px;">ARTICLE / CODE</th>
                                                             <th>PRODUCT NAME</th>
                                                             <th style="width: 140px;">BRAND / CATEGORY</th>
                                                             <th class="text-center" style="width: 75px;">SOLD QTY</th>
@@ -504,7 +557,10 @@
                                     html += `
                                         <tr>
                                             <td class="text-center text-muted fw-bold">${idx + 1}</td>
-                                            <td><span class="font-monospace text-dark">${p.product_code}</span></td>
+                                            <td>
+                                                <span class="font-monospace fw-bold text-dark">${p.product_code}</span>
+                                                ${p.base_code && p.base_code !== p.product_code ? `<br><small class="text-muted" style="font-size: 10px;">${p.base_code}</small>` : ''}
+                                            </td>
                                             <td class="fw-semibold text-dark">${p.product_name}</td>
                                             <td class="text-muted">${p.brand_name} / ${p.category_name}</td>
                                             <td class="text-center fw-bold text-dark">${parseFloat(p.sold_qty).toLocaleString()}</td>
@@ -542,7 +598,8 @@
                                                 <div class="mb-1">
                                                     <div class="d-flex align-items-center gap-1 mb-1">
                                                         <span class="badge bg-light text-muted border" style="font-size: 10px;">#${idx + 1}</span>
-                                                        <span class="badge bg-light text-primary border font-monospace" style="font-size: 11px;">${p.product_code}</span>
+                                                        <span class="badge bg-light text-primary border font-monospace fw-bold" style="font-size: 11px;">${p.product_code}</span>
+                                                        ${p.base_code && p.base_code !== p.product_code ? `<span class="badge bg-light text-secondary border font-monospace" style="font-size: 10px;">${p.base_code}</span>` : ''}
                                                     </div>
                                                     <div class="fw-bold text-dark" style="font-size: 13px; line-height: 1.2;">${p.product_name}</div>
                                                     <small class="text-muted" style="font-size: 11px;">${p.brand_name} / ${p.category_name}</small>
@@ -622,6 +679,7 @@
 
             // Reset Filters
             $('.btnResetTrigger').on('click', function() {
+                $('.quickDateInput').val('this_month');
                 $('#filterFromDateDesk, #filterFromDateMob').val('{{ date("Y-m-01") }}');
                 $('#filterToDateDesk, #filterToDateMob').val('{{ date("Y-m-d") }}');
                 $('.select2-multi').val(null).trigger('change');

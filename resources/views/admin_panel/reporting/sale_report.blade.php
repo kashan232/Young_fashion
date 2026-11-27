@@ -129,38 +129,58 @@
         word-break: break-word;
         white-space: normal;
     }
+
+    @media print {
+        body { background: #ffffff !important; font-size: 11px; }
+        .no-print, header, .sidebar, .navbar, footer { display: none !important; }
+        .sale-report-container { padding: 0 !important; background: #fff !important; }
+        .card { border: 1px solid #dee2e6 !important; box-shadow: none !important; margin-bottom: 10px !important; }
+        .sale-table-wrap { height: auto !important; max-height: none !important; overflow: visible !important; border: none !important; }
+        #saleReport th, #saleReport td { border: 1px solid #cbd5e1 !important; }
+    }
 </style>
 
 <div class="sale-report-container">
     
     {{-- DESKTOP FILTER HEADER BAR (d-none d-md-block) --}}
-    <div class="card border-0 shadow-sm mb-2 d-none d-md-block" style="border-radius: 10px;">
+    <div class="card border-0 shadow-sm mb-2 d-none d-md-block no-print" style="border-radius: 10px;">
         <div class="card-body py-2 px-3">
             <form id="SaleFilterFormDesk" class="sale-filter-form">
                 
                 {{-- Title Badge --}}
-                <div class="sale-filter-group" style="margin-right: 18px;">
+                <div class="sale-filter-group" style="margin-right: 12px;">
                     <span class="fw-bold text-dark fs-6" style="letter-spacing: -0.2px; font-weight:700; white-space:nowrap;">
                         <i class="fas fa-chart-line text-primary" style="margin-right: 8px;"></i>Sale Report
                     </span>
                 </div>
 
+                {{-- Quick Date Preset --}}
+                <div class="sale-filter-group" style="margin-right: 10px;">
+                    <select id="quick_date_desk" class="form-select form-select-sm fw-bold quickDateInput" style="height: 36px; width: 125px; font-size: .78rem; border-radius: 6px;">
+                        <option value="this_month" selected>This Month</option>
+                        <option value="today">Today (Aaj)</option>
+                        <option value="yesterday">Yesterday (Kal)</option>
+                        <option value="last_7">Last 7 Days</option>
+                        <option value="custom">Custom Range</option>
+                    </select>
+                </div>
+
                 {{-- Start Date --}}
-                <div class="sale-filter-group" style="margin-right: 18px;">
+                <div class="sale-filter-group" style="margin-right: 10px;">
                     <label for="start_date_desk" class="sale-filter-label">Start:</label>
-                    <input type="datetime-local" name="start_date" id="start_date_desk" class="form-control form-control-sm fw-bold startDateInput" style="height: 36px; width: 185px; font-size: .78rem; border-radius: 6px;">
+                    <input type="date" name="start_date" id="start_date_desk" class="form-control form-control-sm fw-bold startDateInput" value="{{ date('Y-m-01') }}" style="height: 36px; width: 130px; font-size: .78rem; border-radius: 6px;">
                 </div>
 
                 {{-- End Date --}}
-                <div class="sale-filter-group" style="margin-right: 18px;">
+                <div class="sale-filter-group" style="margin-right: 10px;">
                     <label for="end_date_desk" class="sale-filter-label">End:</label>
-                    <input type="datetime-local" name="end_date" id="end_date_desk" class="form-control form-control-sm fw-bold endDateInput" style="height: 36px; width: 185px; font-size: .78rem; border-radius: 6px;">
+                    <input type="date" name="end_date" id="end_date_desk" class="form-control form-control-sm fw-bold endDateInput" value="{{ date('Y-m-d') }}" style="height: 36px; width: 130px; font-size: .78rem; border-radius: 6px;">
                 </div>
 
                 {{-- Cashier / User --}}
-                <div class="sale-filter-group" style="margin-right: 18px;">
+                <div class="sale-filter-group" style="margin-right: 10px;">
                     <label for="user_id_desk" class="sale-filter-label">Cashier:</label>
-                    <select name="user_id" id="user_id_desk" class="form-select form-select-sm fw-bold userIdInput" style="height: 36px; width: 140px; font-size: .78rem; border-radius: 6px;">
+                    <select name="user_id" id="user_id_desk" class="form-select form-select-sm fw-bold userIdInput" style="height: 36px; width: 125px; font-size: .78rem; border-radius: 6px;">
                         <option value="">All Cashiers</option>
                         @if(isset($users))
                             @foreach($users as $u)
@@ -171,20 +191,26 @@
                 </div>
 
                 {{-- Search Input --}}
-                <div class="flex-grow-1" style="min-width: 210px; margin-right: 18px;">
+                <div class="flex-grow-1" style="min-width: 170px; margin-right: 10px;">
                     <div class="position-relative">
                         <i class="fas fa-search position-absolute text-muted" style="left: 12px; top: 50%; transform: translateY(-50%); font-size: 12px; pointer-events: none;"></i>
-                        <input type="text" class="form-control form-control-sm searchProductInput" placeholder="Search Product / Size / Invoice / Customer…" style="height: 36px; font-size: .80rem; border-radius: 6px; padding-left: 34px;">
+                        <input type="text" class="form-control form-control-sm searchProductInput" placeholder="Search Product / Invoice / Customer…" style="height: 36px; font-size: .80rem; border-radius: 6px; padding-left: 34px;">
                     </div>
                 </div>
 
                 {{-- Action Buttons --}}
-                <div class="d-flex align-items-center">
-                    <button type="button" class="btn btn-primary btn-sm px-3 fw-bold d-inline-flex align-items-center btnSearchTrigger" style="height: 36px; border-radius: 6px; font-size: .80rem; margin-right: 10px;">
-                        <i class="fas fa-filter" style="margin-right: 6px;"></i> Search
+                <div class="d-flex align-items-center" style="gap: 6px;">
+                    <button type="button" class="btn btn-primary btn-sm px-2.5 px-2 fw-bold d-inline-flex align-items-center btnSearchTrigger" style="height: 36px; border-radius: 6px; font-size: .78rem;">
+                        <i class="fas fa-filter me-1"></i> Search
                     </button>
-                    <button type="button" class="btn btn-outline-danger btn-sm px-3 fw-bold d-inline-flex align-items-center btnExportCsvTrigger" style="height: 36px; border-radius: 6px; font-size: .80rem;">
-                        <i class="fas fa-file-csv" style="margin-right: 6px;"></i> CSV
+                    <button type="button" class="btn btn-light border btn-sm px-2.5 px-2 fw-bold text-secondary d-inline-flex align-items-center btnResetTrigger" style="height: 36px; border-radius: 6px; font-size: .78rem;">
+                        <i class="fas fa-undo me-1"></i> Reset
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm px-2.5 px-2 fw-bold d-inline-flex align-items-center btnExportCsvTrigger" style="height: 36px; border-radius: 6px; font-size: .78rem;">
+                        <i class="fas fa-file-csv me-1"></i> CSV
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm px-2.5 px-2 fw-bold d-inline-flex align-items-center btnPrintReport" style="height: 36px; border-radius: 6px; font-size: .78rem;">
+                        <i class="fas fa-print me-1"></i> Print
                     </button>
                 </div>
             </form>
@@ -201,13 +227,26 @@
                             <i class="fas fa-chart-line text-primary me-2"></i>Sale Report
                         </span>
                     </div>
+
+                    {{-- Quick Preset --}}
+                    <div class="col-12 mb-1">
+                        <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 11px;">Quick Preset</label>
+                        <select id="quick_date_mob" class="form-select form-select-sm quickDateInput" style="font-size: 11px;">
+                            <option value="this_month" selected>This Month</option>
+                            <option value="today">Today (Aaj)</option>
+                            <option value="yesterday">Yesterday (Kal)</option>
+                            <option value="last_7">Last 7 Days</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                    </div>
+
                     <div class="col-6 mb-1">
                         <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 11px;">Start Date</label>
-                        <input type="datetime-local" name="start_date" id="start_date_mob" class="form-control form-control-sm startDateInput" style="font-size: 11px;">
+                        <input type="date" name="start_date" id="start_date_mob" class="form-control form-control-sm startDateInput" value="{{ date('Y-m-01') }}" style="font-size: 11px;">
                     </div>
                     <div class="col-6 mb-1">
                         <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 11px;">End Date</label>
-                        <input type="datetime-local" name="end_date" id="end_date_mob" class="form-control form-control-sm endDateInput" style="font-size: 11px;">
+                        <input type="date" name="end_date" id="end_date_mob" class="form-control form-control-sm endDateInput" value="{{ date('Y-m-d') }}" style="font-size: 11px;">
                     </div>
                     <div class="col-12 mb-1">
                         <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 11px;">Cashier</label>
@@ -230,9 +269,17 @@
                         </button>
                     </div>
                     <div class="col-12">
-                        <button type="button" class="btn btn-outline-danger w-100 btn-sm fw-bold btnExportCsvTrigger" style="font-size: 11px;">
-                            <i class="fas fa-file-csv me-1"></i> Export CSV
-                        </button>
+                        <div class="d-flex align-items-center gap-1">
+                            <button type="button" class="btn btn-light border btn-sm flex-fill fw-bold text-secondary btnResetTrigger" style="font-size: 11px;">
+                                <i class="fas fa-undo me-1"></i> Reset
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm flex-fill fw-bold btnExportCsvTrigger" style="font-size: 11px;">
+                                <i class="fas fa-file-csv me-1"></i> CSV
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm flex-fill fw-bold btnPrintReport" style="font-size: 11px;">
+                                <i class="fas fa-print me-1"></i> Print
+                            </button>
+                        </div>
                     </div>
                 </div>
             </form>
@@ -393,10 +440,60 @@
         let currentCogs = 0;
 
         // Sync Date & Cashier Inputs between Desktop & Mobile
-        $('.startDateInput').on('change', function() { $('.startDateInput').val($(this).val()); });
-        $('.endDateInput').on('change', function() { $('.endDateInput').val($(this).val()); });
+        $('.startDateInput').on('change', function() { $('.startDateInput').val($(this).val()); $('.quickDateInput').val('custom'); });
+        $('.endDateInput').on('change', function() { $('.endDateInput').val($(this).val()); $('.quickDateInput').val('custom'); });
         $('.userIdInput').on('change', function() { $('.userIdInput').val($(this).val()); });
         $('.searchProductInput').on('input', function() { $('.searchProductInput').val($(this).val()); });
+
+        function applyQuickDate(val) {
+            let now = new Date();
+            let pad = (n) => String(n).padStart(2, '0');
+            let toYmd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+            if (val === 'today') {
+                let str = toYmd(now);
+                $('.startDateInput').val(str);
+                $('.endDateInput').val(str);
+            } else if (val === 'yesterday') {
+                let yest = new Date(now);
+                yest.setDate(yest.getDate() - 1);
+                let str = toYmd(yest);
+                $('.startDateInput').val(str);
+                $('.endDateInput').val(str);
+            } else if (val === 'last_7') {
+                let past = new Date(now);
+                past.setDate(past.getDate() - 6);
+                $('.startDateInput').val(toYmd(past));
+                $('.endDateInput').val(toYmd(now));
+            } else if (val === 'this_month') {
+                let firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+                $('.startDateInput').val(toYmd(firstDay));
+                $('.endDateInput').val(toYmd(now));
+            }
+        }
+
+        $('.quickDateInput').on('change', function() {
+            let val = $(this).val();
+            $('.quickDateInput').val(val);
+            if (val !== 'custom') {
+                applyQuickDate(val);
+                $('.btnSearchTrigger').first().trigger('click');
+            }
+        });
+
+        // Reset Handler
+        $(document).on('click', '.btnResetTrigger', function() {
+            $('.quickDateInput').val('this_month');
+            applyQuickDate('this_month');
+            $('.userIdInput').val('');
+            $('.searchProductInput').val('');
+            $('.btnSearchTrigger').first().trigger('click');
+        });
+
+        // Print Handler
+        $(document).on('click', '.btnPrintReport', function() {
+            window.print();
+        });
 
         // Auto Search Trigger
         $(document).on('click', '.btnSearchTrigger', function() {
@@ -430,6 +527,7 @@
                         grandReturn = 0;
 
                     salesData.forEach((s, i) => {
+                        let invNo = s.invoice_no || ('INVSLE-' + s.id);
                         let products = s.product.split(',').join('<br>');
                         let qtyArr = s.qty.split(',');
                         let qtyPiecesArr = s.total_pieces ? s.total_pieces.split(',') : (s.qty_decimal ? s.qty_decimal.split(',') : qtyArr);
@@ -457,7 +555,7 @@
                         html += `<tr data-qty="${rowQty}" data-total="${rowTotal}" data-net="${s.total_net}" data-return="${returnTotal}">
                             <td>${i+1}</td>
                             <td class="small text-nowrap">${s.created_at}</td>
-                            <td class="font-monospace fw-bold text-primary">INVSLE-${s.id}</td>
+                            <td class="font-monospace fw-bold text-primary">${invNo}</td>
                             <td>${s.customer_name ?? '-'}</td>
                             <td><span class="badge bg-light text-dark border px-2 py-1"><i class="fas fa-user-circle text-primary me-1"></i>${s.cashier || 'System'}</span></td>
                             <td>${s.reference ?? '-'}</td>
@@ -471,11 +569,11 @@
 
                         // Mobile Card
                         mobHtml += `
-                        <div class="mob-card p-2.5 p-2 mb-2 mob-sale-card" data-search="${(s.product + ' INVSLE-' + s.id + ' ' + (s.customer_name||'') + ' ' + (s.cashier||'') + ' ' + (s.reference||'')).toLowerCase()}">
+                        <div class="mob-card p-2.5 p-2 mb-2 mob-sale-card" data-search="${(s.product + ' ' + invNo + ' ' + (s.customer_name||'') + ' ' + (s.cashier||'') + ' ' + (s.reference||'')).toLowerCase()}">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <div class="d-flex align-items-center gap-1">
                                     <span class="badge bg-light text-muted border" style="font-size: 10px;">#${i+1}</span>
-                                    <span class="badge bg-light text-primary border font-monospace fw-bold" style="font-size: 11px;">INVSLE-${s.id}</span>
+                                    <span class="badge bg-light text-primary border font-monospace fw-bold" style="font-size: 11px;">${invNo}</span>
                                 </div>
                                 <small class="text-muted" style="font-size: 10.5px;">${s.created_at}</small>
                             </div>
@@ -601,6 +699,9 @@
             link.click();
             document.body.removeChild(link);
         });
+
+        // Auto-load on page ready
+        $('.btnSearchTrigger').first().trigger('click');
 
     });
 </script>

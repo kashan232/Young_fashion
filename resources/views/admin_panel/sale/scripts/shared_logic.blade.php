@@ -496,31 +496,34 @@
             tNet += net;
         });
 
-        const isWalkin = $('#walkinToggle').length > 0 && $('#walkinToggle').is(':checked');
-        
-        let orderDisc = 0;
-        if (isWalkin) {
-            orderDisc = toNum($('#walkinDiscountRs').val());
-            $('#discountPercent').val(0); // clear percent
-        } else {
-            const orderPct = toNum($('#discountPercent').val());
+        // Order Discount calculation (supports both Rs. and %)
+        let orderDisc = toNum($('#walkinDiscountRs').val());
+        const orderPct = toNum($('#discountPercent').val());
+        if (orderDisc <= 0 && orderPct > 0 && tNet > 0) {
             orderDisc = (tNet * orderPct) / 100;
         }
 
         const prev = toNum($('#previousBalance').val());
-        const receipts = toNum($('#receiptsTotal').text());
-        const payable = Math.max(0, tNet - orderDisc + prev - receipts);
+
+        // Receipts calculation: directly sum from all payment method inputs
+        let receipts = 0;
+        $('.rv-amount').each(function() {
+            receipts += toNum($(this).val());
+        });
+
         const currentInvoiceTotal = Math.max(0, tNet - orderDisc);
+        const payable = Math.max(0, currentInvoiceTotal + prev - receipts);
 
         $('#tQty').text(tQty.toFixed(0));
         $('#tGross').text(tGross.toFixed(2));
         $('#tLineDisc').text(tLineDisc.toFixed(2));
-        $('#tSub').text(tNet.toFixed(2));
+        $('#tSub').text(currentInvoiceTotal.toFixed(2));
         $('#tOrderDisc').text(orderDisc.toFixed(2));
         $('#tPrev').text(prev.toFixed(2));
         $('#tPayable').text(payable.toFixed(2));
         $('#totalAmount').text(tNet.toFixed(2));
-        $('#walkinNetTotal').text(tNet.toFixed(2));
+        $('#walkinNetTotal').text(currentInvoiceTotal.toFixed(2));
+        $('#receiptsTotal').text(receipts.toFixed(2));
         $('#bottomPaymentsTotal').text(receipts.toFixed(2));
         $('#receiptsTotalBadge').text(receipts.toFixed(2));
         $('#itemsRowCount').text($('#salesTableBody tr').length);
@@ -536,8 +539,10 @@
         $('#backendChange').val(change > 0 ? change.toFixed(2) : 0);
         if (change >= 0) {
             $('#walkinChange, #bottomChangeVal').removeClass('text-warning text-danger').addClass('text-success');
+            $('#changeLabel, #bottomChangeLabel').text('Change');
         } else {
             $('#walkinChange, #bottomChangeVal').removeClass('text-success text-warning').addClass('text-danger');
+            $('#changeLabel, #bottomChangeLabel').text('Due / Balance');
         }
 
         $('#subTotal1').val(tGross.toFixed(2));
@@ -919,8 +924,34 @@
 
     $(document).ready(function() {
 
-        // Walk-in UI Event Bindings
-        $(document).on('input', '#walkinDiscountRs', function() {
+        // Two-way sync for Order Discount (Rupees <-> Percentage)
+        $(document).on('input keyup change', '#walkinDiscountRs', function() {
+            let rsVal = toNum($(this).val());
+            let tNetVal = 0;
+            $('#salesTableBody tr').each(function() {
+                tNetVal += toNum($(this).find('.sales-amount').val());
+            });
+            if (tNetVal > 0 && rsVal > 0) {
+                let calcPct = (rsVal / tNetVal) * 100;
+                $('#discountPercent').val(calcPct.toFixed(2));
+            } else if (rsVal <= 0) {
+                $('#discountPercent').val('0');
+            }
+            updateGrandTotals();
+        });
+
+        $(document).on('input keyup change', '#discountPercent', function() {
+            let pctVal = toNum($(this).val());
+            let tNetVal = 0;
+            $('#salesTableBody tr').each(function() {
+                tNetVal += toNum($(this).find('.sales-amount').val());
+            });
+            if (tNetVal > 0 && pctVal > 0) {
+                let calcRs = (tNetVal * pctVal) / 100;
+                $('#walkinDiscountRs').val(calcRs.toFixed(2));
+            } else if (pctVal <= 0) {
+                $('#walkinDiscountRs').val('0');
+            }
             updateGrandTotals();
         });
         
@@ -1360,18 +1391,18 @@
         });
 
         // Receipts Logic
-        $(document).on('input', '.rv-amount', function() {
+        $(document).on('input keyup change paste', '.rv-amount', function() {
             if (typeof window.recomputeReceipts === 'function') window.recomputeReceipts();
         });
 
-        $('#btnAddRV').on('click', function() {
+        $('#btnAddRV').off('click').on('click', function() {
             const row = `
-              <div class="d-flex gap-2 align-items-center mb-2 rv-row">
-                <select class="form-select rv-account" name="receipt_account_id[]" style="max-width:320px">
+              <div class="d-flex gap-1 align-items-center mb-2 rv-row">
+                <select class="form-select form-select-sm rv-account bg-light fw-bold" name="receipt_account_id[]" style="font-size:0.75rem;">
                   <option value="">Select account</option>
                 </select>
-                <input type="text" class="form-control text-end rv-amount" name="receipt_amount[]" placeholder="0.00" style="max-width:160px">
-                <button type="button" class="btn btn-outline-danger btn-sm btnRemRV">&times;</button>
+                <input type="number" step="0.01" class="form-control form-control-sm text-end rv-amount fw-bold" name="receipt_amount[]" placeholder="0.00" style="width: 110px; font-size:0.75rem;">
+                <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2 btnRemRV" style="font-size:0.75rem;" title="Remove">&times;</button>
               </div>`;
             $('#rvWrapper').append(row);
             loadAccountsInto($('#rvWrapper .rv-account:last'));
@@ -1409,8 +1440,11 @@
                 sum += toNum($(this).val());
             });
             $('#receiptsTotal').text(sum.toFixed(2));
+            $('#receiptsTotalBadge').text(sum.toFixed(2));
+            $('#bottomPaymentsTotal').text(sum.toFixed(2));
+            $('input[name="cash"]').val(sum.toFixed(2));
             updateGrandTotals();
-        }
+        };
 
         // --- Sidebar Direct Add Product ---
         $(document).on('click', '.add-product-direct-btn', function() {
@@ -1490,7 +1524,7 @@
         });
 
         // --- Save & Complete (F9) Handler ---
-        $('#btnSaveAndComplete, #btnHeaderSaveSale').on('click', function() {
+        $('#btnSaveAndComplete, #btnSaveAndComplete2, #btnHeaderSaveSale').on('click', function() {
             $('#btnPosted').trigger('click');
         });
 

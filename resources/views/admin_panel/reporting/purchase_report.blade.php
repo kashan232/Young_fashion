@@ -127,14 +127,24 @@
                     </div>
 
                     {{-- Mid Filters --}}
-                    <div class="d-flex align-items-center me-auto flex-wrap" style="gap: 12px !important;">
+                    <div class="d-flex align-items-center me-auto flex-wrap" style="gap: 10px !important;">
+                        <div class="d-flex align-items-center gap-1">
+                            <select id="quick_date_desk" class="form-select form-select-sm fw-bold quickDateInput" style="height: 32px; width: 125px; font-size: .78rem; border-radius: 6px;">
+                                <option value="this_month" selected>This Month</option>
+                                <option value="today">Today (Aaj)</option>
+                                <option value="yesterday">Yesterday (Kal)</option>
+                                <option value="last_7">Last 7 Days</option>
+                                <option value="custom">Custom Range</option>
+                            </select>
+                        </div>
+
                         <div class="d-flex align-items-center gap-1">
                             <label class="sale-filter-label mb-0 ms-1 me-1">Start:</label>
-                            <input type="date" id="start_date_desk" class="form-control form-control-sm fw-bold startDateInput" value="{{ date('Y-m-01') }}" style="height: 32px; width: 130px; font-size: .78rem; border-radius: 6px;">
+                            <input type="date" id="start_date_desk" class="form-control form-control-sm fw-bold startDateInput" value="{{ date('Y-m-01') }}" style="height: 32px; width: 125px; font-size: .78rem; border-radius: 6px;">
                         </div>
                         <div class="d-flex align-items-center gap-1">
                             <label class="sale-filter-label mb-0 ms-1 me-1">End:</label>
-                            <input type="date" id="end_date_desk" class="form-control form-control-sm fw-bold endDateInput" value="{{ date('Y-m-d') }}" style="height: 32px; width: 130px; font-size: .78rem; border-radius: 6px;">
+                            <input type="date" id="end_date_desk" class="form-control form-control-sm fw-bold endDateInput" value="{{ date('Y-m-d') }}" style="height: 32px; width: 125px; font-size: .78rem; border-radius: 6px;">
                         </div>
 
                         <div class="d-flex align-items-center gap-1">
@@ -188,6 +198,18 @@
                         <span class="fw-bold text-dark fs-6">
                             <i class="fa-solid fa-cart-shopping text-primary me-2"></i>Purchase Report
                         </span>
+                    </div>
+
+                    {{-- Quick Date Range --}}
+                    <div class="col-12 mb-1">
+                        <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 11px;">Quick Preset</label>
+                        <select id="quick_date_mob" class="form-select form-select-sm quickDateInput" style="font-size: 11px;">
+                            <option value="this_month" selected>This Month</option>
+                            <option value="today">Today (Aaj)</option>
+                            <option value="yesterday">Yesterday (Kal)</option>
+                            <option value="last_7">Last 7 Days</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
                     </div>
 
                     {{-- Start & End Date --}}
@@ -355,10 +377,46 @@
     $(document).ready(function() {
         
         // Sync Inputs between Desktop & Mobile
-        $('.startDateInput').on('change', function() { $('.startDateInput').val($(this).val()); });
-        $('.endDateInput').on('change', function() { $('.endDateInput').val($(this).val()); });
+        $('.startDateInput').on('change', function() { $('.startDateInput').val($(this).val()); $('.quickDateInput').val('custom'); });
+        $('.endDateInput').on('change', function() { $('.endDateInput').val($(this).val()); $('.quickDateInput').val('custom'); });
         $('.vendorInput').on('change', function() { $('.vendorInput').val($(this).val()); });
         $('.productInput').on('change', function() { $('.productInput').val($(this).val()); });
+
+        function applyQuickDate(val) {
+            let now = new Date();
+            let pad = (n) => String(n).padStart(2, '0');
+            let toYmd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+            if (val === 'today') {
+                let str = toYmd(now);
+                $('.startDateInput').val(str);
+                $('.endDateInput').val(str);
+            } else if (val === 'yesterday') {
+                let yest = new Date(now);
+                yest.setDate(yest.getDate() - 1);
+                let str = toYmd(yest);
+                $('.startDateInput').val(str);
+                $('.endDateInput').val(str);
+            } else if (val === 'last_7') {
+                let past = new Date(now);
+                past.setDate(past.getDate() - 6);
+                $('.startDateInput').val(toYmd(past));
+                $('.endDateInput').val(toYmd(now));
+            } else if (val === 'this_month') {
+                let firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+                $('.startDateInput').val(toYmd(firstDay));
+                $('.endDateInput').val(toYmd(now));
+            }
+        }
+
+        $('.quickDateInput').on('change', function() {
+            let val = $(this).val();
+            $('.quickDateInput').val(val);
+            if (val !== 'custom') {
+                applyQuickDate(val);
+                loadReport();
+            }
+        });
 
         function fmt(amount) {
             let val = parseFloat(amount || 0);
@@ -547,6 +605,7 @@
         });
 
         $(".btnResetTrigger").click(function() {
+            $('.quickDateInput').val('this_month');
             let startOfMonth = '{{ date("Y-m-01") }}';
             let today = '{{ date("Y-m-d") }}';
             $(".startDateInput").val(startOfMonth);

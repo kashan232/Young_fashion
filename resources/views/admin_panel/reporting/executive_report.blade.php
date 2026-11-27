@@ -111,21 +111,43 @@
     {{-- DESKTOP FILTER HEADER CARD (d-none d-md-block Standard Pattern) --}}
     <div class="card border-0 shadow-sm mb-2 no-print d-none d-md-block" style="border-radius: 10px;">
         <div class="card-body py-2 px-3">
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                 
                 {{-- Left Title --}}
-                <div class="d-flex align-items-center me-3">
+                <div class="d-flex align-items-center me-2">
                     <span class="fw-bold text-dark fs-6 text-nowrap" style="letter-spacing: -0.2px;">
                         <i class="fa-solid fa-crown text-warning me-2"></i>Executive Overview Report
                     </span>
                 </div>
 
+                {{-- Middle: Date Range Controls --}}
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <select id="quickDatePresetDesk" class="form-select form-select-sm fw-bold quickPresetSelect" style="width: 140px; height: 32px; font-size: .78rem; border-radius: 6px;">
+                        <option value="today" selected>Today</option>
+                        <option value="yesterday">Yesterday</option>
+                        <option value="day_before">2 Days Ago</option>
+                        <option value="last_7_days">Last 7 Days</option>
+                        <option value="this_month">This Month</option>
+                        <option value="custom">Custom Range</option>
+                    </select>
+
+                    <div class="d-flex align-items-center gap-1">
+                        <label for="start_date_desk" class="mb-0 text-muted fw-bold" style="font-size: .75rem;">From:</label>
+                        <input type="date" name="start_date" id="start_date_desk" class="form-control form-control-sm fw-bold startDateInput" value="{{ date('Y-m-d') }}" style="height: 32px; width: 130px; font-size: .78rem; border-radius: 6px;">
+                    </div>
+
+                    <div class="d-flex align-items-center gap-1">
+                        <label for="end_date_desk" class="mb-0 text-muted fw-bold" style="font-size: .75rem;">To:</label>
+                        <input type="date" name="end_date" id="end_date_desk" class="form-control form-control-sm fw-bold endDateInput" value="{{ date('Y-m-d') }}" style="height: 32px; width: 130px; font-size: .78rem; border-radius: 6px;">
+                    </div>
+                </div>
+
                 {{-- Action Buttons --}}
-                <div class="d-flex align-items-center ms-auto" style="gap: 10px !important;">
-                    <button type="button" class="btn btn-primary btn-sm px-3 fw-bold d-inline-flex align-items-center btnFetchTrigger" style="height: 34px; border-radius: 6px; font-size: .78rem; margin-right: 8px !important;">
-                        <i class="fas fa-sync-alt me-1"></i> Refresh Data
+                <div class="d-flex align-items-center ms-auto" style="gap: 8px !important;">
+                    <button type="button" class="btn btn-primary btn-sm px-3 fw-bold d-inline-flex align-items-center btnFetchTrigger" style="height: 32px; border-radius: 6px; font-size: .78rem;">
+                        <i class="fas fa-filter me-1"></i> Filter / Refresh
                     </button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm px-3 fw-bold d-inline-flex align-items-center btnPrintReport" style="height: 34px; border-radius: 6px; font-size: .78rem;">
+                    <button type="button" class="btn btn-outline-secondary btn-sm px-3 fw-bold d-inline-flex align-items-center btnPrintReport" style="height: 32px; border-radius: 6px; font-size: .78rem;">
                         <i class="fas fa-print me-1"></i> Print
                     </button>
                 </div>
@@ -137,17 +159,35 @@
     <div class="card border-0 shadow-sm mb-3 no-print d-md-none mt-2" style="border-radius: 12px;">
         <div class="card-body p-3">
             <div class="row g-2">
-                <div class="col-12 mb-2 d-flex justify-content-between align-items-center">
+                <div class="col-12 mb-1 d-flex justify-content-between align-items-center">
                     <span class="fw-bold text-dark fs-6">
                         <i class="fa-solid fa-crown text-warning me-2"></i>Executive Report
                     </span>
-                    <button type="button" class="btn btn-primary btn-sm fw-bold btnFetchTrigger" style="font-size: 11px;">
-                        <i class="fas fa-sync-alt me-1"></i> Refresh
+                    <button type="button" class="btn btn-outline-secondary btn-sm fw-bold btnPrintReport" style="font-size: 11px;">
+                        <i class="fas fa-print me-1"></i> Print
                     </button>
                 </div>
                 <div class="col-12">
-                    <button type="button" class="btn btn-outline-secondary w-100 btn-sm fw-bold btnPrintReport" style="font-size: 11px;">
-                        <i class="fas fa-print me-1"></i> Print Report
+                    <select id="quickDatePresetMob" class="form-select form-select-sm fw-bold quickPresetSelect" style="font-size: 11px;">
+                        <option value="today" selected>Today</option>
+                        <option value="yesterday">Yesterday</option>
+                        <option value="day_before">2 Days Ago</option>
+                        <option value="last_7_days">Last 7 Days</option>
+                        <option value="this_month">This Month</option>
+                        <option value="custom">Custom Range</option>
+                    </select>
+                </div>
+                <div class="col-6">
+                    <label class="small text-muted fw-bold mb-0" style="font-size:10px;">From Date</label>
+                    <input type="date" name="start_date" id="start_date_mob" class="form-control form-control-sm startDateInput" value="{{ date('Y-m-d') }}" style="font-size: 11px;">
+                </div>
+                <div class="col-6">
+                    <label class="small text-muted fw-bold mb-0" style="font-size:10px;">To Date</label>
+                    <input type="date" name="end_date" id="end_date_mob" class="form-control form-control-sm endDateInput" value="{{ date('Y-m-d') }}" style="font-size: 11px;">
+                </div>
+                <div class="col-12 mt-2">
+                    <button type="button" class="btn btn-primary w-100 btn-sm fw-bold btnFetchTrigger" style="font-size: 11px;">
+                        <i class="fas fa-filter me-1"></i> Apply Filter / Refresh
                     </button>
                 </div>
             </div>
@@ -160,23 +200,23 @@
             <div class="summary-pill-bar">
                 
                 <div class="stat-pill" style="background: #f0f9ff; border-color: #bae6fd;">
-                    <div class="stat-label text-info">Sales Today</div>
-                    <div class="stat-val text-primary" id="salesToday">Rs 0.00</div>
+                    <div class="stat-label text-primary" id="lblSalesPeriod">Sales (Today)</div>
+                    <div class="stat-val text-primary" id="salesPeriod">Rs 0.00</div>
                 </div>
 
                 <div class="stat-pill" style="background: #f0f9ff; border-color: #bae6fd;">
-                    <div class="stat-label text-info">Sales (Month)</div>
+                    <div class="stat-label text-info">Sales (This Month)</div>
                     <div class="stat-val text-info" id="salesMonth">Rs 0.00</div>
                 </div>
 
                 <div class="stat-pill" style="background: #fffbeb; border-color: #fde047;">
-                    <div class="stat-label" style="color: #b45309;">Purchases (Month)</div>
-                    <div class="stat-val" style="color: #d97706;" id="purchasesMonth">Rs 0.00</div>
+                    <div class="stat-label" style="color: #b45309;" id="lblPurchasesPeriod">Purchases (Today)</div>
+                    <div class="stat-val" style="color: #d97706;" id="purchasesPeriod">Rs 0.00</div>
                 </div>
 
                 <div class="stat-pill" style="background: #fef2f2; border-color: #fca5a5;">
-                    <div class="stat-label text-danger">Expenses (Month)</div>
-                    <div class="stat-val text-danger" id="expensesMonth">Rs 0.00</div>
+                    <div class="stat-label text-danger" id="lblExpensesPeriod">Expenses (Today)</div>
+                    <div class="stat-val text-danger" id="expensesPeriod">Rs 0.00</div>
                 </div>
 
                 <div class="stat-pill" style="background: #fef2f2; border-color: #fca5a5;">
@@ -202,14 +242,14 @@
     <div class="row g-2 mb-3 d-md-none no-print px-1">
         <div class="col-6 mb-1">
             <div class="mob-metric-card">
-                <span class="mob-metric-label"><i class="fas fa-shopping-cart text-primary me-1"></i>Sales (Month)</span>
-                <div class="mob-metric-val text-primary mt-1" id="mobSalesMonth">Rs 0.00</div>
+                <span class="mob-metric-label"><i class="fas fa-shopping-cart text-primary me-1"></i><span id="mobSalesLabel">Sales (Today)</span></span>
+                <div class="mob-metric-val text-primary mt-1" id="mobSalesPeriod">Rs 0.00</div>
             </div>
         </div>
         <div class="col-6 mb-1">
             <div class="mob-metric-card">
-                <span class="mob-metric-label"><i class="fas fa-truck-loading text-warning me-1"></i>Purchases</span>
-                <div class="mob-metric-val text-warning mt-1" id="mobPurchasesMonth">Rs 0.00</div>
+                <span class="mob-metric-label"><i class="fas fa-truck-loading text-warning me-1"></i><span id="mobPurchasesLabel">Purchases</span></span>
+                <div class="mob-metric-val text-warning mt-1" id="mobPurchasesPeriod">Rs 0.00</div>
             </div>
         </div>
         <div class="col-6 mb-1">
@@ -264,7 +304,10 @@
     {{-- Top 10 Customers --}}
     <div class="card border-0 shadow-sm mb-3 rounded-3 bg-white">
         <div class="card-header bg-light py-2 px-3 d-flex justify-content-between align-items-center">
-            <span class="fw-bold text-dark fs-6"><i class="fas fa-crown text-warning me-2"></i>Top 10 Customers by Profit</span>
+            <span class="fw-bold text-dark fs-6">
+                <i class="fas fa-crown text-warning me-2"></i>Top Customers by Profit 
+                <span class="badge bg-primary text-white ms-1 fw-bold" id="topCustomersPeriodBadge" style="font-size:0.75rem;">Today</span>
+            </span>
             <span class="badge bg-secondary text-white small" id="customerCount">0 customers</span>
         </div>
         <div class="card-body p-0">
@@ -307,26 +350,86 @@ function fmt(n) {
     return sign + 'Rs ' + Math.abs(val).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
 
+function getActiveDateRange() {
+    let start = $('#start_date_desk').val() || $('#start_date_mob').val();
+    let end = $('#end_date_desk').val() || $('#end_date_mob').val();
+    return { start: start, end: end };
+}
+
+function setQuickPreset(preset) {
+    let today = new Date();
+    let pad = (n) => String(n).padStart(2, '0');
+    let fmtDate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+    let start = fmtDate(today);
+    let end = fmtDate(today);
+
+    if (preset === 'today') {
+        start = fmtDate(today);
+        end = fmtDate(today);
+    } else if (preset === 'yesterday') {
+        let y = new Date();
+        y.setDate(today.getDate() - 1);
+        start = fmtDate(y);
+        end = fmtDate(y);
+    } else if (preset === 'day_before') {
+        let db = new Date();
+        db.setDate(today.getDate() - 2);
+        start = fmtDate(db);
+        end = fmtDate(db);
+    } else if (preset === 'last_7_days') {
+        let d7 = new Date();
+        d7.setDate(today.getDate() - 6);
+        start = fmtDate(d7);
+        end = fmtDate(today);
+    } else if (preset === 'this_month') {
+        let firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        start = fmtDate(firstDay);
+        end = fmtDate(today);
+    }
+
+    if (preset !== 'custom') {
+        $('.startDateInput').val(start);
+        $('.endDateInput').val(end);
+    }
+}
+
 function fetchData() {
     $('#loader').show();
+    let range = getActiveDateRange();
 
     $.ajax({
         url: "{{ route('report.executive.fetch') }}",
         type: "GET",
+        data: {
+            start_date: range.start,
+            end_date: range.end
+        },
         success: function(res) {
             $('#loader').hide();
 
+            let label = res.filter ? res.filter.period_label : 'Today';
+
+            // Dynamic Labels
+            $('#lblSalesPeriod').text(`Sales (${label})`);
+            $('#lblPurchasesPeriod').text(`Purchases (${label})`);
+            $('#lblExpensesPeriod').text(`Expenses (${label})`);
+            $('#topCustomersPeriodBadge').text(label);
+            $('#mobSalesLabel').text(`Sales (${label})`);
+            $('#mobPurchasesLabel').text(`Purchases (${label})`);
+
             // Sales
-            $('#salesToday').text(fmt(res.sales.today));
-            $('#salesMonth, #mobSalesMonth').text(fmt(res.sales.month));
+            let salesPeriodVal = res.sales.period !== undefined ? res.sales.period : res.sales.today;
+            $('#salesPeriod, #mobSalesPeriod').text(fmt(salesPeriodVal));
+            $('#salesMonth').text(fmt(res.sales.month));
 
             // Purchases
-            $('#purchasesToday').text(fmt(res.purchases.today));
-            $('#purchasesMonth, #mobPurchasesMonth').text(fmt(res.purchases.month));
+            let purchPeriodVal = res.purchases.period !== undefined ? res.purchases.period : res.purchases.today;
+            $('#purchasesPeriod, #mobPurchasesPeriod').text(fmt(purchPeriodVal));
 
             // Expenses
-            $('#expensesToday').text(fmt(res.expenses.today));
-            $('#expensesMonth').text(fmt(res.expenses.month));
+            let expPeriodVal = res.expenses.period !== undefined ? res.expenses.period : res.expenses.today;
+            $('#expensesPeriod').text(fmt(expPeriodVal));
 
             // Vitals
             $('#totalReceivables, #mobTotalReceivables').text(fmt(res.receivables));
@@ -408,8 +511,8 @@ function fetchData() {
                 $('#topCustomersList').html(topCustHtml);
                 $('#mobTopCustomersContainer').html(mobCustHtml);
             } else {
-                $('#topCustomersList').html('<tr><td colspan="5" class="text-center text-muted py-4 small">No customer profit data found</td></tr>');
-                $('#mobTopCustomersContainer').html('<div class="text-center text-muted py-3 small">No customer profit data found</div>');
+                $('#topCustomersList').html('<tr><td colspan="5" class="text-center text-muted py-4 small">No customer profit data found for selected period</td></tr>');
+                $('#mobTopCustomersContainer').html('<div class="text-center text-muted py-3 small">No customer profit data found for selected period</div>');
             }
 
             // Liquidity Index
@@ -429,6 +532,23 @@ function fetchData() {
 }
 
 $(document).ready(function() {
+    $('.quickPresetSelect').on('change', function() {
+        let val = $(this).val();
+        $('.quickPresetSelect').val(val);
+        setQuickPreset(val);
+        fetchData();
+    });
+
+    $('.startDateInput').on('change', function() {
+        $('.startDateInput').val($(this).val());
+        $('.quickPresetSelect').val('custom');
+    });
+
+    $('.endDateInput').on('change', function() {
+        $('.endDateInput').val($(this).val());
+        $('.quickPresetSelect').val('custom');
+    });
+
     $('.btnFetchTrigger').click(fetchData);
     $('.btnPrintReport').click(() => window.print());
     fetchData();
